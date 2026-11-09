@@ -65,8 +65,10 @@ export async function getSetting(env, key) {
   return rows?.[0]?.value ?? null;
 }
 
+// Audit wajib untuk operasi sensitif: kegagalan dicatat ke log Worker (tidak lagi hilang diam-diam).
 export const audit = (env, action, entity, reason, entityId = null, oldV = null, newV = null) =>
-  rpc(env, 'sys_audit', { p_actor: 'super_admin', p_action: action, p_entity: entity, p_entity_id: entityId, p_old: oldV, p_new: newV, p_reason: reason }).catch(() => null);
+  rpc(env, 'sys_audit', { p_actor: 'super_admin', p_action: action, p_entity: entity, p_entity_id: entityId, p_old: oldV, p_new: newV, p_reason: reason })
+    .catch((e) => { console.log('AUDIT GAGAL', action, String(e?.message || e)); return null; });
 
 // ---------- Notifikasi Captain ----------
 export async function notify(env, userId, kind, title, body, tid = null) {
@@ -76,12 +78,13 @@ export async function notify(env, userId, kind, title, body, tid = null) {
     return true;
   } catch (e) { return false; }
 }
+// Satu job web_push untuk semua penerima (menghindari ratusan subrequest; batas Worker gratis 50 per request).
 export async function notifyOwners(env, ids, kind, title, body, tid = null) {
   try {
     const u = [...new Set(ids)].filter(Boolean);
     if (!u.length) return 0;
     await sb(env, 'POST', 'notifications', u.map((x) => ({ user_id: x, kind, title, body, data: {}, tournament_id: tid, is_read: false })), 'return=minimal');
-    for (const x of u) await rpc(env, 'sys_enqueue_job', { p_kind: 'web_push', p_payload: { user_id: x }, p_idem: null, p_run_after: new Date().toISOString() }).catch(() => null);
+    await rpc(env, 'sys_enqueue_job', { p_kind: 'web_push', p_payload: { user_ids: u }, p_idem: null, p_run_after: new Date().toISOString() }).catch(() => null);
     return u.length;
   } catch (e) { return null; }
 }
@@ -94,9 +97,13 @@ export async function notifyRegistrants(env, tid, kind, title, body) {
 export const notifNote = (n) => (n === null ? '⚠️ Notifikasi ke Captain GAGAL dikirim.' : `🔔 Notifikasi terkirim ke ${n} Captain.`);
 
 // ---------- Idempotensi & state ----------
+// true = baru, false = duplikat (409). Kegagalan lain DILEMPAR: pemrosesan dihentikan, bukan diteruskan.
 export async function firstTime(env, updateId) {
   try { await sb(env, 'POST', 'bot_processed_updates', { update_id: updateId }, 'return=minimal'); return true; }
-  catch (e) { return e.status === 409 ? false : true; }
+  catch (e) {
+    if (e.status === 409) return false;
+    throw new Error('Cek duplikasi update gagal, aksi tidak diproses. Coba lagi. (' + String(e.message).slice(0, 120) + ')');
+  }
 }
 export async function getState(env, chat) {
   const rows = await sb(env, 'GET', `bot_state?chat_id=eq.${chat}&select=state,data,updated_at`);
@@ -175,6 +182,7 @@ export function parsePairs(text, maxPlace) {
     if (!m) return { err: `Format salah: "${p}"` };
     const pl = +m[1];
     if (pl < 1 || pl > maxPlace) return { err: `Posisi harus 1 sampai ${maxPlace} (kamu tulis ${pl}).` };
+    if (Object.prototype.hasOwnProperty.call(out, pl)) return { err: `Posisi ${pl} ditulis lebih dari sekali.` };
     out[pl] = Number(m[2]);
   }
   if (!Object.keys(out).length) return { err: 'Tidak ada data.' };
@@ -254,4 +262,3 @@ export async function sendImageCard(env, chat, url, caption, markup) {
   const r = await tg(env, 'sendPhoto', { chat_id: chat, photo: url, caption: String(caption).slice(0, 1000), parse_mode: 'HTML', reply_markup: markup });
   if (!r.ok) await show(env, chat, null, caption + '\n<i>(gambar gagal ditampilkan)</i>', markup);
 }
-
