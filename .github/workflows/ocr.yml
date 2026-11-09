@@ -20,6 +20,7 @@ jobs:
       - name: Install Dependencies
         run: |
           npm init -y
+          npm pkg set type=module
           npm install @supabase/supabase-js tesseract.js sharp
 
       - name: Run OCR Script
