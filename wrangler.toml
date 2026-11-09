@@ -1,4 +1,4 @@
-name = "gh-t-arena"
+name = "ght-arena-bot"
 main = "src/index.js"
 compatibility_date = "2025-09-01"
 keep_vars = true
