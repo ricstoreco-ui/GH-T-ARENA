@@ -1,12 +1,11 @@
-// GH-T ARENA — Telegram Bot Worker v0.4 (Cloudflare Workers, module syntax)
-// Baru di v0.4: menu Pengumuman (buat, lihat, hapus; notifikasi ke Captain terdaftar).
-// Baru di v0.3: slot terisi, notifikasi Captain (tabel notifications), menu Pendaftaran,
-// menu Verifikasi Pembayaran (verifikasi, tolak bayar, data belum lengkap, tolak, lihat bukti).
-// Variabel yang harus diisi di Cloudflare (JANGAN tulis nilainya di file ini):
+// GH-T ARENA — Telegram Bot Worker v0.5 (Cloudflare Workers, module syntax)
+// Baru di v0.5: Banner, QRIS & Aset (upload dari Telegram), Konfigurasi, Waiting List (lihat),
+// Pengajuan Mundur, Captain (cari, saldo), Edit Turnamen, Batalkan Turnamen, Ganti Banner Turnamen.
+// Baru di v0.4: menu Pengumuman. Baru di v0.3: Pendaftaran + Verifikasi Pembayaran + notifikasi Captain.
+// Baru di v0.2: Tabel Poin, Turnamen, input teks (bot_state), idempotensi (bot_processed_updates).
+// Variabel di Cloudflare (JANGAN tulis nilainya di file ini):
 //   BOT_TOKEN, ADMIN_ID, WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_KEY
-// Baru di v0.2: menu Tabel Poin, menu Turnamen (daftar, buat, ubah status, tunda,
-// jadwal lanjutan, lanjutkan, registrasi ON/OFF), input teks (bot_state),
-// idempotensi update (bot_processed_updates).
+// Butuh SQL 5.09 (fungsi sys_check_values) untuk menu Mundur dan Batalkan Turnamen.
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const wib = (x) => (x ? new Date(x).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '-');
@@ -139,8 +138,9 @@ const MAIN = {
     [b('📝 Pendaftaran', 'm:rg'), b('💳 Pembayaran', 'm:vp')],
     [b('🎯 Battle Royale', 'm:soon:Battle Royale'), b('⚔️ Clash Squad', 'm:soon:Clash Squad')],
     [b('🧮 Tabel Poin', 'm:pt'), b('📣 Pengumuman', 'm:an')],
-    [b('💸 Pencairan', 'm:soon:Pencairan Hadiah'), b('⚙️ Pengaturan', 'm:set')],
-    [b('🩺 Monitoring', 'm:mon')],
+    [b('⏳ Waiting List', 'm:wl'), b('↩️ Pengajuan Mundur', 'm:wd')],
+    [b('👤 Captain', 'm:cp'), b('💸 Pencairan', 'm:soon:Pencairan Hadiah')],
+    [b('⚙️ Pengaturan', 'm:set'), b('🩺 Monitoring', 'm:mon')],
   ],
 };
 const MAIN_TEXT = '<b>GH-T ARENA — Panel Super Admin</b>\nPilih menu:';
@@ -226,6 +226,8 @@ async function settingsMenu(env) {
       inline_keyboard: [
         [b(regOn ? '🔴 Matikan Registrasi' : '🟢 Hidupkan Registrasi', 'm:reg:' + (regOn ? '0' : '1'))],
         [b(open ? '🛠 Aktifkan Maintenance' : '✅ Matikan Maintenance', 'm:mt:' + (open ? '1' : '0'))],
+        [b('🖼 Banner', 'm:bn'), b('🧾 QRIS & Aset', 'm:as')],
+        [b('🔧 Konfigurasi', 'm:cfg')],
         ...BACK,
       ],
     },
@@ -396,6 +398,7 @@ async function tDetail(env, id, notice) {
     kb.push([b('🔁 Ubah Status', 'm:t:s:' + id), b(t.registration_enabled ? '🔴 Registrasi OFF' : '🟢 Registrasi ON', 'm:t:r:' + id)]);
     if (t.status === 'ditunda') kb.push([b('📅 Atur Jadwal Lanjutan', 'm:t:j:' + id), b('▶️ Lanjutkan', 'm:t:c:' + id)]);
     else kb.push([b('⏸ Tunda Turnamen', 'm:t:p:' + id)]);
+    kb.push([b('✏️ Edit', 'm:te:m:' + id), b('🚫 Batalkan Turnamen', 'm:cc:s:' + id)]);
   }
   kb.push([b('🔄 Segarkan', 'm:t:v:' + id), b('⬅️ Daftar', 'm:t')]);
   return { text: (notice ? notice + '\n\n' : '') + lines.join('\n'), markup: { inline_keyboard: kb } };
@@ -517,7 +520,7 @@ function wizSummary(d) {
   l.push(`Jadwal: ${wib(d.schedule_at)}`);
   l.push(`Batas daftar: ${wib(d.registration_deadline)}`);
   l.push('Status awal: ⏳ Segera Hadir');
-  l.push('\n<i>Distribusi hadiah per posisi, banner, deskripsi, aturan, map: diatur di menu Edit (versi berikutnya).</i>');
+  l.push('\n<i>Hadiah per posisi, banner, deskripsi: diatur di menu Edit setelah turnamen dibuat.</i>');
   return l.join('\n');
 }
 
@@ -643,8 +646,8 @@ async function wizCallback(env, chat, mid, parts) {
     }
     const id = created?.[0]?.id;
     await audit(env, 'buat_turnamen', 'tournaments', d.name, id, null, row);
-    const v = await tDetail(env, id, '✅ Turnamen dibuat. Status awal: Segera Hadir.');
-    return show(env, chat, mid, v.text, v.markup);
+    const v2 = await tDetail(env, id, '✅ Turnamen dibuat. Status awal: Segera Hadir.');
+    return show(env, chat, mid, v2.text, v2.markup);
   }
   return wizShow(env, chat, mid, d);
 }
@@ -768,7 +771,7 @@ async function rgDetail(env, rid, notice) {
   if (p?.reject_reason) lines.push(`Alasan tolak bayar: ${esc(p.reject_reason)}`);
   if (r.incomplete_reason) lines.push(`Alasan data belum lengkap: ${esc(r.incomplete_reason)}`);
   if (r.reject_reason) lines.push(`Alasan ditolak: ${esc(r.reject_reason)}`);
-  if (r.withdraw_requested_at) lines.push(`⚠️ Mengajukan mundur ${wib(r.withdraw_requested_at)}${r.withdraw_reason ? ': ' + esc(r.withdraw_reason) : ''} (diproses di menu berikutnya)`);
+  if (r.withdraw_requested_at) lines.push(`⚠️ Mengajukan mundur ${wib(r.withdraw_requested_at)}${r.withdraw_reason ? ': ' + esc(r.withdraw_reason) : ''} (proses di menu Pengajuan Mundur)`);
 
   const kb = [];
   if (r.status === 'menunggu_verifikasi') kb.push([b('✅ Verifikasi', 'm:rg:ok:' + rid), b('❌ Tolak Pembayaran', 'm:rg:no:' + rid)]);
@@ -780,6 +783,7 @@ async function rgDetail(env, rid, notice) {
     row.push(b('🚫 Tolak Pendaftaran', 'm:rg:rj:' + rid));
     kb.push(row);
   }
+  if (r.withdraw_requested_at && r.status !== 'mengundurkan_diri') kb.push([b('↩️ Proses Pengajuan Mundur', 'm:wd:v:' + rid)]);
   kb.push([b('🔄 Segarkan', 'm:rg:v:' + rid), b('⬅️ Kembali', 'm:rg:t:' + r.tournament_id)]);
   return { text: (notice ? notice + '\n\n' : '') + lines.join('\n'), markup: { inline_keyboard: kb } };
 }
@@ -964,14 +968,801 @@ async function anDelete(env, chat, mid, id) {
 }
 
 // =====================================================================
+// HELPER UMUM v0.5
+// =====================================================================
+async function checkVals(env, table, col) {
+  let v;
+  try { v = await rpc(env, 'sys_check_values', { p_table: table, p_column: col }); }
+  catch (e) { throw new Error('Fungsi sys_check_values belum ada. Jalankan SQL 5.09 dulu. (' + e.message.slice(0, 80) + ')'); }
+  return Array.isArray(v) ? [...new Set(v)] : [];
+}
+
+async function notifyOwners(env, ownerIds, kind, title, body, tid = null) {
+  try {
+    const ids = [...new Set(ownerIds)].filter(Boolean);
+    if (!ids.length) return 0;
+    await sb(env, 'POST', 'notifications',
+      ids.map((u) => ({ user_id: u, kind, title, body, data: {}, tournament_id: tid, is_read: false })),
+      'return=minimal');
+    return ids.length;
+  } catch (e) { return null; }
+}
+
+async function withRegLock(env, t, fn) {
+  const needLock = t.status === 'pendaftaran_dibuka' && t.registration_enabled;
+  if (needLock) await patchT(env, t.id, { registration_enabled: false });
+  try { return await fn(); }
+  finally { if (needLock) await patchT(env, t.id, { registration_enabled: true }).catch(() => null); }
+}
+
+function parsePairs(text, maxPlace) {
+  const t = text.trim().replace(/\s*=\s*/g, '=');
+  const out = {};
+  for (const p of t.split(/[,;\s]+/).filter(Boolean)) {
+    const m = p.match(/^(\d{1,2})=(\d{1,12})$/);
+    if (!m) return { err: `Format salah: "${p}"` };
+    const pl = +m[1];
+    if (pl < 1 || pl > maxPlace) return { err: `Posisi harus 1 sampai ${maxPlace} (kamu tulis ${pl}).` };
+    out[pl] = Number(m[2]);
+  }
+  if (!Object.keys(out).length) return { err: 'Tidak ada data.' };
+  return { out };
+}
+
+// =====================================================================
+// UPLOAD GAMBAR (Telegram -> Supabase Storage) + file_registry
+// =====================================================================
+const MAXIMG = 10 * 1024 * 1024;
+const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+const encPath = (p) => p.split('/').map(encodeURIComponent).join('/');
+const publicUrl = (env, bucket, path) => `${env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${encPath(path)}`;
+function ourPath(env, url, bucket) {
+  const pre = `${env.SUPABASE_URL}/storage/v1/object/public/${bucket}/`;
+  return typeof url === 'string' && url.startsWith(pre) ? decodeURIComponent(url.slice(pre.length)) : null;
+}
+
+function pickImage(msg) {
+  if (msg.photo?.length) {
+    const p = msg.photo[msg.photo.length - 1];
+    return { file_id: p.file_id, mime: 'image/jpeg', size: p.file_size || 0, caption: (msg.caption || '').trim() };
+  }
+  if (msg.document) {
+    const m = msg.document.mime_type || '';
+    if (EXT[m]) return { file_id: msg.document.file_id, mime: m, size: msg.document.file_size || 0, caption: (msg.caption || '').trim() };
+    return { bad: true };
+  }
+  return null;
+}
+
+async function downloadTg(env, fileId) {
+  const g = await tg(env, 'getFile', { file_id: fileId });
+  if (!g.ok) throw new Error('getFile: ' + (g.description || '?'));
+  const r = await fetch(`https://api.telegram.org/file/bot${env.BOT_TOKEN}/${g.result.file_path}`);
+  if (!r.ok) throw new Error('Unduh file dari Telegram gagal: ' + r.status);
+  return r.arrayBuffer();
+}
+
+async function storageUpload(env, bucket, path, bytes, mime) {
+  const r = await fetch(`${env.SUPABASE_URL}/storage/v1/object/${bucket}/${encPath(path)}`, {
+    method: 'POST',
+    headers: { ...sbHeaders(env), 'content-type': mime, 'x-upsert': 'false' },
+    body: bytes,
+  });
+  if (!r.ok) {
+    const j = await r.json().catch(() => ({}));
+    throw new Error('Upload gagal: ' + (j.message || j.error || r.status));
+  }
+}
+
+async function storageDelete(env, bucket, path) {
+  const r = await fetch(`${env.SUPABASE_URL}/storage/v1/object/${bucket}/${encPath(path)}`, { method: 'DELETE', headers: sbHeaders(env) });
+  return r.ok || r.status === 404;
+}
+
+async function regUpsert(env, row) {
+  try {
+    await sb(env, 'POST', 'file_registry?on_conflict=bucket,path', { in_use: true, ...row }, 'resolution=merge-duplicates,return=minimal');
+    return true;
+  } catch (e) { return false; }
+}
+
+async function regRelease(env, bucket, path, deleted) {
+  const body = deleted
+    ? { in_use: false, deleted_at: new Date().toISOString() }
+    : { in_use: false, delete_after: new Date().toISOString() };
+  try { await sb(env, 'PATCH', `file_registry?bucket=eq.${bucket}&path=eq.${encodeURIComponent(path)}`, body, 'return=minimal'); } catch (e) { /* abaikan */ }
+}
+
+// Hapus file lama SETELAH yang baru berhasil dipakai
+async function dropOld(env, bucket, path) {
+  if (!path) return;
+  const ok = await storageDelete(env, bucket, path);
+  await regRelease(env, bucket, path, ok);
+}
+
+async function sendImageCard(env, chat, url, caption, markup) {
+  const r = await tg(env, 'sendPhoto', { chat_id: chat, photo: url, caption, parse_mode: 'HTML', reply_markup: markup });
+  if (!r.ok) await show(env, chat, null, caption + '\n<i>(gambar gagal ditampilkan)</i>', markup);
+}
+
+// =====================================================================
+// BANNER
+// =====================================================================
+async function bnList(env, notice) {
+  const rows = (await sb(env, 'GET', 'banners?select=id,title,sort_order,is_active&order=sort_order.asc,created_at.asc&limit=20')) || [];
+  const kb = rows.map((r, i) => [b(`${i + 1}. ${r.is_active ? '✅' : '⛔'} ${String(r.title || '(tanpa judul)').slice(0, 30)}`, 'm:bn:v:' + r.id)]);
+  return {
+    text: (notice ? notice + '\n\n' : '') + '<b>🖼 Banner</b>\n' + (rows.length ? 'Urutan tampil di website (atas = pertama). Pilih banner:' : 'Belum ada banner.'),
+    markup: { inline_keyboard: [[b('➕ Upload Banner', 'm:bn:new')], ...kb, ...BACK] },
+  };
+}
+
+async function bnGet(env, id) {
+  if (!UUID.test(id)) throw new Error('ID banner tidak valid');
+  const rows = await sb(env, 'GET', `banners?id=eq.${id}&select=*`);
+  if (!rows?.[0]) throw new Error('Banner tidak ditemukan');
+  return rows[0];
+}
+
+async function bnShow(env, chat, id, notice) {
+  const bn = await bnGet(env, id);
+  const caption = (notice ? notice + '\n' : '') + `<b>Banner #${bn.sort_order}</b> ${bn.is_active ? '✅ Aktif' : '⛔ Nonaktif'}\n${esc(bn.title || '(tanpa judul)')}`;
+  const markup = {
+    inline_keyboard: [
+      [b('⬆️ Naik', 'm:bn:u:' + id), b('⬇️ Turun', 'm:bn:dn:' + id)],
+      [b(bn.is_active ? '⛔ Nonaktifkan' : '✅ Aktifkan', 'm:bn:a:' + id), b('🔁 Ganti Gambar', 'm:bn:r:' + id)],
+      [b('🗑 Hapus', 'm:bn:d:' + id)],
+      [b('⬅️ Daftar Banner', 'm:bn')],
+    ],
+  };
+  return sendImageCard(env, chat, bn.image_url, caption, markup);
+}
+
+async function bnMove(env, id, dir) {
+  const rows = (await sb(env, 'GET', 'banners?select=id,sort_order&order=sort_order.asc,created_at.asc')) || [];
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].sort_order !== i + 1) {
+      await sb(env, 'PATCH', `banners?id=eq.${rows[i].id}`, { sort_order: i + 1 }, 'return=minimal');
+      rows[i].sort_order = i + 1;
+    }
+  }
+  const idx = rows.findIndex((r) => r.id === id);
+  const j = idx + dir;
+  if (idx < 0 || j < 0 || j >= rows.length) return false;
+  const A = rows[idx], B = rows[j];
+  await sb(env, 'PATCH', `banners?id=eq.${A.id}`, { sort_order: 100000 + idx }, 'return=minimal'); // sementara
+  await sb(env, 'PATCH', `banners?id=eq.${B.id}`, { sort_order: idx + 1 }, 'return=minimal');
+  await sb(env, 'PATCH', `banners?id=eq.${A.id}`, { sort_order: j + 1 }, 'return=minimal');
+  return true;
+}
+
+async function bnDelete(env, id) {
+  const bn = await bnGet(env, id);
+  await sb(env, 'DELETE', `banners?id=eq.${id}`);
+  await dropOld(env, 'banners', bn.storage_path);
+  await audit(env, 'hapus_banner', 'banners', bn.title || '-', id, { image_url: bn.image_url }, null);
+}
+
+// =====================================================================
+// LOGO & ASET, QRIS
+// =====================================================================
+const ASSET_KEYS = [
+  ['qris_qr_image', '🔳 Gambar QR Pembayaran'],
+  ['logo_qris', 'Logo QRIS'],
+  ['logo_transparent', 'Logo GH-T Arena (transparan)'],
+  ['logo_original', 'Logo GH-T Arena (original)'],
+  ['logo_free_fire', 'Logo Free Fire'],
+  ['logo_garena', 'Logo Garena'],
+  ['logo_gh_topup', 'Logo GH TOPUP'],
+  ['logo_dana', 'Logo DANA'],
+];
+
+async function asGetVal(env, key) {
+  const rows = await sb(env, 'GET', `site_settings?key=eq.${key}&select=value`);
+  return rows?.[0]?.value ?? null;
+}
+
+function asList() {
+  return {
+    text: '<b>🧾 QRIS & Aset</b>\nPilih aset untuk dilihat atau diganti. Perubahan langsung dipakai website.\n<i>Logo QRIS = identitas metode bayar. Gambar QR = kode yang dipindai Captain.</i>',
+    markup: { inline_keyboard: [...ASSET_KEYS.map(([k, l], i) => [b(l, 'm:as:v:' + i)]), ...BACK] },
+  };
+}
+
+async function asShow(env, chat, i, notice) {
+  const a = ASSET_KEYS[i];
+  if (!a) throw new Error('Aset tidak dikenal');
+  const val = await asGetVal(env, a[0]);
+  const caption = (notice ? notice + '\n' : '') + `<b>${esc(a[1])}</b>\n${val ? '' : 'Belum diisi.'}`;
+  const markup = { inline_keyboard: [[b('🔁 Ganti Gambar', 'm:as:r:' + i)], [b('⬅️ Daftar Aset', 'm:as')]] };
+  if (!val) return show(env, chat, null, caption, markup);
+  return sendImageCard(env, chat, val, caption, markup);
+}
+
+// =====================================================================
+// PROSES UPLOAD (banner, aset, banner turnamen)
+// =====================================================================
+async function onUpload(env, chat, st, img) {
+  if (img.bad) return show(env, chat, null, '❌ Kirim sebagai foto, atau file gambar JPG / PNG / WEBP.', undefined);
+  if (img.size > MAXIMG) return show(env, chat, null, '❌ Ukuran file maksimal 10 MB.', undefined);
+  const d = st.data || {};
+  const bytes = await downloadTg(env, img.file_id);
+  if (bytes.byteLength > MAXIMG) throw new Error('Ukuran file lebih dari 10 MB');
+  const ext = EXT[img.mime];
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const size = bytes.byteLength;
+
+  if (st.state === 'bn_up') {
+    const path = `b-${stamp}.${ext}`;
+    await storageUpload(env, 'banners', path, bytes, img.mime);
+    const url = publicUrl(env, 'banners', path);
+    if (d.mode === 'replace') {
+      const old = await bnGet(env, d.id);
+      try { await sb(env, 'PATCH', `banners?id=eq.${d.id}`, { image_url: url, storage_path: path }, 'return=minimal'); }
+      catch (e) { await storageDelete(env, 'banners', path); throw e; }
+      const okReg = await regUpsert(env, { bucket: 'banners', path, kind: 'banner', ref_table: 'banners', ref_id: d.id, size_bytes: size });
+      await dropOld(env, 'banners', old.storage_path);
+      await clearState(env, chat);
+      await audit(env, 'ganti_gambar_banner', 'banners', 'via bot', d.id, { image_url: old.image_url }, { image_url: url });
+      return bnShow(env, chat, d.id, '✅ Gambar banner diganti.' + (okReg ? '' : '\n⚠️ Gagal mencatat ke file_registry.'));
+    }
+    const last = (await sb(env, 'GET', 'banners?select=sort_order&order=sort_order.desc&limit=1'))?.[0];
+    let row;
+    try {
+      row = (await sb(env, 'POST', 'banners',
+        { title: img.caption || null, image_url: url, storage_path: path, sort_order: (last?.sort_order || 0) + 1, is_active: true },
+        'return=representation'))?.[0];
+    } catch (e) { await storageDelete(env, 'banners', path); throw e; }
+    const okReg = await regUpsert(env, { bucket: 'banners', path, kind: 'banner', ref_table: 'banners', ref_id: row.id, size_bytes: size });
+    await clearState(env, chat);
+    await audit(env, 'upload_banner', 'banners', img.caption || '-', row.id, null, { image_url: url });
+    return bnShow(env, chat, row.id, '✅ Banner ditambahkan (judul dari caption foto, kalau ada).' + (okReg ? '' : '\n⚠️ Gagal mencatat ke file_registry.'));
+  }
+
+  if (st.state === 'tb_up') {
+    const t = await getT(env, d.tid);
+    const path = `t-${d.tid}-${stamp}.${ext}`;
+    await storageUpload(env, 'banners', path, bytes, img.mime);
+    const url = publicUrl(env, 'banners', path);
+    try { await patchT(env, d.tid, { banner_url: url }); }
+    catch (e) { await storageDelete(env, 'banners', path); throw e; }
+    const okReg = await regUpsert(env, { bucket: 'banners', path, kind: 'tournament_banner', tournament_id: d.tid, ref_table: 'tournaments', ref_id: d.tid, size_bytes: size });
+    await dropOld(env, 'banners', ourPath(env, t.banner_url, 'banners'));
+    await clearState(env, chat);
+    await audit(env, 'banner_turnamen', 'tournaments', 'via bot', d.tid, { banner_url: t.banner_url }, { banner_url: url });
+    const v = await tDetail(env, d.tid, '✅ Banner turnamen diganti.' + (okReg ? '' : '\n⚠️ Gagal mencatat ke file_registry.'));
+    return show(env, chat, null, v.text, v.markup);
+  }
+
+  if (st.state === 'as_up') {
+    const a = ASSET_KEYS.findIndex((x) => x[0] === d.key);
+    if (a < 0) throw new Error('Aset tidak dikenal');
+    const path = `assets/${d.key}-${stamp}.${ext}`;
+    await storageUpload(env, 'site-assets', path, bytes, img.mime);
+    const url = publicUrl(env, 'site-assets', path);
+    const cur = await asGetVal(env, d.key);
+    try { await setSetting(env, d.key, url); }
+    catch (e) { await storageDelete(env, 'site-assets', path); throw e; }
+    const okReg = await regUpsert(env, { bucket: 'site-assets', path, kind: 'asset', ref_table: 'site_settings', size_bytes: size });
+    await dropOld(env, 'site-assets', ourPath(env, cur, 'site-assets'));
+    await clearState(env, chat);
+    await audit(env, 'ganti_aset', 'site_settings', d.key, null, { value: cur }, { value: url });
+    return asShow(env, chat, a, '✅ Gambar diganti. Website otomatis memakai gambar terbaru.' + (okReg ? '' : '\n⚠️ Gagal mencatat ke file_registry.'));
+  }
+}
+
+// =====================================================================
+// KONFIGURASI WEBSITE
+// =====================================================================
+const CFG = [
+  ['admin_whatsapp', 'WhatsApp Admin'],
+  ['waitlist_offer_minutes', 'Batas respons Waiting List (menit)'],
+];
+
+async function cfgMenu(env, notice) {
+  const rows = (await sb(env, 'GET', `site_settings?key=in.(${CFG.map((c) => c[0]).join(',')})&select=key,value`)) || [];
+  const m = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  const lines = CFG.map(([k, l]) => `${l}: <b>${esc(m[k] === '' || m[k] == null ? '(kosong)' : m[k])}</b>`);
+  return {
+    text: (notice ? notice + '\n\n' : '') + '<b>🔧 Konfigurasi</b>\n' + lines.join('\n'),
+    markup: { inline_keyboard: [...CFG.map(([k, l], i) => [b('✏️ ' + l, 'm:cfg:e:' + i)]), [b('⬅️ Pengaturan', 'm:set')]] },
+  };
+}
+
+async function cfgText(env, chat, st, text) {
+  const key = st.data?.key;
+  const c = CFG.find((x) => x[0] === key);
+  if (!c) throw new Error('Sesi tidak valid');
+  let val;
+  if (key === 'admin_whatsapp') {
+    if (text === '-') val = '';
+    else if (/^\+?\d{8,15}$/.test(text.replace(/[\s-]/g, ''))) val = text.replace(/[\s-]/g, '');
+    else return show(env, chat, null, '❌ Nomor tidak valid. Contoh: 628123456789. Ketik - untuk mengosongkan.', { inline_keyboard: [[b('✖️ Batal', 'm:cfg')]] });
+  } else {
+    const n = /^\d{1,4}$/.test(text) ? Number(text) : 0;
+    if (n < 1 || n > 1440) return show(env, chat, null, '❌ Isi angka 1 sampai 1440 (menit).', { inline_keyboard: [[b('✖️ Batal', 'm:cfg')]] });
+    val = n;
+  }
+  const old = await asGetVal(env, key);
+  await clearState(env, chat);
+  await setSetting(env, key, val);
+  await audit(env, 'ubah_konfigurasi', 'site_settings', key, null, { value: old }, { value: val });
+  const v = await cfgMenu(env, `✅ ${esc(c[1])} diperbarui.`);
+  return show(env, chat, null, v.text, v.markup);
+}
+
+// =====================================================================
+// WAITING LIST (lihat antrean; diproses otomatis oleh housekeeping tiap 10 menit)
+// =====================================================================
+async function wlTournaments(env) {
+  const rows = (await sb(env, 'GET', 'waiting_list?status=in.(menunggu,ditawari)&select=tournament_id,status&limit=1000')) || [];
+  const per = {};
+  rows.forEach((r) => { per[r.tournament_id] ??= { menunggu: 0, ditawari: 0 }; per[r.tournament_id][r.status]++; });
+  const ids = Object.keys(per);
+  let names = {};
+  if (ids.length) {
+    const ts = (await sb(env, 'GET', `tournaments?id=in.(${ids.join(',')})&select=id,name`)) || [];
+    names = Object.fromEntries(ts.map((t) => [t.id, t.name]));
+  }
+  const kb = ids.map((id) => [b(`${String(names[id] || '?').slice(0, 24)} (${per[id].menunggu} antre, ${per[id].ditawari} ditawari)`, 'm:wl:t:' + id)]);
+  return {
+    text: '<b>⏳ Waiting List</b>\n' + (ids.length ? 'Turnamen dengan antrean aktif:' : 'Tidak ada antrean aktif.') +
+      '\n<i>Penawaran slot diproses otomatis tiap 10 menit.</i>',
+    markup: { inline_keyboard: [...kb, [b('🔄 Segarkan', 'm:wl')], ...BACK] },
+  };
+}
+
+async function wlQueue(env, tid) {
+  const t = await getT(env, tid);
+  const rows = (await sb(env, 'GET', `waiting_list?tournament_id=eq.${tid}&status=in.(menunggu,ditawari)&select=seq,status,team_id,offer_expires_at&order=seq.asc&limit=30`)) || [];
+  let names = {};
+  const tids = [...new Set(rows.map((r) => r.team_id))];
+  if (tids.length) {
+    try {
+      const ts = (await sb(env, 'GET', `teams?id=in.(${tids.join(',')})&select=id,name`)) || [];
+      names = Object.fromEntries(ts.map((x) => [x.id, x.name]));
+    } catch (e) { /* nama tim tidak tersedia */ }
+  }
+  const lines = rows.map((r) =>
+    `#${r.seq} ${esc(names[r.team_id] || String(r.team_id).slice(0, 8))} — ${r.status === 'ditawari' ? '📨 ditawari' : '🕒 menunggu'}` +
+    (r.status === 'ditawari' && r.offer_expires_at ? ` (batas ${wib(r.offer_expires_at)})` : ''));
+  return {
+    text: `<b>⏳ Antrean: ${esc(t.name)}</b>\n` + (lines.join('\n') || 'Kosong.'),
+    markup: { inline_keyboard: [[b('🔄 Segarkan', 'm:wl:t:' + tid), b('⬅️ Daftar', 'm:wl')]] },
+  };
+}
+
+// =====================================================================
+// PENGAJUAN MUNDUR (setujui / tolak)
+// =====================================================================
+const COMP = [
+  ['mundur_poin_dipertahankan', 'Mundur, poin dipertahankan'],
+  ['dq', 'Diskualifikasi (DQ)'],
+  ['dikeluarkan', 'Dikeluarkan dari perhitungan'],
+];
+
+async function wdList(env, notice) {
+  const rows = (await sb(env, 'GET', 'registrations?withdraw_requested_at=not.is.null&status=neq.mengundurkan_diri&select=id,team_name,tournament_id&order=withdraw_requested_at.asc&limit=10')) || [];
+  let names = {};
+  if (rows.length) {
+    const ids = [...new Set(rows.map((r) => r.tournament_id))];
+    const ts = (await sb(env, 'GET', `tournaments?id=in.(${ids.join(',')})&select=id,name`)) || [];
+    names = Object.fromEntries(ts.map((t) => [t.id, t.name]));
+  }
+  const kb = rows.map((r) => [b(`${String(r.team_name || '?').slice(0, 20)} · ${String(names[r.tournament_id] || '?').slice(0, 18)}`, 'm:wd:v:' + r.id)]);
+  return {
+    text: (notice ? notice + '\n\n' : '') + '<b>↩️ Pengajuan Mundur</b>\n' + (rows.length ? 'Menunggu keputusan (10 terlama):' : 'Tidak ada pengajuan mundur.'),
+    markup: { inline_keyboard: [...kb, [b('🔄 Segarkan', 'm:wd')], ...BACK] },
+  };
+}
+
+async function wdDetail(env, rid) {
+  const r = await getReg(env, rid);
+  const [t, prof] = await Promise.all([
+    getT(env, r.tournament_id),
+    sb(env, 'GET', `profiles?id=eq.${r.owner_id}&select=username,whatsapp`).catch(() => []),
+  ]);
+  const pf = prof?.[0];
+  return {
+    text:
+      `<b>↩️ ${esc(r.team_name)}</b>\nTurnamen: ${esc(t.name)} (${stLabel(t.status)})\nStatus: ${rgLabel(r.status)}\n` +
+      `Captain: ${esc(pf?.username || '-')} · WA: ${esc(pf?.whatsapp || '-')}\n` +
+      `Biaya: ${rp(r.fee_amount)} · Metode: ${esc(r.payment_method || '-')}\n` +
+      `Diajukan: ${wib(r.withdraw_requested_at)}\nAlasan: ${esc(r.withdraw_reason || '-')}`,
+    markup: {
+      inline_keyboard: [
+        [b('✅ Setujui', 'm:wd:a:' + rid), b('❌ Tolak', 'm:wd:x:' + rid)],
+        [b('⬅️ Daftar', 'm:wd')],
+      ],
+    },
+  };
+}
+
+function wdNext(d) {
+  if (d.dst == null) return 'dst';
+  if (d.pct == null) return 'pct';
+  if (d.needComp && d.comp == null) return 'comp';
+  if (d.pct !== 100 && d.rsn === undefined) return 'rsn';
+  return 'confirm';
+}
+
+function wdPrompt(d, step) {
+  const CX = [b('✖️ Batal', 'm:wx:x')];
+  if (step === 'dst') {
+    const kb = [];
+    for (let i = 0; i < d.dsts.length; i += 2) kb.push(d.dsts.slice(i, i + 2).map((v, j) => b(v, 'm:wx:d:' + (i + j))));
+    return { text: `<b>Setujui pengunduran: ${esc(d.team)}</b>\nPilih <b>tujuan refund</b>:`, markup: { inline_keyboard: [...kb, CX] } };
+  }
+  if (step === 'pct') {
+    return { text: `Berapa <b>persen refund</b>? (biaya ${rp(d.fee)})\nPilih atau ketik angka 0 sampai 100:`, markup: { inline_keyboard: [[b('100%', 'm:wx:p:100'), b('50%', 'm:wx:p:50'), b('0%', 'm:wx:p:0')], CX] } };
+  }
+  if (step === 'comp') {
+    return { text: 'Turnamen BR sudah berlangsung. Status tim di kompetisi:', markup: { inline_keyboard: [...COMP.map((c, i) => [b(c[1], 'm:wx:c:' + i)]), CX] } };
+  }
+  if (step === 'rsn') {
+    return { text: 'Refund bukan 100%. Ketik <b>alasan pengecualian</b>, atau ketik - untuk lewati:', markup: { inline_keyboard: [CX] } };
+  }
+  const amount = Math.floor((Number(d.fee) * d.pct) / 100);
+  return {
+    text:
+      `<b>Konfirmasi pengunduran</b>\nTim: ${esc(d.team)}\nTurnamen: ${esc(d.tname)}\nTujuan refund: ${esc(d.dst)}\n` +
+      `Refund: ${d.pct}% = ${rp(amount)}\n` + (d.needComp ? `Status kompetisi: ${esc(d.comp)}\n` : '') +
+      (d.rsn && d.rsn !== '-' ? `Alasan: ${esc(d.rsn)}\n` : '') + '\nProses?',
+    markup: { inline_keyboard: [[b('✅ Ya, setujui', 'm:wx:ok'), CX[0]]] },
+  };
+}
+
+async function wdShow(env, chat, mid, d, err) {
+  const step = wdNext(d);
+  await setState(env, chat, 'wd:' + step, d);
+  const p = wdPrompt(d, step);
+  return show(env, chat, mid, (err ? '❌ ' + err + '\n\n' : '') + p.text, p.markup);
+}
+
+async function wdStart(env, chat, mid, rid) {
+  const r = await getReg(env, rid);
+  if (!r.withdraw_requested_at || r.status === 'mengundurkan_diri') throw new Error('Tidak ada pengajuan mundur aktif untuk tim ini');
+  const t = await getT(env, r.tournament_id);
+  const dsts = await checkVals(env, 'refund_requests', 'destination');
+  if (!dsts.length) throw new Error('Daftar tujuan refund kosong. Pastikan SQL 5.09 sudah dijalankan.');
+  const d = { rid, dsts, team: r.team_name, tname: t.name, fee: r.fee_amount, needComp: t.format === 'BR' && t.status === 'berlangsung' };
+  return wdShow(env, chat, mid, d);
+}
+
+async function wdText(env, chat, st, text) {
+  const d = st.data || {};
+  const step = st.state.slice(3);
+  let err = null;
+  if (step === 'pct') {
+    const n = /^\d{1,3}$/.test(text) ? Number(text) : -1;
+    if (n < 0 || n > 100) err = 'Isi angka 0 sampai 100.'; else d.pct = n;
+  } else if (step === 'rsn') {
+    if (text !== '-' && (text.length < 3 || text.length > 300)) err = 'Alasan 3 sampai 300 karakter, atau ketik -.'; else d.rsn = text;
+  } else err = 'Pilih lewat tombol.';
+  return wdShow(env, chat, null, d, err);
+}
+
+async function wdCallback(env, chat, mid, parts) {
+  const a = parts[2], v = parts[3];
+  if (a === 'x') {
+    await clearState(env, chat);
+    const l = await wdList(env, 'Dibatalkan.');
+    return show(env, chat, mid, l.text, l.markup);
+  }
+  const st = await getState(env, chat);
+  if (!st || !st.state.startsWith('wd:')) {
+    const l = await wdList(env, 'Sesi kedaluwarsa. Pilih ulang.');
+    return show(env, chat, mid, l.text, l.markup);
+  }
+  const d = st.data || {};
+  if (a === 'd') { d.dst = d.dsts[Number(v)]; if (d.dst == null) return wdShow(env, chat, mid, d, 'Pilihan tidak valid.'); }
+  else if (a === 'p') { d.pct = Number(v); }
+  else if (a === 'c') { d.comp = COMP[Number(v)]?.[0]; if (!d.comp) return wdShow(env, chat, mid, d, 'Pilihan tidak valid.'); }
+  else if (a === 'ok') {
+    if (wdNext(d) !== 'confirm') return wdShow(env, chat, mid, d, 'Data belum lengkap.');
+    const r = await getReg(env, d.rid);
+    if (!r.withdraw_requested_at || r.status === 'mengundurkan_diri') throw new Error('Pengajuan sudah diproses');
+    const amount = Math.floor((Number(d.fee) * d.pct) / 100);
+    await clearState(env, chat);
+    await rpc(env, 'admin_approve_withdraw', {
+      p_registration: d.rid, p_percent: d.pct, p_destination: d.dst,
+      p_exception_reason: d.rsn && d.rsn !== '-' ? d.rsn : null,
+      p_competition: d.needComp ? d.comp : null,
+    });
+    const ok = await notify(env, r.owner_id, 'pendaftaran', 'Pengunduran diri disetujui',
+      `Pengunduran tim ${d.team} dari ${d.tname} disetujui. Refund ${d.pct}% (${rp(amount)}) ke: ${d.dst}.`, r.tournament_id);
+    const l = await wdList(env, '✅ Pengunduran disetujui.\n' + (ok ? '🔔 Notifikasi terkirim ke Captain.' : '⚠️ Notifikasi ke Captain GAGAL dikirim.'));
+    return show(env, chat, mid, l.text, l.markup);
+  }
+  return wdShow(env, chat, mid, d);
+}
+
+async function wdRejText(env, chat, st, text) {
+  const rid = st.data?.rid;
+  if (text.length < 3 || text.length > 300) {
+    return show(env, chat, null, '❌ Alasan 3 sampai 300 karakter. Ketik lagi atau /batal.', { inline_keyboard: [[b('✖️ Batal', 'm:wd:v:' + rid)]] });
+  }
+  const r = await getReg(env, rid);
+  if (!r.withdraw_requested_at || r.status === 'mengundurkan_diri') throw new Error('Pengajuan sudah diproses');
+  const t = await getT(env, r.tournament_id);
+  await clearState(env, chat);
+  await rpc(env, 'admin_reject_withdraw', { p_registration: rid, p_reason: text });
+  const ok = await notify(env, r.owner_id, 'pendaftaran', 'Pengunduran diri ditolak',
+    `Pengajuan mundur tim ${r.team_name} dari ${t.name} ditolak. Alasan: ${text}`, r.tournament_id);
+  const l = await wdList(env, '✅ Pengajuan ditolak.\n' + (ok ? '🔔 Notifikasi terkirim ke Captain.' : '⚠️ Notifikasi ke Captain GAGAL dikirim.'));
+  return show(env, chat, null, l.text, l.markup);
+}
+
+// =====================================================================
+// CAPTAIN: SALDO
+// =====================================================================
+function ledgerLine(r) {
+  const f = [];
+  if (r.created_at) f.push(wib(r.created_at));
+  for (const k of ['kind', 'type', 'amount', 'balance_after', 'reason', 'note']) {
+    if (r[k] !== undefined && r[k] !== null) f.push(`${k}: ${typeof r[k] === 'object' ? JSON.stringify(r[k]) : r[k]}`);
+  }
+  return '• ' + esc(f.join(' · ').slice(0, 170));
+}
+
+async function cpDetail(env, uid, notice) {
+  if (!UUID.test(uid)) throw new Error('ID user tidak valid');
+  const rows = await sb(env, 'GET', `profiles?id=eq.${uid}&select=id,username,whatsapp`);
+  const p = rows?.[0];
+  if (!p) throw new Error('Captain tidak ditemukan');
+  const [nt, nr, led] = await Promise.all([
+    count(env, `teams?owner_id=eq.${uid}&select=id`).catch(() => '?'),
+    count(env, `registrations?owner_id=eq.${uid}&select=id`).catch(() => '?'),
+    sb(env, 'GET', `wallet_ledger?user_id=eq.${uid}&select=*&order=created_at.desc&limit=5`).catch(() => null),
+  ]);
+  return {
+    text:
+      (notice ? notice + '\n\n' : '') +
+      `<b>👤 ${esc(p.username)}</b>\nWA: ${esc(p.whatsapp || '-')}\nTim: ${nt} · Pendaftaran: ${nr}\n\n<b>Ledger saldo (5 terakhir)</b>\n` +
+      (led === null ? '(ledger tidak terbaca)' : led.length ? led.map(ledgerLine).join('\n') : 'Belum ada transaksi.'),
+    markup: {
+      inline_keyboard: [
+        [b('💰 Ubah Saldo', 'm:cp:b:' + uid), b('🗑 Hapus Akun', 'm:cp:d:' + uid)],
+        [b('🔎 Cari Lagi', 'm:cp:s'), b('⬅️ Menu Utama', 'm:main')],
+      ],
+    },
+  };
+}
+
+async function cpFindText(env, chat, text) {
+  const term = text.replace(/[^\w.\- ]/g, '').trim();
+  if (term.length < 2) return show(env, chat, null, '❌ Ketik minimal 2 karakter username. Atau /batal.', { inline_keyboard: BACK });
+  const rows = (await sb(env, 'GET', `profiles?username=ilike.*${encodeURIComponent(term)}*&select=id,username&limit=8`)) || [];
+  await clearState(env, chat);
+  if (!rows.length) return show(env, chat, null, 'Tidak ada Captain dengan username itu.', { inline_keyboard: [[b('🔎 Cari Lagi', 'm:cp:s')], ...BACK] });
+  return show(env, chat, null, '<b>Hasil pencarian</b>', {
+    inline_keyboard: [...rows.map((r) => [b(String(r.username).slice(0, 40), 'm:cp:u:' + r.id)]), [b('🔎 Cari Lagi', 'm:cp:s')], ...BACK],
+  });
+}
+
+async function cpAmtText(env, chat, st, text) {
+  const t = text.replace(/[.\s]/g, '');
+  if (!/^-?\d{1,9}$/.test(t) || Number(t) === 0) {
+    return show(env, chat, null, '❌ Isi angka bukan nol. Tambah: 50000, kurangi: -20000. Atau /batal.', { inline_keyboard: [[b('✖️ Batal', 'm:cp:u:' + st.data.uid)]] });
+  }
+  await setState(env, chat, 'cp_rsn', { ...st.data, amt: Number(t) });
+  return show(env, chat, null, 'Ketik <b>alasan</b> perubahan saldo (3 sampai 200 karakter):', { inline_keyboard: [[b('✖️ Batal', 'm:cp:u:' + st.data.uid)]] });
+}
+
+async function cpRsnText(env, chat, st, text) {
+  if (text.length < 3 || text.length > 200) {
+    return show(env, chat, null, '❌ Alasan 3 sampai 200 karakter. Ketik lagi atau /batal.', { inline_keyboard: [[b('✖️ Batal', 'm:cp:u:' + st.data.uid)]] });
+  }
+  const d = { ...st.data, rsn: text };
+  await setState(env, chat, 'cp_conf', d);
+  return show(env, chat, null,
+    `<b>Konfirmasi ubah saldo</b>\nCaptain: ${esc(d.uname)}\nPerubahan: <b>${d.amt > 0 ? '+' : '-'}${rp(Math.abs(d.amt))}</b>\nAlasan: ${esc(d.rsn)}\n\nProses?`,
+    { inline_keyboard: [[b('✅ Ya, proses', 'm:cx:ok'), b('✖️ Batal', 'm:cp:u:' + d.uid)]] });
+}
+
+async function cpApply(env, chat, mid) {
+  const st = await getState(env, chat);
+  if (!st || st.state !== 'cp_conf') {
+    return show(env, chat, mid, 'Sesi kedaluwarsa. Ulangi dari menu Captain.', { inline_keyboard: [[b('👤 Captain', 'm:cp')], ...BACK] });
+  }
+  const d = st.data;
+  await clearState(env, chat);
+  const res = await rpc(env, 'admin_adjust_balance', { p_user: d.uid, p_amount: d.amt, p_reason: d.rsn });
+  const ok = await notify(env, d.uid, 'saldo', 'Saldo GH-T Arena diperbarui',
+    `Saldo ${d.amt > 0 ? 'bertambah' : 'berkurang'} ${rp(Math.abs(d.amt))}. Alasan: ${d.rsn}`);
+  const v = await cpDetail(env, d.uid,
+    `✅ Saldo diubah.\n${ok ? '🔔 Notifikasi terkirim ke Captain.' : '⚠️ Notifikasi ke Captain GAGAL dikirim.'}\nHasil sistem: ${esc(JSON.stringify(res)).slice(0, 160)}`);
+  return show(env, chat, mid, v.text, v.markup);
+}
+
+// =====================================================================
+// EDIT TURNAMEN & BATALKAN TURNAMEN
+// =====================================================================
+const TE = [
+  ['name', 'Nama'], ['description', 'Deskripsi'], ['entry_fee', 'Biaya'], ['prize_pool', 'Total Hadiah'],
+  ['total_slots', 'Jumlah Slot'], ['starters_per_team', 'Pemain Utama/Tim'], ['winner_positions', 'Posisi Pemenang'],
+  ['schedule_at', 'Jadwal'], ['registration_deadline', 'Batas Daftar'], ['prizes', 'Hadiah per Posisi'],
+];
+const ACTIVE_REG = 'status=in.(menunggu_pembayaran,menunggu_verifikasi,data_belum_lengkap,resmi_terdaftar)';
+
+async function teMenu(env, tid) {
+  const t = await getT(env, tid);
+  if (FINAL.includes(t.status)) throw new Error('Turnamen sudah selesai/dibatalkan, tidak bisa diedit');
+  const kb = [];
+  for (let i = 0; i < TE.length; i += 2) kb.push(TE.slice(i, i + 2).map(([k, l], j) => b(l, `m:te:f:${tid}:${i + j}`)));
+  kb.push([b('🖼 Ganti Banner', 'm:te:b:' + tid)], [b('⬅️ Kembali', 'm:t:v:' + tid)]);
+  return {
+    text: `<b>✏️ Edit: ${esc(t.name)}</b>\nPilih yang diubah.\n<i>Jadwal, biaya, hadiah, dan batas daftar saat pendaftaran dibuka: registrasi dimatikan sementara otomatis, lalu dinyalakan lagi.</i>`,
+    markup: { inline_keyboard: kb },
+  };
+}
+
+async function tePrompt(env, chat, mid, tid, i) {
+  const t = await getT(env, tid);
+  if (FINAL.includes(t.status)) throw new Error('Turnamen sudah selesai/dibatalkan');
+  const item = TE[i];
+  if (!item) throw new Error('Pilihan tidak valid');
+  const k = item[0];
+  await setState(env, chat, 'te', { tid, k });
+  let ask = '';
+  if (k === 'name') ask = `Sekarang: ${esc(t.name)}\nKetik nama baru (3 sampai 80 karakter):`;
+  else if (k === 'description') ask = 'Ketik deskripsi (maks 1000 karakter). Ketik - untuk menghapus.';
+  else if (k === 'entry_fee') ask = `Sekarang: ${rp(t.entry_fee)}\nKetik biaya baru (Rp, angka saja, 0 = gratis):`;
+  else if (k === 'prize_pool') ask = `Sekarang: ${rp(t.prize_pool)}\nKetik total hadiah baru (Rp, angka saja):`;
+  else if (k === 'total_slots') ask = `Sekarang: ${t.total_slots}\nKetik jumlah slot baru (${t.format === 'BR' ? '2 sampai 12' : 'minimal 2'}; tidak boleh di bawah slot terisi atau jumlah posisi pemenang):`;
+  else if (k === 'starters_per_team') ask = `Sekarang: ${t.starters_per_team}\nKetik jumlah pemain utama/tim (1 sampai 20). Tidak bisa diubah kalau sudah ada pendaftaran aktif.`;
+  else if (k === 'winner_positions') ask = `Sekarang: ${t.winner_positions}\nKetik jumlah posisi pemenang (1 sampai ${Math.min(12, t.total_slots)}):`;
+  else if (k === 'schedule_at') ask = `Sekarang: ${wib(t.schedule_at)}\nKetik jadwal baru (WIB): <code>2026-11-25 19:00</code>\nKetik - untuk mengosongkan.`;
+  else if (k === 'registration_deadline') ask = `Sekarang: ${wib(t.registration_deadline)}\nKetik batas daftar baru (WIB): <code>2026-11-25 18:00</code>\nKetik - untuk mengosongkan.`;
+  else {
+    const pr = (await sb(env, 'GET', `tournament_prizes?tournament_id=eq.${tid}&select=place,amount&order=place.asc`)) || [];
+    ask = `Sekarang: ${pr.length ? pr.map((x) => `${x.place}=${x.amount}`).join(', ') : '(belum diatur)'}\n` +
+      `Ketik SEMUA posisi (1 sampai ${t.winner_positions}), contoh:\n<code>1=100000, 2=50000, 3=25000</code>\nIni menggantikan distribusi lama.`;
+  }
+  return show(env, chat, mid, `<b>✏️ ${esc(item[1])}</b>\n${ask}`, { inline_keyboard: [[b('✖️ Batal', 'm:te:m:' + tid)]] });
+}
+
+async function teText(env, chat, st, text) {
+  const { tid, k } = st.data || {};
+  const t = await getT(env, tid);
+  if (FINAL.includes(t.status)) throw new Error('Turnamen sudah selesai/dibatalkan');
+  const num = (s) => { const x = String(s).replace(/[.,\s]/g, ''); return /^\d{1,12}$/.test(x) ? Number(x) : null; };
+  const filled = Number(await count(env, `registrations?tournament_id=eq.${tid}&status=eq.resmi_terdaftar&select=id`)) || 0;
+  let patch = null, err = null, prizeRows = null, notice = '', schedChanged = false;
+
+  if (k === 'name') {
+    if (text.length < 3 || text.length > 80) err = 'Nama 3 sampai 80 karakter.'; else patch = { name: text };
+  } else if (k === 'description') {
+    if (text !== '-' && text.length > 1000) err = 'Maksimal 1000 karakter.'; else patch = { description: text === '-' ? null : text };
+  } else if (k === 'entry_fee' || k === 'prize_pool') {
+    const n = num(text);
+    if (n === null) err = 'Ketik angka saja.'; else patch = { [k]: n };
+  } else if (k === 'total_slots') {
+    const n = num(text);
+    const max = t.format === 'BR' ? 12 : 32767;
+    if (n === null || n < 2 || n > max) err = `Slot harus 2 sampai ${max}.`;
+    else if (n < filled) err = `Slot terisi sudah ${filled}. Tidak boleh di bawah itu.`;
+    else if (n < t.winner_positions) err = `Posisi pemenang saat ini ${t.winner_positions}. Turunkan dulu posisi pemenang.`;
+    else patch = { total_slots: n };
+  } else if (k === 'starters_per_team') {
+    const n = num(text);
+    const active = Number(await count(env, `registrations?tournament_id=eq.${tid}&${ACTIVE_REG}&select=id`)) || 0;
+    if (n === null || n < 1 || n > 20) err = 'Angka 1 sampai 20.';
+    else if (active > 0) err = `Sudah ada ${active} pendaftaran aktif. Jumlah pemain utama tidak bisa diubah.`;
+    else patch = { starters_per_team: n };
+  } else if (k === 'winner_positions') {
+    const n = num(text);
+    const max = Math.min(12, t.total_slots);
+    if (n === null || n < 1 || n > max) err = `Angka 1 sampai ${max}.`; else patch = { winner_positions: n };
+  } else if (k === 'schedule_at') {
+    if (text === '-') patch = { schedule_at: null };
+    else {
+      const p = parseWib(text);
+      if (!p) err = 'Format salah. Contoh: 2026-11-25 19:00';
+      else if (t.registration_deadline && new Date(t.registration_deadline) > new Date(p.iso)) err = 'Batas daftar saat ini sesudah jadwal baru. Ubah batas daftar dulu.';
+      else { patch = { schedule_at: p.iso }; schedChanged = true; }
+    }
+  } else if (k === 'registration_deadline') {
+    if (text === '-') patch = { registration_deadline: null };
+    else {
+      const p = parseWib(text);
+      if (!p) err = 'Format salah. Contoh: 2026-11-25 18:00';
+      else if (t.schedule_at && new Date(p.iso) > new Date(t.schedule_at)) err = 'Batas daftar tidak boleh sesudah jadwal turnamen.';
+      else patch = { registration_deadline: p.iso };
+    }
+  } else if (k === 'prizes') {
+    const p = parsePairs(text, t.winner_positions);
+    if (p.err) err = p.err;
+    else prizeRows = Object.entries(p.out).map(([pl, amt]) => ({ tournament_id: tid, place: Number(pl), amount: amt }));
+  } else err = 'Sesi tidak valid.';
+
+  if (err) return show(env, chat, null, '❌ ' + err + '\nKetik lagi atau /batal.', { inline_keyboard: [[b('✖️ Batal', 'm:te:m:' + tid)]] });
+  await clearState(env, chat);
+
+  if (prizeRows) {
+    await withRegLock(env, t, async () => {
+      await sb(env, 'POST', 'tournament_prizes?on_conflict=tournament_id,place', prizeRows, 'resolution=merge-duplicates,return=minimal');
+      await sb(env, 'DELETE', `tournament_prizes?tournament_id=eq.${tid}&place=not.in.(${prizeRows.map((r) => r.place).join(',')})`);
+    });
+    const sum = prizeRows.reduce((a, r) => a + r.amount, 0);
+    await audit(env, 'edit_hadiah_per_posisi', 'tournament_prizes', 'via bot', tid, null, { distribusi: prizeRows.map((r) => `${r.place}=${r.amount}`) });
+    notice = '✅ Hadiah per posisi disimpan.' + (sum !== Number(t.prize_pool) ? `\n⚠️ Total distribusi ${rp(sum)} berbeda dari Total Hadiah ${rp(t.prize_pool)}.` : '');
+  } else {
+    const important = ['entry_fee', 'prize_pool', 'schedule_at', 'registration_deadline', 'total_slots', 'winner_positions'].includes(k);
+    if (important) await withRegLock(env, t, () => patchT(env, tid, patch));
+    else await patchT(env, tid, patch);
+    await audit(env, 'edit_turnamen', 'tournaments', k, tid, { [k]: t[k] }, patch);
+    notice = `✅ ${TE.find((x) => x[0] === k)[1]} diperbarui.`;
+    if (schedChanged && patch.schedule_at) {
+      const n = await notifyRegistrants(env, tid, 'jadwal', 'Jadwal turnamen diperbarui', `${t.name}: jadwal baru ${wib(patch.schedule_at)}`);
+      notice += '\n' + notifNote(n) + '\n⚠️ Hitung ulang Waiting List belum otomatis.';
+    }
+  }
+  const v = await tDetail(env, tid, notice);
+  return show(env, chat, null, v.text, v.markup);
+}
+
+async function ccStart(env, chat, mid, tid) {
+  const t = await getT(env, tid);
+  if (FINAL.includes(t.status)) throw new Error('Turnamen sudah selesai/dibatalkan');
+  const dsts = await checkVals(env, 'refund_requests', 'destination');
+  if (!dsts.length) throw new Error('Daftar tujuan refund kosong. Pastikan SQL 5.09 sudah dijalankan.');
+  const kb = [];
+  for (let i = 0; i < dsts.length; i += 2) kb.push(dsts.slice(i, i + 2).map((v, j) => b(v, `m:cc:d:${tid}:${i + j}`)));
+  kb.push([b('✖️ Batal', 'm:t:v:' + tid)]);
+  return show(env, chat, mid,
+    `<b>🚫 Batalkan turnamen</b>\n${esc(t.name)}\nDefault refund 100%. Pilih <b>tujuan refund</b>:`, { inline_keyboard: kb });
+}
+
+async function ccDest(env, chat, mid, tid, i) {
+  const dsts = await checkVals(env, 'refund_requests', 'destination');
+  const dst = dsts[i];
+  if (!dst) throw new Error('Pilihan tidak valid');
+  const t = await getT(env, tid);
+  await setState(env, chat, 'cc', { tid, dst, tname: t.name });
+  return show(env, chat, mid, `<b>🚫 Batalkan: ${esc(t.name)}</b>\nTujuan refund: ${esc(dst)}\nKetik <b>alasan pembatalan</b> (3 sampai 300 karakter):`,
+    { inline_keyboard: [[b('✖️ Batal', 'm:t:v:' + tid)]] });
+}
+
+async function ccText(env, chat, st, text) {
+  const d = st.data;
+  if (text.length < 3 || text.length > 300) {
+    return show(env, chat, null, '❌ Alasan 3 sampai 300 karakter. Ketik lagi atau /batal.', { inline_keyboard: [[b('✖️ Batal', 'm:t:v:' + d.tid)]] });
+  }
+  const n = await count(env, `registrations?tournament_id=eq.${d.tid}&${ACTIVE_REG}&select=id`);
+  await setState(env, chat, 'cc_conf', { ...d, reason: text });
+  return show(env, chat, null,
+    `<b>⚠️ Konfirmasi pembatalan</b>\nTurnamen: ${esc(d.tname)}\nTujuan refund: ${esc(d.dst)}\nAlasan: ${esc(text)}\nPendaftaran aktif terdampak: ${n}\n\nTindakan ini tidak bisa dibatalkan. Lanjut?`,
+    { inline_keyboard: [[b('🚫 Ya, batalkan turnamen', 'm:cc:ok')], [b('✖️ Tidak', 'm:t:v:' + d.tid)]] });
+}
+
+async function ccApply(env, chat, mid) {
+  const st = await getState(env, chat);
+  if (!st || st.state !== 'cc_conf') {
+    return show(env, chat, mid, 'Sesi kedaluwarsa. Ulangi dari detail turnamen.', { inline_keyboard: [[b('🏆 Turnamen', 'm:t')], ...BACK] });
+  }
+  const d = st.data;
+  await clearState(env, chat);
+  const t = await getT(env, d.tid);
+  if (FINAL.includes(t.status)) throw new Error('Turnamen sudah selesai/dibatalkan');
+  const regs = (await sb(env, 'GET', `registrations?tournament_id=eq.${d.tid}&${ACTIVE_REG}&select=owner_id`)) || [];
+  await rpc(env, 'admin_cancel_tournament', { p_tournament: d.tid, p_reason: d.reason, p_destination: d.dst, p_exceptions: [] });
+  const n = await notifyOwners(env, regs.map((r) => r.owner_id), 'pendaftaran', 'Turnamen dibatalkan',
+    `${t.name} dibatalkan. Alasan: ${d.reason}. Refund diproses ke: ${d.dst}.`, d.tid);
+  const v = await tDetail(env, d.tid, `✅ Turnamen dibatalkan.\n${notifNote(n)}`);
+  return show(env, chat, mid, v.text, v.markup);
+}
+
+// =====================================================================
 // ROUTER
 // =====================================================================
 async function onCallback(env, cq) {
   await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id });
   const chat = cq.message.chat.id, mid = cq.message.message_id, d = cq.data || '';
   const parts = d.split(':');
-  // Bersihkan state input teks kecuali sedang di wizard atau simpan tabel poin
-  if (!(d.startsWith('m:w:') || d === 'm:pt:save' || d === 'm:an:ok')) await clearState(env, chat);
+  // Bersihkan state input teks kecuali di tengah alur yang butuh state
+  const KEEP = d.startsWith('m:w:') || d.startsWith('m:wx:') || d === 'm:pt:save' || d === 'm:an:ok' || d === 'm:cx:ok' || d === 'm:cc:ok';
+  if (!KEEP) await clearState(env, chat);
 
   if (d === 'm:main') return show(env, chat, mid, MAIN_TEXT, MAIN);
   if (d === 'm:dash') return show(env, chat, mid, await dashboard(env), { inline_keyboard: [[b('🔄 Segarkan', 'm:dash')], ...BACK] });
@@ -1043,6 +1834,26 @@ async function onCallback(env, cq) {
     if (a === 'cm') { const v = await tResume(env, id, parts[4]); return show(env, chat, mid, v.text, v.markup); }
   }
 
+  // ----- Edit & Batalkan Turnamen -----
+  if (parts[1] === 'te') {
+    const a = parts[2], id = parts[3];
+    if (a === 'm') { const v = await teMenu(env, id); return show(env, chat, mid, v.text, v.markup); }
+    if (a === 'f') return tePrompt(env, chat, mid, id, Number(parts[4]));
+    if (a === 'b') {
+      const t = await getT(env, id);
+      if (FINAL.includes(t.status)) throw new Error('Turnamen sudah selesai/dibatalkan');
+      await setState(env, chat, 'tb_up', { tid: id });
+      return show(env, chat, mid, `<b>🖼 Banner: ${esc(t.name)}</b>\nKirim <b>foto</b> banner baru (atau file JPG/PNG/WEBP, maks 10 MB).`,
+        { inline_keyboard: [[b('✖️ Batal', 'm:te:m:' + id)]] });
+    }
+  }
+  if (parts[1] === 'cc') {
+    const a = parts[2];
+    if (a === 's') return ccStart(env, chat, mid, parts[3]);
+    if (a === 'd') return ccDest(env, chat, mid, parts[3], Number(parts[4]));
+    if (a === 'ok') return ccApply(env, chat, mid);
+  }
+
   // ----- Pengumuman -----
   if (d === 'm:an' || d === 'm:an:x') { const v = await anList(env); return show(env, chat, mid, v.text, v.markup); }
   if (parts[1] === 'an') {
@@ -1080,89 +1891,14 @@ async function onCallback(env, cq) {
     if (a === 'pf') return rgProof(env, chat, id);
   }
 
-  if (d.startsWith('m:soon:')) {
-    return show(env, chat, mid, `<b>${esc(d.slice(7))}</b>\nMenu ini belum aktif. Dibangun di tahap Bot berikutnya.`, { inline_keyboard: BACK });
-  }
-}
-
-async function onMessage(env, msg) {
-  const chat = msg.chat.id;
-  const text = (msg.text || '').trim();
-  if (text === '/start' || text === '/menu') { await clearState(env, chat); return show(env, chat, null, MAIN_TEXT, MAIN); }
-  if (text === '/batal') { await clearState(env, chat); return show(env, chat, null, 'Dibatalkan.\n\n' + MAIN_TEXT, MAIN); }
-  if (text === '/health') return show(env, chat, null, await healthText(env), { inline_keyboard: BACK });
-  if (text.startsWith('/')) return show(env, chat, null, 'Perintah tidak dikenal. Ketik /menu untuk membuka panel.', undefined);
-  const st = text ? await getState(env, chat) : null;
-  if (st) {
-    if (st.state === 'pt_edit') return ptTextInput(env, chat, text);
-    if (st.state === 'pt_save') return show(env, chat, null, 'Tekan tombol Simpan / Ulangi / Batal di pesan konfirmasi.', undefined);
-    if (st.state.startsWith('w:')) return wizText(env, chat, st, text);
-    if (st.state === 'tp') return tpText(env, chat, st, text);
-    if (st.state === 'tj') return tjText(env, chat, st, text);
-    if (st.state === 'rr') return rrText(env, chat, st, text);
-    if (st.state === 'an_title') return anTitleText(env, chat, st, text);
-    if (st.state === 'an_body') return anBodyText(env, chat, st, text);
-    if (st.state === 'an_conf') return show(env, chat, null, 'Tekan tombol Kirim atau Batal di pesan konfirmasi.', undefined);
-  }
-  return show(env, chat, null, 'Ketik /menu untuk membuka panel.', undefined);
-}
-
-async function handle(env, update) {
-  const from = update.message?.from || update.callback_query?.from;
-  if (!from || String(from.id) !== String(env.ADMIN_ID)) return; // hanya Super Admin
-  if (update.update_id != null && !(await firstTime(env, update.update_id))) return; // sudah diproses
-  try {
-    if (update.callback_query) await onCallback(env, update.callback_query);
-    else if (update.message) await onMessage(env, update.message);
-  } catch (e) {
-    await tg(env, 'sendMessage', { chat_id: env.ADMIN_ID, text: 'Terjadi error: ' + String(e.message).slice(0, 300) });
-  }
-}
-
-// ---------- Cron (tiap 5 menit): heartbeat + proses job ----------
-async function cron(env) {
-  const me = await tg(env, 'getMe');
-  if (!me.ok) return; // bot tidak sehat -> jangan kirim heartbeat
-  await rpc(env, 'sys_bot_heartbeat');
-  const jobs = (await rpc(env, 'sys_claim_jobs', { p_limit: 10 })) || [];
-  for (const job of jobs) {
-    try {
-      if (job.kind === 'admin_telegram') {
-        const r = await tg(env, 'sendMessage', { chat_id: env.ADMIN_ID, text: String(job.payload?.text || '').slice(0, 3500) });
-        if (!r.ok) throw new Error(r.description || 'gagal kirim');
-        await rpc(env, 'sys_job_done', { p_id: job.id });
-      } else if (job.kind === 'web_push') {
-        // Web Push dibangun di Tahap 9. Notifikasi tetap tersimpan di database.
-        await rpc(env, 'sys_job_done', { p_id: job.id });
-      } else {
-        await rpc(env, 'sys_job_fail', { p_id: job.id, p_error: 'jenis job tidak dikenal: ' + job.kind, p_permanent: true });
-      }
-    } catch (e) {
-      await rpc(env, 'sys_job_fail', { p_id: job.id, p_error: String(e.message), p_permanent: false }).catch(() => null);
+  // ----- Banner -----
+  if (d === 'm:bn') { const v = await bnList(env); return show(env, chat, mid, v.text, v.markup); }
+  if (parts[1] === 'bn') {
+    const a = parts[2], id = parts[3];
+    if (a === 'new') {
+      await setState(env, chat, 'bn_up', { mode: 'new' });
+      return show(env, chat, mid, '<b>➕ Upload Banner</b>\nKirim <b>foto</b> banner (atau file JPG/PNG/WEBP, maks 10 MB).\nCaption foto jadi judul banner (opsional).',
+        { inline_keyboard: [[b('✖️ Batal', 'm:bn')]] });
     }
-  }
-}
-
-export default {
-  async fetch(req, env, ctx) {
-    const url = new URL(req.url);
-    if (url.pathname === `/setup/${env.WEBHOOK_SECRET}`) {
-      const r = await tg(env, 'setWebhook', {
-        url: `${url.origin}/webhook/${env.WEBHOOK_SECRET}`,
-        secret_token: env.WEBHOOK_SECRET,
-        allowed_updates: ['message', 'callback_query'],
-      });
-      return new Response(JSON.stringify(r), { headers: { 'content-type': 'application/json' } });
-    }
-    if (req.method === 'POST' && url.pathname === `/webhook/${env.WEBHOOK_SECRET}`
-        && req.headers.get('x-telegram-bot-api-secret-token') === env.WEBHOOK_SECRET) {
-      const update = await req.json().catch(() => null);
-      if (update) ctx.waitUntil(handle(env, update));
-      return new Response('ok');
-    }
-    return new Response('GH-T Arena Bot', { status: 200 });
-  },
-  async scheduled(event, env, ctx) {
-    ctx.waitUntil(cron(env).catch(() => null));
-  },
-};
+    if (a === 'v') return bnShow(env, chat, id);
+    if (a === 'u' || a === 'dn') 
