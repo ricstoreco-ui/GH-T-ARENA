@@ -3,18 +3,21 @@ import { tg, rpc, sb, firstTime, getState, clearState, show, b, BACK, pickImage,
 import * as fMain from './f_main.js';
 import * as fMisc from './f_misc.js';
 import * as fBr from './f_br.js';
-import * as fCs from './f_cs.js'; // BARU
-import * as fPo from './f_po.js'; // BARU
-import * as fRm from './f_rm.js'; // BARU
+import * as fCs from './f_cs.js';
+import * as fPo from './f_po.js';
+import * as fRm from './f_rm.js';
+import * as fAdmin from './f_admin.js'; // TAMBAHAN
+import * as fDana from './f_dana.js';   // TAMBAHAN
 
-const MODULES = [fMain, fMisc, fBr, fCs, fPo, fRm]; // MASUKKAN SEMUA DI SINI
+const MODULES = [fMain, fMisc, fBr, fCs, fPo, fRm, fAdmin, fDana]; // TAMBAHKAN fAdmin & fDana
 const H = {}, T = {}, U = {};
-const KEEP = ['m:w:', 'm:pt:save', 'm:an:ok', 'm:cc:ok'];
+const KEEP = ['m:w:', 'm:pt:save', 'm:an:ok', 'm:cc:ok', 'm:br:ayes', 'm:br:mok', 'm:wx:'];
+
 for (const m of MODULES) {
   Object.assign(H, m.H || {});
   Object.assign(T, m.T || {});
   Object.assign(U, m.U || {});
-  KEEP.push(...(m.KEEP || []));
+  if (m.KEEP) KEEP.push(...m.KEEP);
 }
 
 const MAIN = {
@@ -25,7 +28,8 @@ const MAIN = {
     [b('🧮 Tabel Poin', 'm:pt'), b('📣 Pengumuman', 'm:an')],
     [b('⏳ Waiting List', 'm:wl'), b('↩️ Pengajuan Mundur', 'm:wd')],
     [b('👤 Captain', 'm:cp'), b('💸 Pencairan', 'm:po')],
-    [b('⚙️ Pengaturan', 'm:set'), b('🩺 Monitoring', 'm:mon')],
+    [b('💳 Verifikasi DANA', 'm:dc'), b('⚙️ Pengaturan', 'm:set')], // TAMBAHAN MENU DANA
+    [b('🩺 Monitoring', 'm:mon')],
   ],
 };
 const MAIN_TEXT = '<b>GH-T ARENA — Panel Super Admin</b>\nPilih menu:';
