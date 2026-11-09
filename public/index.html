@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GH-T ARENA - Dashboard</title>
+    <title>GH-T ARENA - Debug</title>
     <script src="supabase.js"></script>
     <style>
         body { font-family: sans-serif; background: #121212; color: #fff; padding: 20px; }
@@ -12,10 +12,14 @@
         input, button { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; }
         button { background: #d4af37; color: #000; font-weight: bold; cursor: pointer; border: none; }
         button:hover { background: #f1c40f; }
+        button:disabled { background: #555; color: #aaa; cursor: not-allowed; }
         .hidden { display: none; }
-        #msg { padding: 10px; margin-bottom: 15px; display: none; text-align: center; border-radius: 4px; font-weight: bold; }
+        
+        /* Kotak Notifikasi */
+        #msg { padding: 15px; margin-bottom: 15px; display: none; text-align: center; border-radius: 4px; font-weight: bold; word-wrap: break-word; font-size: 14px; }
         .err { background: #c62828; display: block !important; }
         .ok { background: #2e7d32; display: block !important; }
+        
         ul { list-style: none; padding: 0; }
         li { background: #2a2a2a; padding: 10px; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
         .btn-sm { width: auto; padding: 5px 10px; font-size: 12px; margin: 0; }
@@ -23,6 +27,8 @@
 </head>
 <body>
     <div class="container">
+        <div id="msg"></div>
+
         <div class="card" id="header" style="display:none;">
             <h2>Dashboard Captain</h2>
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -33,34 +39,32 @@
 
         <div class="card" id="auth-section">
             <h2 style="text-align: center;">Login / Register</h2>
-            <div id="msg"></div>
             <input type="text" id="user" placeholder="Username">
             <input type="email" id="email" placeholder="Email">
             <input type="password" id="pass" placeholder="Password">
-            <button onclick="doRegister()">Register</button>
-            <button onclick="doLogin()" style="background:#555; color:#fff;">Login</button>
+            <button id="btn-reg" onclick="doRegister()">Register</button>
+            <button id="btn-log" onclick="doLogin()" style="background:#555; color:#fff;">Login</button>
         </div>
 
         <div id="dashboard-section" class="hidden">
             <div class="card">
                 <h3>Buat Tim Baru</h3>
-                <input type="text" id="team-name" placeholder="Nama Tim (Wajib)">
+                <input type="text" id="team-name" placeholder="Nama Tim">
                 <input type="text" id="team-desc" placeholder="Deskripsi (Opsional)">
-                <button onclick="createTeam()">Simpan Tim</button>
+                <button id="btn-save-team" onclick="createTeam()">Simpan Tim</button>
             </div>
 
             <div class="card">
                 <h3>Tim Saya</h3>
-                <ul id="team-list"><li>Belum ada tim.</li></ul>
+                <ul id="team-list"><li>Memuat tim...</li></ul>
             </div>
 
             <div class="card hidden" id="roster-section">
                 <h3 id="roster-title">Kelola Roster</h3>
                 <div style="background:#333; padding:10px; border-radius:5px; margin-bottom:10px;">
-                    <p style="margin-top:0; font-size:12px; color:#aaa;">Tambah Pemain</p>
                     <input type="text" id="player-nick" placeholder="Nickname Free Fire">
                     <input type="text" id="player-uid" placeholder="UID Free Fire">
-                    <button onclick="addPlayer()" style="background:#2e7d32; color:white;">Tambah Pemain</button>
+                    <button id="btn-add-player" onclick="addPlayer()" style="background:#2e7d32; color:white;">Tambah Pemain</button>
                 </div>
                 <ul id="player-list"></ul>
                 <button onclick="closeRoster()" style="background:#555; color:white; margin-top:10px;">Tutup Roster</button>
@@ -69,96 +73,162 @@
     </div>
 
     <script>
-        const sb = supabase.createClient('https://honxcvnpdruthlygwdyo.supabase.co', 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh');
+        // 1. INISIALISASI
+        let sb = null;
         let currentUser = null;
         let activeTeamId = null;
 
-        function msg(text, isErr) {
+        try {
+            if (!window.supabase) throw new Error("File supabase.js tidak termuat.");
+            sb = window.supabase.createClient('https://honxcvnpdruthlygwdyo.supabase.co', 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh');
+        } catch (e) {
+            showMsg("GAGAL INIT: " + e.message, true);
+        }
+
+        // 2. FUNGSI NOTIFIKASI
+        function showMsg(text, isErr) {
             const m = document.getElementById('msg');
             m.innerText = text;
             m.className = isErr ? 'err' : 'ok';
-            setTimeout(() => { m.className = ''; m.style.display = 'none'; }, 5000);
+            // Auto hilang setelah 10 detik
+            setTimeout(() => { m.className = ''; m.style.display = 'none'; }, 10000);
         }
 
-        // ================= AUTH =================
+        // 3. LOGIKA REGISTER
         async function doRegister() {
+            const btn = document.getElementById('btn-reg');
+            btn.disabled = true; btn.innerText = "Loading...";
+            
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
             const user = document.getElementById('user').value;
-            if(!email || !pass) return msg("Isi Email & Password!", true);
             
-            const { error } = await sb.auth.signUp({ email, password: pass, options: { data: { username: user } } });
-            if (error) msg(error.message, true);
-            else msg("Register Berhasil! Silakan Login.", false);
+            if(!email || !pass) { showMsg("Isi Email & Password!", true); btn.disabled=false; btn.innerText="Register"; return; }
+            
+            try {
+                const { error } = await sb.auth.signUp({ email, password: pass, options: { data: { username: user } } });
+                if (error) throw error;
+                showMsg("Register Berhasil! Silakan Login.", false);
+            } catch (err) {
+                showMsg("ERROR REGISTER: " + err.message, true);
+            } finally {
+                btn.disabled = false; btn.innerText = "Register";
+            }
         }
 
+        // 4. LOGIKA LOGIN
         async function doLogin() {
+            const btn = document.getElementById('btn-log');
+            btn.disabled = true; btn.innerText = "Loading...";
+            
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
-            if(!email || !pass) return msg("Isi Email & Password!", true);
             
-            const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-            if (error) msg(error.message, true);
-            else checkUser();
+            if(!email || !pass) { showMsg("Isi Email & Password!", true); btn.disabled=false; btn.innerText="Login"; return; }
+            
+            try {
+                const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+                if (error) throw error;
+                showMsg("Login Berhasil!", false);
+                checkUser();
+            } catch (err) {
+                showMsg("ERROR LOGIN: " + err.message, true);
+            } finally {
+                btn.disabled = false; btn.innerText = "Login";
+            }
         }
 
+        // 5. LOGIKA LOGOUT & CEK USER
         async function doLogout() {
             await sb.auth.signOut();
             checkUser();
         }
 
         async function checkUser() {
-            const { data: { session } } = await sb.auth.getSession();
-            currentUser = session?.user;
-            if (currentUser) {
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('header').style.display = 'block';
-                document.getElementById('dashboard-section').classList.remove('hidden');
-                document.getElementById('user-info').innerHTML = `Login: <b>${currentUser.user_metadata?.username || currentUser.email}</b>`;
-                loadTeams();
-            } else {
-                document.getElementById('auth-section').classList.remove('hidden');
-                document.getElementById('header').style.display = 'none';
-                document.getElementById('dashboard-section').classList.add('hidden');
-                document.getElementById('roster-section').classList.add('hidden');
+            if (!sb) return;
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                currentUser = session?.user;
+                if (currentUser) {
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('header').style.display = 'block';
+                    document.getElementById('dashboard-section').classList.remove('hidden');
+                    document.getElementById('user-info').innerHTML = `Login: <b>${currentUser.user_metadata?.username || currentUser.email}</b>`;
+                    loadTeams();
+                } else {
+                    document.getElementById('auth-section').classList.remove('hidden');
+                    document.getElementById('header').style.display = 'none';
+                    document.getElementById('dashboard-section').classList.add('hidden');
+                    document.getElementById('roster-section').classList.add('hidden');
+                }
+            } catch (e) {
+                showMsg("ERROR CEK USER: " + e.message, true);
             }
         }
 
-        // ================= TIM =================
+        // 6. LOGIKA BUAT TIM (YANG BERMASALAH)
         async function createTeam() {
-            if (!currentUser) return;
+            if (!currentUser) return showMsg("Harus login dulu!", true);
+            
+            const btn = document.getElementById('btn-save-team');
+            btn.disabled = true; btn.innerText = "Menyimpan...";
+
             const name = document.getElementById('team-name').value;
             const desc = document.getElementById('team-desc').value;
-            if(!name) return msg("Nama tim wajib diisi!", true);
+            
+            if(!name) { 
+                showMsg("Nama tim wajib diisi!", true); 
+                btn.disabled=false; btn.innerText="Simpan Tim"; 
+                return; 
+            }
 
-            const { error } = await sb.from('teams').insert([{ owner_id: currentUser.id, name: name, description: desc }]);
-            if (error) msg(error.message, true);
-            else {
-                msg("Tim berhasil dibuat!", false);
+            try {
+                const { error } = await sb.from('teams').insert([{ 
+                    owner_id: currentUser.id, 
+                    name: name, 
+                    description: desc 
+                }]);
+                
+                if (error) throw error;
+                
+                showMsg("Tim berhasil dibuat!", false);
                 document.getElementById('team-name').value = '';
                 document.getElementById('team-desc').value = '';
                 loadTeams();
+            } catch (err) {
+                // INI BAKAL NAMPILIN ERROR ASLI DARI SUPABASE (RLS/DLL)
+                showMsg("ERROR BUAT TIM: " + err.message, true);
+            } finally {
+                btn.disabled = false; btn.innerText = "Simpan Tim";
             }
         }
 
+        // 7. TAMPILKAN DAFTAR TIM
         async function loadTeams() {
-            const { data: teams, error } = await sb.from('teams').select('*').eq('owner_id', currentUser.id);
-            const list = document.getElementById('team-list');
-            list.innerHTML = '';
-            if (error || !teams || teams.length === 0) {
-                list.innerHTML = '<li>Belum ada tim.</li>';
-                return;
+            if (!currentUser) return;
+            try {
+                const { data: teams, error } = await sb.from('teams').select('*').eq('owner_id', currentUser.id);
+                if (error) throw error;
+                
+                const list = document.getElementById('team-list');
+                list.innerHTML = '';
+                if (!teams || teams.length === 0) {
+                    list.innerHTML = '<li>Belum ada tim.</li>';
+                    return;
+                }
+                teams.forEach(t => {
+                    list.innerHTML += `
+                        <li>
+                            <div><b>${t.name}</b><br><small style="color:#aaa;">${t.description || '-'}</small></div>
+                            <button onclick="openRoster('${t.id}', '${t.name}')" class="btn-sm">Kelola Roster</button>
+                        </li>`;
+                });
+            } catch (err) {
+                document.getElementById('team-list').innerHTML = `<li style="color:red;">Gagal memuat tim: ${err.message}</li>`;
             }
-            teams.forEach(t => {
-                list.innerHTML += `
-                    <li>
-                        <div><b>${t.name}</b><br><small style="color:#aaa;">${t.description || '-'}</small></div>
-                        <button onclick="openRoster('${t.id}', '${t.name}')" class="btn-sm">Kelola Roster</button>
-                    </li>`;
-            });
         }
 
-        // ================= ROSTER =================
+        // 8. LOGIKA ROSTER (PEMAIN)
         function closeRoster() {
             document.getElementById('roster-section').classList.add('hidden');
             activeTeamId = null;
@@ -175,32 +245,55 @@
 
         async function addPlayer() {
             if (!activeTeamId) return;
+            const btn = document.getElementById('btn-add-player');
+            btn.disabled = true; btn.innerText = "Loading...";
+
             const nick = document.getElementById('player-nick').value;
             const uid = document.getElementById('player-uid').value;
-            if(!nick || !uid) return msg("Nickname dan UID wajib diisi!", true);
+            
+            if(!nick || !uid) { 
+                showMsg("Nickname dan UID wajib diisi!", true); 
+                btn.disabled=false; btn.innerText="Tambah Pemain"; 
+                return; 
+            }
 
-            const { error } = await sb.from('team_players').insert([{ team_id: activeTeamId, nickname: nick, game_id: uid }]);
-            if (error) msg(error.message, true);
-            else {
-                msg("Pemain ditambahkan!", false);
+            try {
+                const { error } = await sb.from('team_players').insert([{ 
+                    team_id: activeTeamId, 
+                    nickname: nick, 
+                    game_id: uid 
+                }]);
+                if (error) throw error;
+                
+                showMsg("Pemain ditambahkan!", false);
                 document.getElementById('player-nick').value = '';
                 document.getElementById('player-uid').value = '';
                 loadPlayers();
+            } catch (err) {
+                showMsg("ERROR TAMBAH PEMAIN: " + err.message, true);
+            } finally {
+                btn.disabled = false; btn.innerText = "Tambah Pemain";
             }
         }
 
         async function loadPlayers() {
             if (!activeTeamId) return;
-            const { data: players, error } = await sb.from('team_players').select('*').eq('team_id', activeTeamId);
-            const list = document.getElementById('player-list');
-            list.innerHTML = '';
-            if (error || !players || players.length === 0) {
-                list.innerHTML = '<li>Belum ada pemain.</li>';
-                return;
+            try {
+                const { data: players, error } = await sb.from('team_players').select('*').eq('team_id', activeTeamId);
+                if (error) throw error;
+                
+                const list = document.getElementById('player-list');
+                list.innerHTML = '';
+                if (!players || players.length === 0) {
+                    list.innerHTML = '<li>Belum ada pemain.</li>';
+                    return;
+                }
+                players.forEach((p, i) => {
+                    list.innerHTML += `<li><span>${i+1}. <b>${p.nickname}</b> (${p.game_id})</span></li>`;
+                });
+            } catch (err) {
+                document.getElementById('player-list').innerHTML = `<li style="color:red;">Gagal memuat pemain: ${err.message}</li>`;
             }
-            players.forEach((p, i) => {
-                list.innerHTML += `<li><span>${i+1}. <b>${p.nickname}</b> (${p.game_id})</span></li>`;
-            });
         }
 
         window.onload = () => { checkUser(); };
