@@ -74,12 +74,28 @@
         const sb = supabase.createClient('https://honxcvnpdruthlygwdyo.supabase.co', 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh');
         let currentUser = null;
         let activeTeamId = null;
+        let freefireId = null; // Bakal nyimpen ID asli Free Fire
 
         function showMsg(text, isErr) {
             const m = document.getElementById('msg');
             m.innerText = text;
             m.className = isErr ? 'err' : 'ok';
             setTimeout(() => { m.className = ''; m.style.display = 'none'; }, 5000);
+        }
+
+        // ================= AMBIL ID FREEFIRE ASLI =================
+        async function loadGameId() {
+            try {
+                const { data, error } = await sb.from('games').select('id').ilike('name', '%free fire%').limit(1);
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    freefireId = data[0].id;
+                } else {
+                    showMsg("Peringatan: Game 'Free Fire' tidak ditemukan di database.", true);
+                }
+            } catch (err) {
+                showMsg("Gagal memuat data game: " + err.message, true);
+            }
         }
 
         // ================= AUTH =================
@@ -133,9 +149,11 @@
             }
         }
 
-        // ================= TIM (DENGAN UMPAN GAME_ID) =================
+        // ================= TIM =================
         async function createTeam() {
             if (!currentUser) return;
+            if (!freefireId) return showMsg("Gagal: ID Game Free Fire belum termuat. Coba refresh.", true);
+
             const btn = document.getElementById('btn-save-team'); btn.disabled = true; btn.innerText = "Menyimpan...";
             const name = document.getElementById('team-name').value;
             const desc = document.getElementById('team-desc').value;
@@ -143,12 +161,12 @@
             if(!name) { showMsg("Nama tim wajib diisi!", true); btn.disabled=false; btn.innerText="Simpan Tim"; return; }
 
             try {
-                // '00000000-0000-0000-0000-000000000000' adalah ID Palsu (Umpan) biar DB nggak error.
+                // Ini udah pake ID Free Fire ASLI dari tabel games
                 const { error } = await sb.from('teams').insert([{ 
                     owner_id: currentUser.id, 
                     name: name, 
                     description: desc,
-                    game_id: '00000000-0000-0000-0000-000000000000' 
+                    game_id: freefireId 
                 }]);
                 if (error) throw error;
                 showMsg("Tim berhasil dibuat!", false);
@@ -173,7 +191,7 @@
             } catch (err) { document.getElementById('team-list').innerHTML = `<li style="color:red;">Gagal memuat tim: ${err.message}</li>`; }
         }
 
-        // ================= ROSTER (INPUT MANUAL) =================
+        // ================= ROSTER =================
         function closeRoster() {
             document.getElementById('roster-section').classList.add('hidden');
             activeTeamId = null;
@@ -225,7 +243,11 @@
             } catch (err) { document.getElementById('player-list').innerHTML = `<li style="color:red;">Gagal memuat: ${err.message}</li>`; }
         }
 
-        window.onload = () => { checkUser(); };
+        // JALANKAN SAAT HALAMAN DIBUKA
+        window.onload = async () => { 
+            await loadGameId(); 
+            checkUser(); 
+        };
     </script>
 </body>
 </html>
