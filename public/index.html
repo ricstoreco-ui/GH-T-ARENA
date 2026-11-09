@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GH-T ARENA - Fase Fungsi Dasar</title>
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: sans-serif; background-color: #121212; color: #fff; margin: 0; padding: 20px; }
@@ -16,17 +15,23 @@
         .hidden { display: none; }
         .nav { display: flex; gap: 10px; margin-bottom: 20px; }
         .nav button { width: auto; background: #333; color: #fff; }
-        .nav button.active { background: #d4af37; color: #000; }
+        
+        /* Kotak Notifikasi Pengganti Alert */
+        #msg-box { padding: 15px; margin-bottom: 20px; border-radius: 5px; display: none; font-weight: bold; text-align: center; font-size: 14px; }
+        .msg-error { background-color: #c62828; color: white; display: block !important; }
+        .msg-success { background-color: #2e7d32; color: white; display: block !important; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 style="text-align: center;">GH-T ARENA</h1>
         
+        <!-- KOTAK PESAN ERROR/SUKSES -->
+        <div id="msg-box"></div>
+
         <div class="nav" id="nav-menu">
             <button onclick="showSection('auth-section')">Login / Register</button>
             <button onclick="showSection('dashboard-section')">Dashboard</button>
-            <button onclick="showSection('tournaments-section')">Turnamen</button>
         </div>
         <div id="user-status" style="text-align: right; margin-bottom: 10px;"></div>
 
@@ -35,13 +40,12 @@
             <input type="text" id="auth-username" placeholder="Username (Khusus Register)">
             <input type="email" id="auth-email" placeholder="Email">
             <input type="password" id="auth-password" placeholder="Password">
-            <button id="btn-login" onclick="handleLogin()">Login</button>
-            <button id="btn-register" onclick="handleRegister()">Register</button>
+            <button onclick="handleLogin()">Login</button>
+            <button onclick="handleRegister()" style="background:#555; color:#fff;">Register</button>
         </div>
 
         <div id="dashboard-section" class="card hidden">
             <h2>Dashboard Captain</h2>
-            <div id="captain-info"></div>
             <h3>Buat Tim Baru</h3>
             <input type="text" id="team-name" placeholder="Nama Tim">
             <input type="text" id="team-desc" placeholder="Deskripsi Tim (Opsional)">
@@ -49,48 +53,49 @@
             <h3>Tim Saya</h3>
             <ul id="my-teams-list"></ul>
         </div>
-
-        <div id="tournaments-section" class="card hidden">
-            <h2>Daftar Turnamen</h2>
-            <div id="tournaments-list">Memuat turnamen...</div>
-        </div>
     </div>
 
     <script>
-        // KONFIGURASI SUPABASE
         const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
         
         let supabase = null;
         let currentUser = null;
 
-        // Cek apakah library Supabase berhasil dimuat dari internet
         if (window.supabase) {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         } else {
-            alert("GAGAL MEMUAT: Library Supabase tidak ditemukan. Cek koneksi internet Anda atau matikan AdBlock.");
+            showMsg("Gagal memuat sistem database. Cek koneksi internet.", "error");
+        }
+
+        // Fungsi buat nampilin pesan di layar (bukan pop-up)
+        function showMsg(text, type) {
+            const box = document.getElementById('msg-box');
+            box.innerText = text;
+            box.className = type === 'error' ? 'msg-error' : 'msg-success';
+            // Hilang otomatis setelah 7 detik
+            setTimeout(() => { box.className = ''; box.style.display = 'none'; }, 7000);
         }
 
         function showSection(id) {
-            ['auth-section', 'dashboard-section', 'tournaments-section'].forEach(sec => {
+            ['auth-section', 'dashboard-section'].forEach(sec => {
                 document.getElementById(sec).classList.add('hidden');
             });
             document.getElementById(id).classList.remove('hidden');
         }
 
         async function handleRegister() {
-            alert("Tombol Register ditekan. Memproses..."); // DEBUG
-
-            if (!supabase) return alert("Supabase belum siap.");
+            if (!supabase) return showMsg("Sistem database belum siap.", "error");
 
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
             const username = document.getElementById('auth-username').value;
 
-            if(!username || !email || !password) return alert("Isi semua data termasuk Username!");
+            if(!username || !email || !password) return showMsg("Isi semua data: Username, Email, dan Password!", "error");
+
+            showMsg("Sedang memproses pendaftaran...", "success");
 
             try {
-                // Proses daftar
                 const { data, error } = await supabase.auth.signUp({
                     email: email,
                     password: password,
@@ -99,28 +104,31 @@
 
                 if (error) throw error;
                 
-                alert("Registrasi Berhasil! Silakan coba Login.");
+                showMsg("Registrasi Berhasil! Silakan klik tombol Login.", "success");
             } catch (err) {
-                alert("ERROR REGISTER: " + err.message); // Nampilin error asli
+                // INI YANG KITA TUNGGU: Nampilin pesan error asli dari Supabase
+                showMsg("ERROR REGISTER: " + err.message, "error"); 
             }
         }
 
         async function handleLogin() {
-            alert("Tombol Login ditekan. Memproses..."); // DEBUG
-
-            if (!supabase) return alert("Supabase belum siap.");
+            if (!supabase) return showMsg("Sistem database belum siap.", "error");
             
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
+
+            if(!email || !password) return showMsg("Isi Email dan Password untuk login!", "error");
+
+            showMsg("Sedang login...", "success");
 
             try {
                 const { data, error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
                 
-                alert("Login Berhasil!");
+                showMsg("Login Berhasil!", "success");
                 checkUser();
             } catch (err) {
-                alert("ERROR LOGIN: " + err.message); // Nampilin error asli
+                showMsg("ERROR LOGIN: " + err.message, "error"); 
             }
         }
 
@@ -133,7 +141,7 @@
 
             if (currentUser) {
                 const uname = currentUser.user_metadata?.username || currentUser.email;
-                statusDiv.innerHTML = `Login: <b>${uname}</b> <button onclick="handleLogout()" style="width:auto; padding: 2px 10px; background:red; color:white;">Logout</button>`;
+                statusDiv.innerHTML = `Login: <b>${uname}</b> <button onclick="handleLogout()" style="width:auto; padding: 5px 15px; background:red; color:white; margin-left:10px;">Logout</button>`;
                 showSection('dashboard-section');
                 loadMyTeams();
             } else {
@@ -149,11 +157,13 @@
         }
 
         async function createTeam() {
-            if (!currentUser) return alert("Login dulu!");
+            if (!currentUser) return showMsg("Harus login dulu!", "error");
             const name = document.getElementById('team-name').value;
             const desc = document.getElementById('team-desc').value;
 
-            if(!name) return alert("Nama tim wajib diisi!");
+            if(!name) return showMsg("Nama tim wajib diisi!", "error");
+
+            showMsg("Menyimpan tim...", "success");
 
             try {
                 const { error } = await supabase.from('teams').insert([{
@@ -162,11 +172,12 @@
                     description: desc
                 }]);
                 if (error) throw error;
-                alert("Tim berhasil dibuat!");
+                
+                showMsg("Tim berhasil dibuat!", "success");
                 document.getElementById('team-name').value = '';
                 loadMyTeams();
             } catch (err) {
-                alert("ERROR BUAT TIM: " + err.message);
+                showMsg("ERROR BUAT TIM: " + err.message, "error");
             }
         }
 
