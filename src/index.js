@@ -5,8 +5,9 @@
 import { tg, rpc, sb, firstTime, getState, clearState, show, b, BACK, pickImage, storageDelete } from './core.js';
 import * as fMain from './f_main.js';
 import * as fMisc from './f_misc.js';
+import * as fBr from './f_br.js'; // <--- TAMBAHAN: Import modul BR
 
-const MODULES = [fMain, fMisc];
+const MODULES = [fMain, fMisc, fBr]; // <--- TAMBAHAN: Masukkan fBr ke dalam array
 const H = {}, T = {}, U = {};
 const KEEP = ['m:w:', 'm:pt:save', 'm:an:ok', 'm:cc:ok']; // callback yang tidak menghapus state input
 for (const m of MODULES) {
