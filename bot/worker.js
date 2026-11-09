@@ -642,7 +642,8 @@ async function wizCallback(env, chat, mid, parts) {
     }
     const id = created?.[0]?.id;
     await audit(env, 'buat_turnamen', 'tournaments', d.name, id, null, row);
-    return tDetail(env, id, '✅ Turnamen dibuat. Status awal: Segera Hadir.');
+    const v = await tDetail(env, id, '✅ Turnamen dibuat. Status awal: Segera Hadir.');
+    return show(env, chat, mid, v.text, v.markup);
   }
   return wizShow(env, chat, mid, d);
 }
@@ -656,7 +657,8 @@ async function tpText(env, chat, st, text) {
   await clearState(env, chat);
   await patchT(env, id, { status: 'ditunda', postponed_reason: text.slice(0, 500) });
   await audit(env, 'tunda_turnamen', 'tournaments', text.slice(0, 500), id, { status: t.status }, { status: 'ditunda' });
-  return tDetail(env, id, '✅ Turnamen ditunda. Belum ada notifikasi jadwal karena belum ada tanggal pasti.');
+  const v = await tDetail(env, id, '✅ Turnamen ditunda. Belum ada notifikasi jadwal karena belum ada tanggal pasti.');
+  return show(env, chat, null, v.text, v.markup);
 }
 
 async function tjText(env, chat, st, text) {
@@ -672,7 +674,8 @@ async function tjText(env, chat, st, text) {
   await audit(env, 'jadwal_lanjutan', 'tournaments', p.note || 'via bot', id, { schedule_at: t.schedule_at }, { schedule_at: p.iso });
   const n = await notifyRegistrants(env, id, 'jadwal', 'Jadwal turnamen diperbarui',
     `${t.name}: jadwal baru ${wib(p.iso)}${p.note ? '. ' + p.note : ''}`);
-  return tDetail(env, id, `✅ Jadwal lanjutan: ${wib(p.iso)}\n${notifNote(n)}\n⚠️ Hitung ulang Waiting List belum aktif.`);
+  const v = await tDetail(env, id, `✅ Jadwal lanjutan: ${wib(p.iso)}\n${notifNote(n)}\n⚠️ Hitung ulang Waiting List belum aktif.`);
+  return show(env, chat, null, v.text, v.markup);
 }
 
 // =====================================================================
@@ -839,7 +842,8 @@ async function rrText(env, chat, st, text) {
     body = `Pendaftaran tim ${r.team_name} di ${t.name} ditolak. Alasan: ${text}`;
   }
   const ok = await notify(env, r.owner_id, kind, title, body, r.tournament_id);
-  return rgDetail(env, rid, `✅ ${RR[act].title} berhasil.\n` + (ok ? '🔔 Notifikasi terkirim ke Captain.' : '⚠️ Notifikasi ke Captain GAGAL dikirim.'));
+  const v = await rgDetail(env, rid, `✅ ${RR[act].title} berhasil.\n` + (ok ? '🔔 Notifikasi terkirim ke Captain.' : '⚠️ Notifikasi ke Captain GAGAL dikirim.'));
+  return show(env, chat, null, v.text, v.markup);
 }
 
 async function rgProof(env, chat, rid) {
