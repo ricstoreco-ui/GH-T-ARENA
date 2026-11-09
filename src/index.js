@@ -1,15 +1,15 @@
 // GH-T ARENA Bot — index.js: pintu masuk Worker (webhook Telegram + cron) dan router menu.
-// Variabel di Cloudflare (JANGAN tulis nilainya di file ini):
-//   BOT_TOKEN, ADMIN_ID, WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_KEY
-// Menambah modul baru: import-nya di bawah, lalu masukkan ke daftar MODULES.
 import { tg, rpc, sb, firstTime, getState, clearState, show, b, BACK, pickImage, storageDelete } from './core.js';
 import * as fMain from './f_main.js';
 import * as fMisc from './f_misc.js';
-import * as fBr from './f_br.js'; // <--- TAMBAHAN: Import modul BR
+import * as fBr from './f_br.js';
+import * as fCs from './f_cs.js'; // BARU
+import * as fPo from './f_po.js'; // BARU
+import * as fRm from './f_rm.js'; // BARU
 
-const MODULES = [fMain, fMisc, fBr]; // <--- TAMBAHAN: Masukkan fBr ke dalam array
+const MODULES = [fMain, fMisc, fBr, fCs, fPo, fRm]; // MASUKKAN SEMUA DI SINI
 const H = {}, T = {}, U = {};
-const KEEP = ['m:w:', 'm:pt:save', 'm:an:ok', 'm:cc:ok']; // callback yang tidak menghapus state input
+const KEEP = ['m:w:', 'm:pt:save', 'm:an:ok', 'm:cc:ok'];
 for (const m of MODULES) {
   Object.assign(H, m.H || {});
   Object.assign(T, m.T || {});
@@ -66,12 +66,12 @@ async function handle(env, u) {
   const from = cq?.from?.id ?? msg?.from?.id;
   const chat = cq?.message?.chat?.id ?? msg?.chat?.id;
   if (!from || !chat) return;
-  if (String(from) !== String(env.ADMIN_ID)) { // hanya Super Admin
+  if (String(from) !== String(env.ADMIN_ID)) {
     if (cq) await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id });
     else await tg(env, 'sendMessage', { chat_id: chat, text: 'Bot ini khusus Super Admin GH-T Arena.' });
     return;
   }
-  if (!(await firstTime(env, u.update_id))) return; // update ganda dari Telegram
+  if (!(await firstTime(env, u.update_id))) return;
   try {
     if (cq) await onCallback(env, cq);
     else if (msg) await onMessage(env, msg);
@@ -80,12 +80,10 @@ async function handle(env, u) {
   }
 }
 
-// ---------- Cron: heartbeat, job, hapus file, housekeeping ----------
 async function runJobs(env) {
   const now = new Date().toISOString();
   const jobs = (await sb(env, 'GET', `jobs?status=eq.pending&kind=in.(telegram_admin,web_push)&run_after=lte.${encodeURIComponent(now)}&select=id,kind,payload&order=created_at.asc&limit=10`)) || [];
   for (const j of jobs) {
-    // ambil job secara atomik: hanya jika masih pending
     const got = await sb(env, 'PATCH', `jobs?id=eq.${j.id}&status=eq.pending`, { status: 'running' }, 'return=representation').catch(() => null);
     if (!got?.[0]) continue;
     try {
@@ -95,7 +93,7 @@ async function runJobs(env) {
           const r = await tg(env, 'sendMessage', { chat_id: env.ADMIN_ID, text: String(text).slice(0, 3900) });
           if (!r.ok) throw new Error(r.description || 'sendMessage gagal');
         }
-      } // web_push: pengiriman push belum diaktifkan; notifikasi tetap tersimpan di database
+      }
       await rpc(env, 'sys_job_done', { p_id: j.id });
     } catch (e) {
       await rpc(env, 'sys_job_fail', { p_id: j.id, p_error: String(e?.message || e).slice(0, 300), p_permanent: false }).catch(() => null);
@@ -122,7 +120,7 @@ async function cron(env, event) {
   await step('jobs', () => runJobs(env));
   await step('files', () => runFiles(env));
   const minute = new Date(event?.scheduledTime || Date.now()).getUTCMinutes();
-  if (Math.floor(minute / 5) % 2 === 0) await step('housekeeping', () => rpc(env, 'sys_run_housekeeping')); // ±tiap 10 menit
+  if (Math.floor(minute / 5) % 2 === 0) await step('housekeeping', () => rpc(env, 'sys_run_housekeeping'));
 }
 
 export default {
