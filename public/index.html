@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GH-T ARENA - Fase Fungsi Dasar</title>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* CSS SEDERHANA (FOKUS FUNGSI) */
+        body { font-family: sans-serif; background-color: #121212; color: #fff; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; }
+        input, select, button { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; }
+        button { background: #d4af37; color: #000; font-weight: bold; cursor: pointer; border: none; }
+        button:hover { background: #f1c40f; }
+        .hidden { display: none; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        .nav button { width: auto; background: #333; color: #fff; }
+        .nav button.active { background: #d4af37; color: #000; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #444; padding: 8px; text-align: left; }
+        th { background: #333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center;">GH-T ARENA</h1>
+        
+        <!-- NAVIGASI -->
+        <div class="nav" id="nav-menu">
+            <button onclick="showSection('auth-section')">Login / Register</button>
+            <button onclick="showSection('dashboard-section')">Dashboard Captain</button>
+            <button onclick="showSection('tournaments-section')">Turnamen</button>
+            <button onclick="showSection('leaderboard-section')">Leaderboard</button>
+        </div>
+        <div id="user-status" style="text-align: right; margin-bottom: 10px;"></div>
+
+        <!-- SECTION AUTH (LOGIN/REGISTER) -->
+        <div id="auth-section" class="card">
+            <h2>Login / Register</h2>
+            <input type="text" id="auth-username" placeholder="Username (Khusus Register)" class="hidden">
+            <input type="email" id="auth-email" placeholder="Email">
+            <input type="password" id="auth-password" placeholder="Password">
+            <button id="btn-login" onclick="handleLogin()">Login</button>
+            <button id="btn-register" onclick="handleRegister()">Register</button>
+            <p style="font-size: 12px; color: #888;">*Note: Register otomatis masuk jika konfirmasi email dimatikan di Supabase.</p>
+        </div>
+
+        <!-- SECTION DASHBOARD CAPTAIN -->
+        <div id="dashboard-section" class="card hidden">
+            <h2>Dashboard Captain</h2>
+            <div id="captain-info"></div>
+            
+            <h3>Buat Tim Baru</h3>
+            <input type="text" id="team-name" placeholder="Nama Tim">
+            <input type="text" id="team-desc" placeholder="Deskripsi Tim (Opsional)">
+            <button onclick="createTeam()">Simpan Tim</button>
+
+            <h3>Tim Saya</h3>
+            <ul id="my-teams-list"></ul>
+        </div>
+
+        <!-- SECTION TURNAMEN -->
+        <div id="tournaments-section" class="card hidden">
+            <h2>Daftar Turnamen</h2>
+            <div id="tournaments-list">Memuat turnamen...</div>
+        </div>
+
+        <!-- SECTION LEADERBOARD -->
+        <div id="leaderboard-section" class="card hidden">
+            <h2>Leaderboard BR</h2>
+            <div id="leaderboard-content">Pilih turnamen di halaman Turnamen untuk melihat hasil.</div>
+        </div>
+
+    </div>
+
+    <script>
+        // ==========================================
+        // KONFIGURASI SUPABASE
+        // ==========================================
+        const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+
+        // ==========================================
+        // NAVIGASI UI
+        // ==========================================
+        function showSection(id) {
+            ['auth-section', 'dashboard-section', 'tournaments-section', 'leaderboard-section'].forEach(sec => {
+                document.getElementById(sec).classList.add('hidden');
+            });
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        // ==========================================
+        // LOGIKA AUTENTIKASI (LOGIN/REGISTER)
+        // ==========================================
+        async function handleRegister() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const username = document.getElementById('auth-username').value;
+
+            if(!username || !email || !password) return alert("Isi semua data termasuk Username!");
+
+            // Daftar ke Supabase Auth
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: { data: { username: username } }
+            });
+
+            if (error) return alert("Gagal Register: " + error.message);
+            
+            // Catatan: Pembuatan row di tabel 'profiles' biasanya otomatis via Trigger Supabase.
+            alert("Registrasi berhasil! Silakan cek email (jika verifikasi aktif) atau langsung login.");
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) return alert("Gagal Login: " + error.message);
+            
+            alert("Login Berhasil!");
+            checkUser();
+        }
+
+        async function handleLogout() {
+            await supabase.auth.signOut();
+            currentUser = null;
+            checkUser();
+        }
+
+        // Cek Sesi User
+        async function checkUser() {
+            const { data: { session } } = await supabase.auth.getSession();
+            currentUser = session?.user;
+            
+            const statusDiv = document.getElementById('user-status');
+            const btnReg = document.getElementById('btn-register');
+            const inputUser = document.getElementById('auth-username');
+
+            if (currentUser) {
+                // Ambil username dari profil (opsional, karena kita bisa ambil dari metadata)
+                const uname = currentUser.user_metadata?.username || currentUser.email;
+                statusDiv.innerHTML = `Login sebagai: <b>${uname}</b> <button onclick="handleLogout()" style="width:auto; padding: 2px 10px; margin-left:10px; background:red; color:white;">Logout</button>`;
+                btnReg.classList.add('hidden');
+                inputUser.classList.add('hidden');
+                showSection('dashboard-section');
+                loadMyTeams();
+            } else {
+                statusDiv.innerHTML = '';
+                btnReg.classList.remove('hidden');
+                inputUser.classList.remove('hidden');
+                showSection('auth-section');
+            }
+        }
+
+        // ==========================================
+        // DASHBOARD CAPTAIN (TIM & ROSTER)
+        // ==========================================
+        async function createTeam() {
+            if (!currentUser) return alert("Login dulu!");
+            const name = document.getElementById('team-name').value;
+            const desc = document.getElementById('team-desc').value;
+
+            if(!name) return alert("Nama tim wajib diisi!");
+
+            const { error } = await supabase.from('teams').insert([{
+                owner_id: currentUser.id,
+                name: name,
+                description: desc
+            }]);
+
+            if (error) return alert("Gagal buat tim: " + error.message);
+            alert("Tim berhasil dibuat!");
+            document.getElementById('team-name').value = '';
+            document.getElementById('team-desc').value = '';
+            loadMyTeams();
+        }
+
+        async function loadMyTeams() {
+            if (!currentUser) return;
+            const { data: teams, error } = await supabase.from('teams').select('*').eq('owner_id', currentUser.id);
+            
+            const list = document.getElementById('my-teams-list');
+            list.innerHTML = '';
+            
+            if (error || !teams || teams.length === 0) {
+                list.innerHTML = '<li>Belum ada tim.</li>';
+                return;
+            }
+
+            teams.forEach(t => {
+                list.innerHTML += `<li><b>${t.name}</b> - ${t.description || 'Tidak ada deskripsi'} 
+                <button onclick="manageRoster('${t.id}', '${t.name}')" style="width:auto; padding:2px 5px; margin-left:10px;">Kelola Roster</button></li>`;
+            });
+        }
+
+        async function manageRoster(teamId, teamName) {
+            // Fitur ini akan diupdate di tahap berikutnya (input pemain, UID, dll)
+            alert(`Membuka form roster untuk tim: ${teamName}\n(Fitur form pemain akan dibuat di tahap selanjutnya)`);
+        }
+
+        // ==========================================
+        // DAFTAR TURNAMEN & LEADERBOARD
+        // ==========================================
+        async function loadTournaments() {
+            const { data, error } = await supabase.from('tournaments').select('*').eq('registration_enabled', true).order('created_at', { ascending: false });
+            
+            const div = document.getElementById('tournaments-list');
+            div.innerHTML = '';
+
+            if (error || !data || data.length === 0) {
+                div.innerHTML = 'Belum ada turnamen yang buka pendaftaran.';
+                return;
+            }
+
+            data.forEach(t => {
+                div.innerHTML += `
+                <div style="border: 1px solid #444; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+                    <h3>${t.name} (${t.format})</h3>
+                    <p>Biaya: Rp ${t.entry_fee} | Hadiah: Rp ${t.prize_pool}</p>
+                    <button onclick="registerTournament('${t.id}')" style="width:auto;">Daftar Turnamen Ini</button>
+                    <button onclick="loadLeaderboard('${t.id}')" style="width:auto; background:#555; color:#fff; margin-left:10px;">Lihat Hasil</button>
+                </div>`;
+            });
+        }
+
+        async function registerTournament(tid) {
+            if (!currentUser) return alert("Harus login dulu untuk mendaftar!");
+            // Fungsi ini butuh memilih Tim. Untuk simplifikasi tahap fungsi, kita ambil tim pertama.
+            const { data: teams } = await supabase.from('teams').select('id, name').eq('owner_id', currentUser.id).limit(1);
+            
+            if (!teams || teams.length === 0) return alert("Buat Tim dulu di Dashboard!");
+
+            alert(`Tahap selanjutnya: Memasukkan tim ${teams[0].name} ke turnamen ini, lalu upload QRIS.`);
+        }
+
+        async function loadLeaderboard(tid) {
+            showSection('leaderboard-section');
+            const div = document.getElementById('leaderboard-content');
+            div.innerHTML = 'Memuat...';
+
+            // Ambil dari view v_leaderboard_public yang udah kita buat di database
+            const { data, error } = await supabase.from('v_leaderboard_public').select('*').eq('tournament_id', tid).order('rank_no', { ascending: true });
+            
+            if (error || !data || data.length === 0) {
+                div.innerHTML = 'Belum ada hasil pertandingan untuk turnamen ini.';
+                return;
+            }
+
+            let html = `<table><tr><th>Rank</th><th>Tim</th><th>Poin</th><th>Kill</th></tr>`;
+            data.forEach(r => {
+                html += `<tr><td>#${r.rank_no}</td><td>${r.team_name}</td><td>${r.total_points}</td><td>${r.total_kills}</td></tr>`;
+            });
+            html += `</table>`;
+            div.innerHTML = html;
+        }
+
+        // ==========================================
+        // INISIALISASI
+        // ==========================================
+        window.onload = () => {
+            checkUser();
+            loadTournaments();
+        };
+    </script>
+</body>
+</html>
