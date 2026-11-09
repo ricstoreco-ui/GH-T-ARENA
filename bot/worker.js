@@ -1,4 +1,6 @@
-// GH-T ARENA — Telegram Bot Worker v0.2 (Cloudflare Workers, module syntax)
+// GH-T ARENA — Telegram Bot Worker v0.3 (Cloudflare Workers, module syntax)
+// Baru di v0.3: slot terisi, notifikasi Captain (tabel notifications), menu Pendaftaran,
+// menu Verifikasi Pembayaran (verifikasi, tolak bayar, data belum lengkap, tolak, lihat bukti).
 // Variabel yang harus diisi di Cloudflare (JANGAN tulis nilainya di file ini):
 //   BOT_TOKEN, ADMIN_ID, WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_KEY
 // Baru di v0.2: menu Tabel Poin, menu Turnamen (daftar, buat, ubah status, tunda,
@@ -76,6 +78,30 @@ const audit = (env, action, entity, reason, entityId = null, oldV = null, newV =
     p_old: oldV, p_new: newV, p_reason: reason,
   }).catch(() => null);
 
+// ---------- Notifikasi Captain (tabel notifications) ----------
+async function notify(env, userId, kind, title, body, tournamentId = null) {
+  try {
+    await sb(env, 'POST', 'notifications',
+      { user_id: userId, kind, title, body, data: {}, tournament_id: tournamentId, is_read: false },
+      'return=minimal');
+    return true;
+  } catch (e) { return false; }
+}
+
+// Kirim ke semua Captain yang timnya Resmi Terdaftar di turnamen. Return jumlah, atau null jika gagal.
+async function notifyRegistrants(env, tid, kind, title, body) {
+  try {
+    const regs = (await sb(env, 'GET', `registrations?tournament_id=eq.${tid}&status=eq.resmi_terdaftar&select=owner_id`)) || [];
+    const ids = [...new Set(regs.map((r) => r.owner_id))];
+    if (!ids.length) return 0;
+    await sb(env, 'POST', 'notifications',
+      ids.map((u) => ({ user_id: u, kind, title, body, data: {}, tournament_id: tid, is_read: false })),
+      'return=minimal');
+    return ids.length;
+  } catch (e) { return null; }
+}
+const notifNote = (n) => (n === null ? '⚠️ Notifikasi ke Captain GAGAL dikirim.' : `🔔 Notifikasi terkirim ke ${n} Captain.`);
+
 // ---------- Idempotensi update Telegram ----------
 async function firstTime(env, updateId) {
   try {
@@ -109,7 +135,7 @@ const BACK = [[b('⬅️ Menu Utama', 'm:main')]];
 const MAIN = {
   inline_keyboard: [
     [b('📊 Dashboard', 'm:dash'), b('🏆 Turnamen', 'm:t')],
-    [b('📝 Pendaftaran', 'm:soon:Pendaftaran'), b('💳 Pembayaran', 'm:soon:Verifikasi Pembayaran')],
+    [b('📝 Pendaftaran', 'm:rg'), b('💳 Pembayaran', 'm:vp')],
     [b('🎯 Battle Royale', 'm:soon:Battle Royale'), b('⚔️ Clash Squad', 'm:soon:Clash Squad')],
     [b('🧮 Tabel Poin', 'm:pt'), b('📣 Pengumuman', 'm:soon:Pengumuman')],
     [b('💸 Pencairan', 'm:soon:Pencairan Hadiah'), b('⚙️ Pengaturan', 'm:set')],
@@ -340,12 +366,13 @@ async function tList(env) {
 
 async function tDetail(env, id, notice) {
   const t = await getT(env, id);
+  const filled = await count(env, `registrations?tournament_id=eq.${id}&status=eq.resmi_terdaftar&select=id`);
   const lines = [
     `<b>🏆 ${esc(t.name)}</b>`,
     `Format: ${t.format === 'BR' ? '🎯 Battle Royale' : '⚔️ Clash Squad'}`,
     `Status: ${stLabel(t.status)}`,
     `Registrasi: ${t.registration_enabled ? '🟢 ON' : '🔴 OFF'}`,
-    `Slot total: ${t.total_slots} · Pemain utama/tim: ${t.starters_per_team} · Cadangan maks: ${t.max_subs}`,
+    `Slot terisi: <b>${filled}/${t.total_slots}</b> · Pemain utama/tim: ${t.starters_per_team} · Cadangan maks: ${t.max_subs}`,
     `Biaya: ${rp(t.entry_fee)} · Hadiah: ${rp(t.prize_pool)} · Posisi pemenang: ${t.winner_positions}`,
     `Jadwal: ${wib(t.schedule_at)}`,
     `Batas daftar: ${wib(t.registration_deadline)}`,
@@ -443,7 +470,9 @@ async function tResume(env, id, matchNo) {
     await sb(env, 'PATCH', `br_matches?tournament_id=eq.${id}&match_no=eq.${Number(matchNo)}`, { status: 'berlangsung' }, 'return=minimal');
   }
   await audit(env, 'lanjutkan_turnamen', 'tournaments', matchNo ? `match ${matchNo}` : 'tanpa pilih match', id, { status: 'ditunda' }, { status: 'berlangsung' });
-  return tDetail(env, id, `✅ Turnamen dilanjutkan${matchNo ? ` (Match ${matchNo} berlangsung)` : ''}.\n⚠️ Notifikasi ke Captain belum aktif di versi ini.`);
+  const n = await notifyRegistrants(env, id, 'jadwal', 'Turnamen dilanjutkan',
+    `${t.name} dilanjutkan${matchNo ? ` (Match ${matchNo})` : ''}. Pantau jadwal dan info room di website.`);
+  return tDetail(env, id, `✅ Turnamen dilanjutkan${matchNo ? ` (Match ${matchNo} berlangsung)` : ''}.\n${notifNote(n)}`);
 }
 
 // ----- Wizard Buat Turnamen -----
@@ -634,7 +663,197 @@ async function tjText(env, chat, st, text) {
   await clearState(env, chat);
   await safePatchT(env, t, { schedule_at: p.iso, resume_note: p.note || null });
   await audit(env, 'jadwal_lanjutan', 'tournaments', p.note || 'via bot', id, { schedule_at: t.schedule_at }, { schedule_at: p.iso });
-  return tDetail(env, id, `✅ Jadwal lanjutan: ${wib(p.iso)}\n⚠️ Notifikasi ke Captain dan hitung ulang Waiting List belum aktif di versi ini.`);
+  const n = await notifyRegistrants(env, id, 'jadwal', 'Jadwal turnamen diperbarui',
+    `${t.name}: jadwal baru ${wib(p.iso)}${p.note ? '. ' + p.note : ''}`);
+  return tDetail(env, id, `✅ Jadwal lanjutan: ${wib(p.iso)}\n${notifNote(n)}\n⚠️ Hitung ulang Waiting List belum aktif.`);
+}
+
+// =====================================================================
+// PENDAFTARAN & VERIFIKASI PEMBAYARAN
+// =====================================================================
+const RG_ST = [
+  ['menunggu_verifikasi', '🕒 Menunggu Verifikasi'],
+  ['menunggu_pembayaran', '💰 Menunggu Pembayaran'],
+  ['data_belum_lengkap', '⚠️ Data Belum Lengkap'],
+  ['resmi_terdaftar', '✅ Resmi Terdaftar'],
+  ['ditolak', '🚫 Ditolak'],
+  ['mengundurkan_diri', '↩️ Mengundurkan Diri'],
+];
+const rgLabel = (s) => (RG_ST.find((x) => x[0] === s) || [s, s])[1];
+
+async function getReg(env, rid) {
+  if (!UUID.test(rid)) throw new Error('ID pendaftaran tidak valid');
+  const rows = await sb(env, 'GET', `registrations?id=eq.${rid}&select=*`);
+  if (!rows?.[0]) throw new Error('Pendaftaran tidak ditemukan');
+  return rows[0];
+}
+
+async function rgTournaments(env) {
+  const [pending, rows] = await Promise.all([
+    count(env, 'registrations?status=eq.menunggu_verifikasi&select=id'),
+    sb(env, 'GET', 'tournaments?select=id,name,format,status&order=created_at.desc&limit=10'),
+  ]);
+  const kb = (rows || []).map((t) => [b(`${(ST[t.status] || ['❔'])[0]} ${t.format} · ${String(t.name).slice(0, 28)}`, 'm:rg:t:' + t.id)]);
+  return {
+    text: '<b>📝 Pendaftaran</b>\n' + (rows?.length ? 'Pilih turnamen:' : 'Belum ada turnamen.'),
+    markup: { inline_keyboard: [[b(`💳 Menunggu Verifikasi (${pending})`, 'm:vp')], ...kb, ...BACK] },
+  };
+}
+
+async function rgSummary(env, tid) {
+  const t = await getT(env, tid);
+  const rows = (await sb(env, 'GET', `registrations?tournament_id=eq.${tid}&select=status&limit=1000`)) || [];
+  const c = {};
+  rows.forEach((r) => { c[r.status] = (c[r.status] || 0) + 1; });
+  const lines = RG_ST.map(([k, l]) => `${l}: <b>${c[k] || 0}</b>`);
+  const kb = RG_ST.map(([k, l], i) => (c[k] ? [b(`${l} (${c[k]})`, `m:rg:l:${tid}:${i}`)] : null)).filter(Boolean);
+  kb.push([b('🔄 Segarkan', 'm:rg:t:' + tid), b('⬅️ Daftar', 'm:rg')]);
+  return {
+    text: `<b>📝 Pendaftaran</b>\n${esc(t.name)}\nSlot terisi: <b>${c.resmi_terdaftar || 0}/${t.total_slots}</b>\n\n` + lines.join('\n'),
+    markup: { inline_keyboard: kb },
+  };
+}
+
+async function rgList(env, tid, i) {
+  const st = RG_ST[i];
+  if (!st) throw new Error('Status tidak dikenal');
+  if (!UUID.test(tid)) throw new Error('ID turnamen tidak valid');
+  const rows = (await sb(env, 'GET', `registrations?tournament_id=eq.${tid}&status=eq.${st[0]}&select=id,team_name&order=created_at.asc&limit=12`)) || [];
+  const kb = rows.map((r) => [b(String(r.team_name || '(tanpa nama)').slice(0, 40), 'm:rg:v:' + r.id)]);
+  kb.push([b('⬅️ Kembali', 'm:rg:t:' + tid)]);
+  return { text: `<b>${st[1]}</b>\n${rows.length ? 'Pilih tim (maks 12 pertama):' : 'Kosong.'}`, markup: { inline_keyboard: kb } };
+}
+
+async function rgPending(env) {
+  const rows = (await sb(env, 'GET', 'registrations?status=eq.menunggu_verifikasi&select=id,team_name,tournament_id&order=created_at.asc&limit=10')) || [];
+  let names = {};
+  if (rows.length) {
+    const ids = [...new Set(rows.map((r) => r.tournament_id))];
+    const ts = (await sb(env, 'GET', `tournaments?id=in.(${ids.join(',')})&select=id,name`)) || [];
+    names = Object.fromEntries(ts.map((t) => [t.id, t.name]));
+  }
+  const kb = rows.map((r) => [b(`${String(r.team_name || '?').slice(0, 20)} · ${String(names[r.tournament_id] || '?').slice(0, 18)}`, 'm:rg:v:' + r.id)]);
+  kb.push([b('🔄 Segarkan', 'm:vp')], ...BACK);
+  return { text: '<b>💳 Verifikasi Pembayaran</b>\n' + (rows.length ? 'Menunggu verifikasi (10 terlama):' : 'Tidak ada yang menunggu verifikasi. 🎉'), markup: { inline_keyboard: kb } };
+}
+
+async function rgDetail(env, rid, notice) {
+  const r = await getReg(env, rid);
+  const [t, prof, pays] = await Promise.all([
+    getT(env, r.tournament_id),
+    sb(env, 'GET', `profiles?id=eq.${r.owner_id}&select=username,whatsapp`).catch(() => []),
+    sb(env, 'GET', `payments?registration_id=eq.${rid}&select=method,amount,status,proof_path,proof_deleted_at,reject_reason&order=created_at.desc&limit=1`).catch(() => []),
+  ]);
+  const p = pays?.[0], pf = prof?.[0];
+  const hasProof = !!(p?.proof_path && !p?.proof_deleted_at);
+  const lines = [
+    `<b>📝 ${esc(r.team_name)}</b>`,
+    `Turnamen: ${esc(t.name)}`,
+    `Status: ${rgLabel(r.status)}`,
+    `Captain: ${esc(pf?.username || '-')} · WA: ${esc(pf?.whatsapp || '-')}`,
+    `Biaya: ${rp(r.fee_amount)} · Metode: ${esc(r.payment_method || '-')}`,
+  ];
+  if (p) lines.push(`Pembayaran: ${esc(p.status)}${hasProof ? ' · bukti ada' : p.proof_deleted_at ? ' · bukti sudah dihapus' : ' · belum ada bukti'}`);
+  if (p?.reject_reason) lines.push(`Alasan tolak bayar: ${esc(p.reject_reason)}`);
+  if (r.incomplete_reason) lines.push(`Alasan data belum lengkap: ${esc(r.incomplete_reason)}`);
+  if (r.reject_reason) lines.push(`Alasan ditolak: ${esc(r.reject_reason)}`);
+  if (r.withdraw_requested_at) lines.push(`⚠️ Mengajukan mundur ${wib(r.withdraw_requested_at)}${r.withdraw_reason ? ': ' + esc(r.withdraw_reason) : ''} (diproses di menu berikutnya)`);
+
+  const kb = [];
+  if (r.status === 'menunggu_verifikasi') kb.push([b('✅ Verifikasi', 'm:rg:ok:' + rid), b('❌ Tolak Pembayaran', 'm:rg:no:' + rid)]);
+  if (hasProof) kb.push([b('📷 Lihat Bukti', 'm:rg:pf:' + rid)]);
+  const open = ['menunggu_pembayaran', 'menunggu_verifikasi', 'data_belum_lengkap'].includes(r.status);
+  if (open) {
+    const row = [];
+    if (r.status !== 'data_belum_lengkap') row.push(b('⚠️ Data Belum Lengkap', 'm:rg:inc:' + rid));
+    row.push(b('🚫 Tolak Pendaftaran', 'm:rg:rj:' + rid));
+    kb.push(row);
+  }
+  kb.push([b('🔄 Segarkan', 'm:rg:v:' + rid), b('⬅️ Kembali', 'm:rg:t:' + r.tournament_id)]);
+  return { text: (notice ? notice + '\n\n' : '') + lines.join('\n'), markup: { inline_keyboard: kb } };
+}
+
+async function rgVerifyConfirm(env, rid) {
+  const r = await getReg(env, rid);
+  if (r.status !== 'menunggu_verifikasi') throw new Error('Status bukan Menunggu Verifikasi (sekarang: ' + r.status + ')');
+  return {
+    text: `<b>Verifikasi pembayaran?</b>\nTim: ${esc(r.team_name)}\nBiaya: ${rp(r.fee_amount)}\nSetelah ini tim jadi ✅ Resmi Terdaftar dan slot bertambah. Pastikan bukti sudah dicek.`,
+    markup: { inline_keyboard: [[b('✅ Ya, verifikasi', 'm:rg:oy:' + rid), b('✖️ Batal', 'm:rg:v:' + rid)]] },
+  };
+}
+
+async function rgVerify(env, rid) {
+  const r = await getReg(env, rid);
+  if (r.status !== 'menunggu_verifikasi') throw new Error('Status bukan Menunggu Verifikasi (sekarang: ' + r.status + ')');
+  await rpc(env, 'admin_verify_payment', { p_registration: rid });
+  const t = await getT(env, r.tournament_id);
+  const ok = await notify(env, r.owner_id, 'pembayaran', 'Pembayaran terverifikasi',
+    `Tim ${r.team_name} resmi terdaftar di ${t.name}.`, r.tournament_id);
+  return rgDetail(env, rid, '✅ Pembayaran terverifikasi.\n' + (ok ? '🔔 Notifikasi terkirim ke Captain.' : '⚠️ Notifikasi ke Captain GAGAL dikirim.'));
+}
+
+const RR = {
+  no: { title: 'Tolak Pembayaran', from: ['menunggu_verifikasi'] },
+  inc: { title: 'Tandai Data Belum Lengkap', from: ['menunggu_pembayaran', 'menunggu_verifikasi'] },
+  rj: { title: 'Tolak Pendaftaran', from: ['menunggu_pembayaran', 'menunggu_verifikasi', 'data_belum_lengkap'] },
+};
+
+async function rrPrompt(env, chat, mid, rid, act) {
+  const r = await getReg(env, rid);
+  if (!RR[act].from.includes(r.status)) throw new Error('Aksi ini tidak berlaku untuk status ' + r.status);
+  await setState(env, chat, 'rr', { rid, act });
+  return show(env, chat, mid,
+    `<b>${RR[act].title}</b>\nTim: ${esc(r.team_name)}\nKetik <b>alasan</b> (akan dikirim ke Captain):`,
+    { inline_keyboard: [[b('✖️ Batal', 'm:rg:v:' + rid)]] });
+}
+
+async function rrText(env, chat, st, text) {
+  const { rid, act } = st.data || {};
+  if (!RR[act]) throw new Error('Sesi tidak valid');
+  if (text.length < 3 || text.length > 300) {
+    return show(env, chat, null, '❌ Alasan 3 sampai 300 karakter. Ketik lagi atau /batal.', { inline_keyboard: [[b('✖️ Batal', 'm:rg:v:' + rid)]] });
+  }
+  const r = await getReg(env, rid);
+  if (!RR[act].from.includes(r.status)) throw new Error('Aksi ini tidak berlaku untuk status ' + r.status);
+  const t = await getT(env, r.tournament_id);
+  await clearState(env, chat);
+  let kind, title, body;
+  if (act === 'no') {
+    await rpc(env, 'admin_reject_payment', { p_registration: rid, p_reason: text });
+    kind = 'pembayaran'; title = 'Pembayaran ditolak';
+    body = `Pembayaran tim ${r.team_name} di ${t.name} ditolak. Alasan: ${text}`;
+  } else if (act === 'inc') {
+    await rpc(env, 'admin_mark_incomplete', { p_registration: rid, p_reason: text });
+    kind = 'pendaftaran'; title = 'Data pendaftaran belum lengkap';
+    body = `Tim ${r.team_name} di ${t.name}: ${text}. Hubungi admin lewat WhatsApp untuk melengkapi.`;
+  } else {
+    await rpc(env, 'admin_reject_registration', { p_registration: rid, p_reason: text });
+    kind = 'pendaftaran'; title = 'Pendaftaran ditolak';
+    body = `Pendaftaran tim ${r.team_name} di ${t.name} ditolak. Alasan: ${text}`;
+  }
+  const ok = await notify(env, r.owner_id, kind, title, body, r.tournament_id);
+  return rgDetail(env, rid, `✅ ${RR[act].title} berhasil.\n` + (ok ? '🔔 Notifikasi terkirim ke Captain.' : '⚠️ Notifikasi ke Captain GAGAL dikirim.'));
+}
+
+async function rgProof(env, chat, rid) {
+  if (!UUID.test(rid)) throw new Error('ID pendaftaran tidak valid');
+  const pays = await sb(env, 'GET', `payments?registration_id=eq.${rid}&select=proof_path,proof_deleted_at,amount&order=created_at.desc&limit=1`);
+  const p = pays?.[0];
+  if (!p?.proof_path || p.proof_deleted_at) {
+    return tg(env, 'sendMessage', { chat_id: chat, text: 'Belum ada bukti bayar (atau sudah dihapus otomatis).' });
+  }
+  const path = p.proof_path.split('/').map(encodeURIComponent).join('/');
+  const r = await fetch(`${env.SUPABASE_URL}/storage/v1/object/sign/payment-proofs/${path}`, {
+    method: 'POST', headers: sbHeaders(env), body: JSON.stringify({ expiresIn: 300 }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.signedURL) throw new Error('Gagal membuat link bukti: ' + (j.message || j.error || r.status));
+  const link = j.signedURL.startsWith('http') ? j.signedURL
+    : env.SUPABASE_URL + (j.signedURL.startsWith('/storage/v1') ? '' : '/storage/v1') + j.signedURL;
+  const sent = await tg(env, 'sendPhoto', { chat_id: chat, photo: link, caption: `Bukti bayar · ${rp(p.amount)}` });
+  if (!sent.ok) {
+    await tg(env, 'sendMessage', { chat_id: chat, text: 'Gagal kirim foto (' + (sent.description || '?') + '). Link bukti (berlaku 5 menit):\n' + link });
+  }
 }
 
 // =====================================================================
@@ -717,6 +936,20 @@ async function onCallback(env, cq) {
     if (a === 'cm') { const v = await tResume(env, id, parts[4]); return show(env, chat, mid, v.text, v.markup); }
   }
 
+  // ----- Pendaftaran & Verifikasi Pembayaran -----
+  if (d === 'm:rg') { const v = await rgTournaments(env); return show(env, chat, mid, v.text, v.markup); }
+  if (d === 'm:vp') { const v = await rgPending(env); return show(env, chat, mid, v.text, v.markup); }
+  if (parts[1] === 'rg') {
+    const a = parts[2], id = parts[3];
+    if (a === 't') { const v = await rgSummary(env, id); return show(env, chat, mid, v.text, v.markup); }
+    if (a === 'l') { const v = await rgList(env, id, Number(parts[4])); return show(env, chat, mid, v.text, v.markup); }
+    if (a === 'v') { const v = await rgDetail(env, id); return show(env, chat, mid, v.text, v.markup); }
+    if (a === 'ok') { const v = await rgVerifyConfirm(env, id); return show(env, chat, mid, v.text, v.markup); }
+    if (a === 'oy') { const v = await rgVerify(env, id); return show(env, chat, mid, v.text, v.markup); }
+    if (a === 'no' || a === 'inc' || a === 'rj') return rrPrompt(env, chat, mid, id, a);
+    if (a === 'pf') return rgProof(env, chat, id);
+  }
+
   if (d.startsWith('m:soon:')) {
     return show(env, chat, mid, `<b>${esc(d.slice(7))}</b>\nMenu ini belum aktif. Dibangun di tahap Bot berikutnya.`, { inline_keyboard: BACK });
   }
@@ -736,6 +969,7 @@ async function onMessage(env, msg) {
     if (st.state.startsWith('w:')) return wizText(env, chat, st, text);
     if (st.state === 'tp') return tpText(env, chat, st, text);
     if (st.state === 'tj') return tjText(env, chat, st, text);
+    if (st.state === 'rr') return rrText(env, chat, st, text);
   }
   return show(env, chat, null, 'Ketik /menu untuk membuka panel.', undefined);
 }
