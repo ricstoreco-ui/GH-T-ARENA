@@ -261,4 +261,4 @@ export async function dropOld(env, bucket, path) {
 export async function sendImageCard(env, chat, url, caption, markup) {
   const r = await tg(env, 'sendPhoto', { chat_id: chat, photo: url, caption: String(caption).slice(0, 1000), parse_mode: 'HTML', reply_markup: markup });
   if (!r.ok) await show(env, chat, null, caption + '\n<i>(gambar gagal ditampilkan)</i>', markup);
-}
+                 }
