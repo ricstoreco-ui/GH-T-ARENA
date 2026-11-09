@@ -150,7 +150,14 @@ async function show(env, chat, mid, text, markup) {
     const r = await tg(env, 'editMessageText', { ...body, message_id: mid });
     if (r.ok || /not modified/i.test(r.description || '')) return;
   }
-  await tg(env, 'sendMessage', body);
+  const r1 = await tg(env, 'sendMessage', body);
+  if (r1.ok) return;
+  // Gagal (mis. format HTML ditolak): kirim ulang sebagai teks polos, lalu lapor
+  const plain = String(text).replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  const r2 = await tg(env, 'sendMessage', { chat_id: chat, text: plain, reply_markup: markup, disable_web_page_preview: true });
+  if (!r2.ok) {
+    await tg(env, 'sendMessage', { chat_id: chat, text: 'Aksi tersimpan, tapi balasan gagal terkirim: ' + String(r2.description || r1.description || '?').slice(0, 200) });
+  }
 }
 
 async function dashboard(env) {
