@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GH-T ARENA</title>
-    <!-- PAKAI CDN UNPKG (Sesuai hasil tes) -->
+    <!-- PAKAI CDN UNPKG -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: sans-serif; background-color: #121212; color: #fff; margin: 0; padding: 20px; }
@@ -43,7 +43,7 @@
             <input type="email" id="auth-email" placeholder="Email">
             <input type="password" id="auth-password" placeholder="Password">
             <button onclick="handleLogin()">Login</button>
-            <button onclick="handleRegister()" style="background:#555; color:#fff;">Register</button>
+            <button id="btn-reg" onclick="handleRegister()" style="background:#555; color:#fff;">Register</button>
         </div>
 
         <!-- DASHBOARD CAPTAIN -->
@@ -66,7 +66,6 @@
         let supabase = null;
         let currentUser = null;
 
-        // Inisialisasi Supabase (Cek error jika library gagal load)
         try {
             if (!window.supabase) throw new Error("Library gagal dimuat.");
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -74,12 +73,10 @@
             showMsg("GAGAL INISIALISASI: " + err.message, "error");
         }
 
-        // Fungsi Notifikasi
         function showMsg(text, type) {
             const box = document.getElementById('msg-box');
             box.innerText = text;
             box.className = type === 'error' ? 'msg-error' : 'msg-success';
-            // Auto hilang setelah 8 detik
             setTimeout(() => { box.className = ''; box.style.display = 'none'; }, 8000);
         }
 
@@ -92,13 +89,22 @@
 
         // ================= LOGIKA REGISTER =================
         async function handleRegister() {
-            if (!supabase) return showMsg("Database tidak siap.", "error");
+            const btn = document.getElementById('btn-reg');
+            btn.innerText = "LOADING..."; // Ubah tombol jadi LOADING
+
+            if (!supabase) {
+                btn.innerText = "Register";
+                return showMsg("Database tidak siap.", "error");
+            }
 
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
             const username = document.getElementById('auth-username').value;
 
-            if(!username || !email || !password) return showMsg("Isi Username, Email, dan Password!", "error");
+            if(!username || !email || !password) {
+                btn.innerText = "Register";
+                return showMsg("Isi Username, Email, dan Password!", "error");
+            }
 
             showMsg("Sedang memproses pendaftaran...", "success");
 
@@ -113,6 +119,8 @@
                 showMsg("Registrasi Berhasil! Silakan klik Login.", "success");
             } catch (err) {
                 showMsg("ERROR REGISTER: " + err.message, "error"); 
+            } finally {
+                btn.innerText = "Register"; // Balikin nama tombol
             }
         }
 
