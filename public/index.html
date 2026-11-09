@@ -3,24 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TES JAVASCRIPT</title>
+    <title>TES KONEKSI SUPABASE</title>
+    <!-- PAKAI CDN UNPKG (Alternatif jsdelivr) -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: sans-serif; background-color: #121212; color: #fff; text-align: center; padding: 50px 20px; }
-        button { padding: 15px 30px; font-size: 18px; background-color: gold; color: black; border: none; border-radius: 5px; margin-top: 20px; cursor: pointer; }
-        #hasil { margin-top: 30px; font-size: 20px; font-weight: bold; color: #4caf50; }
+        button { padding: 15px 30px; font-size: 18px; background-color: gold; color: black; border: none; border-radius: 5px; margin-top: 20px; cursor: pointer; font-weight: bold;}
+        #hasil { margin-top: 30px; font-size: 16px; font-weight: bold; padding: 15px; border-radius: 5px; display: none; word-wrap: break-word;}
+        .sukses { background-color: #2e7d32; color: white; display: block !important; }
+        .gagal { background-color: #c62828; color: white; display: block !important; }
     </style>
 </head>
 <body>
-    <h1>TES BROWSER LU</h1>
-    <p>Klik tombol di bawah ini. Kalau nggak ada perubahan, berarti JavaScript di HP lu mati/diblokir.</p>
+    <h2>TES KONEKSI DATABASE</h2>
+    <p>Klik tombol di bawah ini untuk mengetes koneksi ke Supabase.</p>
     
-    <button onclick="tesKlik()">KLIK SAYA!</button>
+    <button onclick="tesKoneksi()">TES KONEKSI SEKARANG</button>
     
     <div id="hasil"></div>
 
     <script>
-        function tesKlik() {
-            document.getElementById('hasil').innerText = "MANTAP! JAVASCRIPT JALAN!";
+        const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
+
+        function tampilPesan(teks, tipe) {
+            const div = document.getElementById('hasil');
+            div.innerText = teks;
+            div.className = tipe; // 'sukses' atau 'gagal'
+        }
+
+        async function tesKoneksi() {
+            tampilPesan("Sedang mencoba menghubungi server...", "sukses");
+
+            try {
+                // Cek apakah library Supabase berhasil didownload
+                if (!window.supabase) {
+                    throw new Error("Library Supabase GAGAL DIDOWNLOAD. Internet HP lu ngeblokir unpkg.com.");
+                }
+
+                // Buat koneksi
+                const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+                // Coba ambil 1 data dari tabel 'tournaments' (tes baca database)
+                const { data, error } = await sb.from('tournaments').select('id').limit(1);
+
+                if (error) throw error;
+
+                // Kalau sampai sini, berarti sukses!
+                tampilPesan("✅ SUKSES! Koneksi Database Berjalan Lancar.", "sukses");
+
+            } catch (err) {
+                // Kalau error, tampilkan pesan aslinya
+                tampilPesan("❌ GAGAL: " + err.message, "gagal");
+            }
         }
     </script>
 </body>
