@@ -3,115 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GH-T ARENA - Mode Debug</title>
-    <!-- Library Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>TES JAVASCRIPT</title>
     <style>
-        body { font-family: sans-serif; background-color: #121212; color: #fff; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: auto; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; }
-        input, button { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; }
-        button { background: #d4af37; color: #000; font-weight: bold; cursor: pointer; border: none; }
-        
-        /* Kotak Notifikasi */
-        #msg-box { padding: 15px; margin-bottom: 20px; border-radius: 5px; display: none; font-weight: bold; text-align: center; font-size: 14px; word-wrap: break-word; }
-        .msg-error { background-color: #c62828; color: white; display: block !important; }
-        .msg-success { background-color: #2e7d32; color: white; display: block !important; }
+        body { font-family: sans-serif; background-color: #121212; color: #fff; text-align: center; padding: 50px 20px; }
+        button { padding: 15px 30px; font-size: 18px; background-color: gold; color: black; border: none; border-radius: 5px; margin-top: 20px; cursor: pointer; }
+        #hasil { margin-top: 30px; font-size: 20px; font-weight: bold; color: #4caf50; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 style="text-align: center;">GH-T ARENA</h1>
-        
-        <!-- KOTAK PESAN ERROR/SUKSES -->
-        <div id="msg-box"></div>
-
-        <div class="card">
-            <h2>Login / Register</h2>
-            <input type="text" id="auth-username" placeholder="Username">
-            <input type="email" id="auth-email" placeholder="Email">
-            <input type="password" id="auth-password" placeholder="Password">
-            <button onclick="handleLogin()">Login</button>
-            <button onclick="handleRegister()" style="background:#555; color:#fff;">Register</button>
-        </div>
-    </div>
+    <h1>TES BROWSER LU</h1>
+    <p>Klik tombol di bawah ini. Kalau nggak ada perubahan, berarti JavaScript di HP lu mati/diblokir.</p>
+    
+    <button onclick="tesKlik()">KLIK SAYA!</button>
+    
+    <div id="hasil"></div>
 
     <script>
-        // FUNGSI PENANGKAP ERROR GLOBAL (Biar kalau script mati, kita tahu)
-        window.onerror = function(message, source, lineno, colno, error) {
-            showMsg("CRASH SCRIPT: " + message + " (Baris: " + lineno + ")", "error");
-            return false;
-        };
-
-        // Fungsi buat nampilin pesan di layar
-        function showMsg(text, type) {
-            const box = document.getElementById('msg-box');
-            box.innerText = text;
-            box.className = type === 'error' ? 'msg-error' : 'msg-success';
-        }
-
-        // KONFIGURASI SUPABASE
-        const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
-        
-        let supabase = null;
-
-        try {
-            // Cek apakah library berhasil didownload dari internet
-            if (!window.supabase) {
-                throw new Error("Library Supabase gagal dimuat dari internet (diblokir browser/AdBlock).");
-            }
-            // Coba inisialisasi
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } catch (err) {
-            showMsg("GAGAL INISIALISASI: " + err.message, "error");
-        }
-
-        // FUNGSI REGISTER
-        async function handleRegister() {
-            showMsg("Sedang memproses register...", "success");
-            
-            if (!supabase) return showMsg("Sistem database mati (gagal inisialisasi).", "error");
-
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-            const username = document.getElementById('auth-username').value;
-
-            if(!username || !email || !password) return showMsg("Isi semua data: Username, Email, Password!", "error");
-
-            try {
-                const { data, error } = await supabase.auth.signUp({
-                    email: email,
-                    password: password,
-                    options: { data: { username: username } }
-                });
-
-                if (error) throw error;
-                showMsg("Registrasi Berhasil! Silakan Login.", "success");
-            } catch (err) {
-                // Ini bakal nampilin error asli dari Supabase
-                showMsg("ERROR REGISTER: " + err.message, "error"); 
-            }
-        }
-
-        // FUNGSI LOGIN
-        async function handleLogin() {
-            showMsg("Sedang memproses login...", "success");
-
-            if (!supabase) return showMsg("Sistem database mati (gagal inisialisasi).", "error");
-            
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-
-            if(!email || !password) return showMsg("Isi Email dan Password!", "error");
-
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                showMsg("Login Berhasil!", "success");
-            } catch (err) {
-                showMsg("ERROR LOGIN: " + err.message, "error"); 
-            }
+        function tesKlik() {
+            document.getElementById('hasil').innerText = "MANTAP! JAVASCRIPT JALAN!";
         }
     </script>
 </body>
