@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Tes Murni JS</title>
+    <style>
+        body { background: #121212; color: white; padding: 20px; font-family: sans-serif; }
+        button { padding: 10px 20px; font-size: 16px; background: gold; color: black; border: none; cursor: pointer; margin-top: 20px; }
+        #log { margin-top: 20px; background: black; color: #0f0; padding: 15px; font-family: monospace; height: 150px; }
+    </style>
+</head>
+<body>
+    <h2>Tes JavaScript Murni (Tanpa Internet)</h2>
+    <button onclick="tesKlik()">KLIK SAYA</button>
+    <div id="log">Menunggu perintah...</div>
+
+    <script>
+        // Ini langsung jalan begitu halaman dibuka
+        document.getElementById('log').innerHTML = "HALAMAN BERHASIL DIBUKA.<br>Klik tombol di atas.";
+
+        function tesKlik() {
+            document.getElementById('log').innerHTML += "<br>✅ TOMBOL BERHASIL DIKLIK! JavaScript jalan.";
+        }
+    </script>
+</body>
+</html>
