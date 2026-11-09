@@ -74,7 +74,7 @@
         const sb = supabase.createClient('https://honxcvnpdruthlygwdyo.supabase.co', 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh');
         let currentUser = null;
         let activeTeamId = null;
-        let freefireId = null; // Bakal nyimpen ID asli Free Fire
+        let freefireId = null;
 
         function showMsg(text, isErr) {
             const m = document.getElementById('msg');
@@ -83,19 +83,13 @@
             setTimeout(() => { m.className = ''; m.style.display = 'none'; }, 5000);
         }
 
-        // ================= AMBIL ID FREEFIRE ASLI =================
         async function loadGameId() {
             try {
                 const { data, error } = await sb.from('games').select('id').ilike('name', '%free fire%').limit(1);
                 if (error) throw error;
-                if (data && data.length > 0) {
-                    freefireId = data[0].id;
-                } else {
-                    showMsg("Peringatan: Game 'Free Fire' tidak ditemukan di database.", true);
-                }
-            } catch (err) {
-                showMsg("Gagal memuat data game: " + err.message, true);
-            }
+                if (data && data.length > 0) freefireId = data[0].id;
+                else showMsg("Peringatan: Game 'Free Fire' tidak ditemukan.", true);
+            } catch (err) { showMsg("Gagal memuat game: " + err.message, true); }
         }
 
         // ================= AUTH =================
@@ -152,7 +146,7 @@
         // ================= TIM =================
         async function createTeam() {
             if (!currentUser) return;
-            if (!freefireId) return showMsg("Gagal: ID Game Free Fire belum termuat. Coba refresh.", true);
+            if (!freefireId) return showMsg("Gagal: ID Game Free Fire belum termuat. Refresh halaman.", true);
 
             const btn = document.getElementById('btn-save-team'); btn.disabled = true; btn.innerText = "Menyimpan...";
             const name = document.getElementById('team-name').value;
@@ -161,7 +155,6 @@
             if(!name) { showMsg("Nama tim wajib diisi!", true); btn.disabled=false; btn.innerText="Simpan Tim"; return; }
 
             try {
-                // Ini udah pake ID Free Fire ASLI dari tabel games
                 const { error } = await sb.from('teams').insert([{ 
                     owner_id: currentUser.id, 
                     name: name, 
@@ -191,7 +184,7 @@
             } catch (err) { document.getElementById('team-list').innerHTML = `<li style="color:red;">Gagal memuat tim: ${err.message}</li>`; }
         }
 
-        // ================= ROSTER =================
+        // ================= ROSTER (DIPERBAIKI) =================
         function closeRoster() {
             document.getElementById('roster-section').classList.add('hidden');
             activeTeamId = null;
@@ -215,10 +208,13 @@
             if(!nick || !uid) { showMsg("Nickname dan UID wajib diisi!", true); btn.disabled=false; btn.innerText="Tambah Pemain"; return; }
 
             try {
+                // PAKAI NAMA KOLOM YANG BENER: game_uid, role, sort_order
                 const { error } = await sb.from('team_players').insert([{ 
                     team_id: activeTeamId, 
                     nickname: nick, 
-                    game_id: uid 
+                    game_uid: uid,
+                    role: 'player',
+                    sort_order: 1
                 }]);
                 if (error) throw error;
                 showMsg("Pemain ditambahkan!", false);
@@ -232,18 +228,17 @@
         async function loadPlayers() {
             if (!activeTeamId) return;
             try {
-                const { data: players, error } = await sb.from('team_players').select('*').eq('team_id', activeTeamId);
+                const { data: players, error } = await sb.from('team_players').select('*').eq('team_id', activeTeamId).order('sort_order', { ascending: true });
                 if (error) throw error;
                 const list = document.getElementById('player-list');
                 list.innerHTML = '';
                 if (!players || players.length === 0) { list.innerHTML = '<li>Belum ada pemain.</li>'; return; }
                 players.forEach((p, i) => {
-                    list.innerHTML += `<li><span>${i+1}. <b>${p.nickname}</b> (UID: ${p.game_id})</span></li>`;
+                    list.innerHTML += `<li><span>${i+1}. <b>${p.nickname}</b> (UID: ${p.game_uid})</span></li>`;
                 });
             } catch (err) { document.getElementById('player-list').innerHTML = `<li style="color:red;">Gagal memuat: ${err.message}</li>`; }
         }
 
-        // JALANKAN SAAT HALAMAN DIBUKA
         window.onload = async () => { 
             await loadGameId(); 
             checkUser(); 
