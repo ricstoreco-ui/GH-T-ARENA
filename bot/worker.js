@@ -1,4 +1,5 @@
-// GH-T ARENA — Telegram Bot Worker v0.3 (Cloudflare Workers, module syntax)
+// GH-T ARENA — Telegram Bot Worker v0.4 (Cloudflare Workers, module syntax)
+// Baru di v0.4: menu Pengumuman (buat, lihat, hapus; notifikasi ke Captain terdaftar).
 // Baru di v0.3: slot terisi, notifikasi Captain (tabel notifications), menu Pendaftaran,
 // menu Verifikasi Pembayaran (verifikasi, tolak bayar, data belum lengkap, tolak, lihat bukti).
 // Variabel yang harus diisi di Cloudflare (JANGAN tulis nilainya di file ini):
@@ -137,7 +138,7 @@ const MAIN = {
     [b('📊 Dashboard', 'm:dash'), b('🏆 Turnamen', 'm:t')],
     [b('📝 Pendaftaran', 'm:rg'), b('💳 Pembayaran', 'm:vp')],
     [b('🎯 Battle Royale', 'm:soon:Battle Royale'), b('⚔️ Clash Squad', 'm:soon:Clash Squad')],
-    [b('🧮 Tabel Poin', 'm:pt'), b('📣 Pengumuman', 'm:soon:Pengumuman')],
+    [b('🧮 Tabel Poin', 'm:pt'), b('📣 Pengumuman', 'm:an')],
     [b('💸 Pencairan', 'm:soon:Pencairan Hadiah'), b('⚙️ Pengaturan', 'm:set')],
     [b('🩺 Monitoring', 'm:mon')],
   ],
@@ -868,6 +869,101 @@ async function rgProof(env, chat, rid) {
 }
 
 // =====================================================================
+// PENGUMUMAN
+// =====================================================================
+const CANCEL_AN = [b('✖️ Batal', 'm:an:x')];
+
+async function anList(env) {
+  const rows = (await sb(env, 'GET', 'announcements?select=id,title,tournament_id&order=created_at.desc&limit=8')) || [];
+  const kb = rows.map((a) => [b(`${a.tournament_id ? '🏆' : '🌐'} ${String(a.title).slice(0, 32)}`, 'm:an:v:' + a.id)]);
+  return {
+    text: '<b>📣 Pengumuman</b>\n' + (rows.length ? '8 terbaru:' : 'Belum ada pengumuman.'),
+    markup: { inline_keyboard: [[b('➕ Buat Pengumuman', 'm:an:new')], ...kb, ...BACK] },
+  };
+}
+
+async function anView(env, id, notice) {
+  if (!UUID.test(id)) throw new Error('ID pengumuman tidak valid');
+  const rows = await sb(env, 'GET', `announcements?id=eq.${id}&select=*`);
+  const a = rows?.[0];
+  if (!a) throw new Error('Pengumuman tidak ditemukan');
+  let target = '🌐 Umum (website)';
+  if (a.tournament_id) {
+    const t = await getT(env, a.tournament_id).catch(() => null);
+    target = '🏆 ' + esc(t?.name || '(turnamen dihapus)');
+  }
+  return {
+    text: (notice ? notice + '\n\n' : '') + `<b>📣 ${esc(a.title)}</b>\nUntuk: ${target}\nDibuat: ${wib(a.created_at)}\n\n${esc(a.body)}`,
+    markup: { inline_keyboard: [[b('🗑 Hapus', 'm:an:d:' + id)], [b('⬅️ Daftar', 'm:an')]] },
+  };
+}
+
+async function anTargets(env) {
+  const rows = (await sb(env, 'GET', 'tournaments?select=id,name,format,status&order=created_at.desc&limit=8')) || [];
+  const kb = rows.map((t) => [b(`${(ST[t.status] || ['❔'])[0]} ${t.format} · ${String(t.name).slice(0, 28)}`, 'm:an:t:' + t.id)]);
+  return {
+    text: '<b>➕ Buat Pengumuman</b>\nUntuk siapa?\n\n🌐 Umum: tampil di website saja.\n🏆 Turnamen: tampil di website + notifikasi ke Captain yang timnya Resmi Terdaftar di turnamen itu.',
+    markup: { inline_keyboard: [[b('🌐 Umum (website saja)', 'm:an:g')], ...kb, CANCEL_AN] },
+  };
+}
+
+async function anTitleText(env, chat, st, text) {
+  if (text.length < 3 || text.length > 100) {
+    return show(env, chat, null, '❌ Judul 3 sampai 100 karakter. Ketik lagi atau /batal.', { inline_keyboard: [CANCEL_AN] });
+  }
+  await setState(env, chat, 'an_body', { ...st.data, title: text });
+  return show(env, chat, null, 'Ketik <b>isi pengumuman</b> (maks 1000 karakter):', { inline_keyboard: [CANCEL_AN] });
+}
+
+async function anBodyText(env, chat, st, text) {
+  if (text.length < 3 || text.length > 1000) {
+    return show(env, chat, null, '❌ Isi 3 sampai 1000 karakter. Ketik lagi atau /batal.', { inline_keyboard: [CANCEL_AN] });
+  }
+  const d = { ...st.data, body: text };
+  await setState(env, chat, 'an_conf', d);
+  let who = '🌐 Umum (website saja, tanpa notifikasi)';
+  if (d.tid) {
+    const n = await count(env, `registrations?tournament_id=eq.${d.tid}&status=eq.resmi_terdaftar&select=id`);
+    who = `🏆 ${esc(d.tname)}\nNotifikasi ke Captain dari ${n} tim Resmi Terdaftar`;
+  }
+  return show(env, chat, null,
+    `<b>Konfirmasi pengumuman</b>\nUntuk: ${who}\n\n<b>${esc(d.title)}</b>\n${esc(d.body)}\n\nKirim?`,
+    { inline_keyboard: [[b('✅ Kirim', 'm:an:ok'), b('✖️ Batal', 'm:an:x')]] });
+}
+
+async function anSend(env, chat, mid) {
+  const st = await getState(env, chat);
+  if (!st || st.state !== 'an_conf') {
+    return show(env, chat, mid, 'Sesi kedaluwarsa. Buat pengumuman lagi.', { inline_keyboard: [[b('➕ Buat Pengumuman', 'm:an:new')], ...BACK] });
+  }
+  const d = st.data;
+  await clearState(env, chat); // cegah kirim ganda kalau tombol ditekan dua kali
+  const rows = await sb(env, 'POST', 'announcements',
+    { tournament_id: d.tid || null, title: d.title, body: d.body }, 'return=representation');
+  const id = rows?.[0]?.id;
+  let note = '✅ Pengumuman tersimpan dan tampil di website.';
+  if (d.tid) {
+    const n = await notifyRegistrants(env, d.tid, 'pengumuman', d.title, d.body);
+    note += '\n' + notifNote(n);
+  } else {
+    note += '\nℹ️ Pengumuman umum tidak dikirim sebagai notifikasi.';
+  }
+  await audit(env, 'buat_pengumuman', 'announcements', d.title, id, null, { tournament_id: d.tid || null });
+  const v = await anView(env, id, note);
+  return show(env, chat, mid, v.text, v.markup);
+}
+
+async function anDelete(env, chat, mid, id) {
+  if (!UUID.test(id)) throw new Error('ID pengumuman tidak valid');
+  const rows = await sb(env, 'GET', `announcements?id=eq.${id}&select=title,tournament_id`);
+  if (!rows?.[0]) throw new Error('Pengumuman tidak ditemukan');
+  await sb(env, 'DELETE', `announcements?id=eq.${id}`);
+  await audit(env, 'hapus_pengumuman', 'announcements', rows[0].title, id, rows[0], null);
+  const v = await anList(env);
+  return show(env, chat, mid, '🗑 Pengumuman dihapus dari website (notifikasi yang sudah terkirim tetap ada di Captain).\n\n' + v.text, v.markup);
+}
+
+// =====================================================================
 // ROUTER
 // =====================================================================
 async function onCallback(env, cq) {
@@ -875,7 +971,7 @@ async function onCallback(env, cq) {
   const chat = cq.message.chat.id, mid = cq.message.message_id, d = cq.data || '';
   const parts = d.split(':');
   // Bersihkan state input teks kecuali sedang di wizard atau simpan tabel poin
-  if (!(d.startsWith('m:w:') || d === 'm:pt:save')) await clearState(env, chat);
+  if (!(d.startsWith('m:w:') || d === 'm:pt:save' || d === 'm:an:ok')) await clearState(env, chat);
 
   if (d === 'm:main') return show(env, chat, mid, MAIN_TEXT, MAIN);
   if (d === 'm:dash') return show(env, chat, mid, await dashboard(env), { inline_keyboard: [[b('🔄 Segarkan', 'm:dash')], ...BACK] });
@@ -947,6 +1043,29 @@ async function onCallback(env, cq) {
     if (a === 'cm') { const v = await tResume(env, id, parts[4]); return show(env, chat, mid, v.text, v.markup); }
   }
 
+  // ----- Pengumuman -----
+  if (d === 'm:an' || d === 'm:an:x') { const v = await anList(env); return show(env, chat, mid, v.text, v.markup); }
+  if (parts[1] === 'an') {
+    const a = parts[2], id = parts[3];
+    if (a === 'v') { const v = await anView(env, id); return show(env, chat, mid, v.text, v.markup); }
+    if (a === 'new') { const v = await anTargets(env); return show(env, chat, mid, v.text, v.markup); }
+    if (a === 'g') {
+      await setState(env, chat, 'an_title', { tid: null });
+      return show(env, chat, mid, '<b>➕ Pengumuman Umum</b>\nKetik <b>judul</b> (maks 100 karakter):', { inline_keyboard: [CANCEL_AN] });
+    }
+    if (a === 't') {
+      const t = await getT(env, id);
+      await setState(env, chat, 'an_title', { tid: id, tname: t.name });
+      return show(env, chat, mid, `<b>➕ Pengumuman: ${esc(t.name)}</b>\nKetik <b>judul</b> (maks 100 karakter):`, { inline_keyboard: [CANCEL_AN] });
+    }
+    if (a === 'ok') return anSend(env, chat, mid);
+    if (a === 'd') {
+      return show(env, chat, mid, '<b>Hapus pengumuman ini dari website?</b>\nNotifikasi yang sudah terkirim ke Captain tidak ikut terhapus.',
+        { inline_keyboard: [[b('🗑 Ya, hapus', 'm:an:dy:' + id), b('✖️ Batal', 'm:an:v:' + id)]] });
+    }
+    if (a === 'dy') return anDelete(env, chat, mid, id);
+  }
+
   // ----- Pendaftaran & Verifikasi Pembayaran -----
   if (d === 'm:rg') { const v = await rgTournaments(env); return show(env, chat, mid, v.text, v.markup); }
   if (d === 'm:vp') { const v = await rgPending(env); return show(env, chat, mid, v.text, v.markup); }
@@ -981,6 +1100,9 @@ async function onMessage(env, msg) {
     if (st.state === 'tp') return tpText(env, chat, st, text);
     if (st.state === 'tj') return tjText(env, chat, st, text);
     if (st.state === 'rr') return rrText(env, chat, st, text);
+    if (st.state === 'an_title') return anTitleText(env, chat, st, text);
+    if (st.state === 'an_body') return anBodyText(env, chat, st, text);
+    if (st.state === 'an_conf') return show(env, chat, null, 'Tekan tombol Kirim atau Batal di pesan konfirmasi.', undefined);
   }
   return show(env, chat, null, 'Ketik /menu untuk membuka panel.', undefined);
 }
