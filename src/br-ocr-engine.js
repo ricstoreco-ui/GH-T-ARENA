@@ -433,4 +433,4 @@ export function calculateBrPoints({
     killPoints: kills,
     totalPoints: placementPoints + kills
   };
-    }
+}
