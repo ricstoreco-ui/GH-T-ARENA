@@ -3,49 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GH-T ARENA</title>
-    <!-- Panggil file supabase.js yang tadi lu upload -->
-    <script src="supabase.js"></script> 
+    <title>GH-T ARENA - Dashboard</title>
+    <script src="supabase.js"></script>
     <style>
         body { font-family: sans-serif; background: #121212; color: #fff; padding: 20px; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; max-width: 400px; margin: auto; border: 1px solid #333; }
+        .container { max-width: 800px; margin: auto; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; }
         input, button { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; }
-        button { background: #d4af37; color: #000; font-weight: bold; cursor: pointer; }
-        #msg { padding: 10px; margin-bottom: 10px; display: none; text-align: center; border-radius: 4px; font-weight: bold; }
+        button { background: #d4af37; color: #000; font-weight: bold; cursor: pointer; border: none; }
+        button:hover { background: #f1c40f; }
+        .hidden { display: none; }
+        #msg { padding: 10px; margin-bottom: 15px; display: none; text-align: center; border-radius: 4px; font-weight: bold; }
         .err { background: #c62828; display: block !important; }
         .ok { background: #2e7d32; display: block !important; }
+        ul { list-style: none; padding: 0; }
+        li { background: #2a2a2a; padding: 10px; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-sm { width: auto; padding: 5px 10px; font-size: 12px; margin: 0; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2 style="text-align: center;">GH-T ARENA</h2>
-        <div id="msg"></div>
-        <input type="text" id="user" placeholder="Username">
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="pass" placeholder="Password">
-        <button onclick="doRegister()">Register</button>
-        <button onclick="doLogin()" style="background:#555; color:#fff;">Login</button>
+    <div class="container">
+        <div class="card" id="header" style="display:none;">
+            <h2>Dashboard Captain</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span id="user-info">Loading...</span>
+                <button onclick="doLogout()" class="btn-sm" style="background:#c62828; color:white;">Logout</button>
+            </div>
+        </div>
+
+        <div class="card" id="auth-section">
+            <h2 style="text-align: center;">Login / Register</h2>
+            <div id="msg"></div>
+            <input type="text" id="user" placeholder="Username">
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="pass" placeholder="Password">
+            <button onclick="doRegister()">Register</button>
+            <button onclick="doLogin()" style="background:#555; color:#fff;">Login</button>
+        </div>
+
+        <div id="dashboard-section" class="hidden">
+            <div class="card">
+                <h3>Buat Tim Baru</h3>
+                <input type="text" id="team-name" placeholder="Nama Tim (Wajib)">
+                <input type="text" id="team-desc" placeholder="Deskripsi (Opsional)">
+                <button onclick="createTeam()">Simpan Tim</button>
+            </div>
+
+            <div class="card">
+                <h3>Tim Saya</h3>
+                <ul id="team-list"><li>Belum ada tim.</li></ul>
+            </div>
+
+            <div class="card hidden" id="roster-section">
+                <h3 id="roster-title">Kelola Roster</h3>
+                <div style="background:#333; padding:10px; border-radius:5px; margin-bottom:10px;">
+                    <p style="margin-top:0; font-size:12px; color:#aaa;">Tambah Pemain</p>
+                    <input type="text" id="player-nick" placeholder="Nickname Free Fire">
+                    <input type="text" id="player-uid" placeholder="UID Free Fire">
+                    <button onclick="addPlayer()" style="background:#2e7d32; color:white;">Tambah Pemain</button>
+                </div>
+                <ul id="player-list"></ul>
+                <button onclick="closeRoster()" style="background:#555; color:white; margin-top:10px;">Tutup Roster</button>
+            </div>
+        </div>
     </div>
 
     <script>
         const sb = supabase.createClient('https://honxcvnpdruthlygwdyo.supabase.co', 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh');
+        let currentUser = null;
+        let activeTeamId = null;
 
         function msg(text, isErr) {
             const m = document.getElementById('msg');
             m.innerText = text;
             m.className = isErr ? 'err' : 'ok';
+            setTimeout(() => { m.className = ''; m.style.display = 'none'; }, 5000);
         }
 
+        // ================= AUTH =================
         async function doRegister() {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
             const user = document.getElementById('user').value;
-            
             if(!email || !pass) return msg("Isi Email & Password!", true);
-            msg("Memproses...", false);
-
-            const { error } = await sb.auth.signUp({ email, password: pass, options: { data: { username: user } } });
             
+            const { error } = await sb.auth.signUp({ email, password: pass, options: { data: { username: user } } });
             if (error) msg(error.message, true);
             else msg("Register Berhasil! Silakan Login.", false);
         }
@@ -53,15 +95,115 @@
         async function doLogin() {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
-            
             if(!email || !pass) return msg("Isi Email & Password!", true);
-            msg("Memproses...", false);
-
-            const { error } = await sb.auth.signInWithPassword({ email, password: pass });
             
+            const { error } = await sb.auth.signInWithPassword({ email, password: pass });
             if (error) msg(error.message, true);
-            else msg("Login Berhasil!", false);
+            else checkUser();
         }
+
+        async function doLogout() {
+            await sb.auth.signOut();
+            checkUser();
+        }
+
+        async function checkUser() {
+            const { data: { session } } = await sb.auth.getSession();
+            currentUser = session?.user;
+            if (currentUser) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('header').style.display = 'block';
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                document.getElementById('user-info').innerHTML = `Login: <b>${currentUser.user_metadata?.username || currentUser.email}</b>`;
+                loadTeams();
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('header').style.display = 'none';
+                document.getElementById('dashboard-section').classList.add('hidden');
+                document.getElementById('roster-section').classList.add('hidden');
+            }
+        }
+
+        // ================= TIM =================
+        async function createTeam() {
+            if (!currentUser) return;
+            const name = document.getElementById('team-name').value;
+            const desc = document.getElementById('team-desc').value;
+            if(!name) return msg("Nama tim wajib diisi!", true);
+
+            const { error } = await sb.from('teams').insert([{ owner_id: currentUser.id, name: name, description: desc }]);
+            if (error) msg(error.message, true);
+            else {
+                msg("Tim berhasil dibuat!", false);
+                document.getElementById('team-name').value = '';
+                document.getElementById('team-desc').value = '';
+                loadTeams();
+            }
+        }
+
+        async function loadTeams() {
+            const { data: teams, error } = await sb.from('teams').select('*').eq('owner_id', currentUser.id);
+            const list = document.getElementById('team-list');
+            list.innerHTML = '';
+            if (error || !teams || teams.length === 0) {
+                list.innerHTML = '<li>Belum ada tim.</li>';
+                return;
+            }
+            teams.forEach(t => {
+                list.innerHTML += `
+                    <li>
+                        <div><b>${t.name}</b><br><small style="color:#aaa;">${t.description || '-'}</small></div>
+                        <button onclick="openRoster('${t.id}', '${t.name}')" class="btn-sm">Kelola Roster</button>
+                    </li>`;
+            });
+        }
+
+        // ================= ROSTER =================
+        function closeRoster() {
+            document.getElementById('roster-section').classList.add('hidden');
+            activeTeamId = null;
+        }
+
+        async function openRoster(teamId, teamName) {
+            activeTeamId = teamId;
+            document.getElementById('roster-title').innerText = `Roster Tim: ${teamName}`;
+            document.getElementById('roster-section').classList.remove('hidden');
+            document.getElementById('player-nick').value = '';
+            document.getElementById('player-uid').value = '';
+            loadPlayers();
+        }
+
+        async function addPlayer() {
+            if (!activeTeamId) return;
+            const nick = document.getElementById('player-nick').value;
+            const uid = document.getElementById('player-uid').value;
+            if(!nick || !uid) return msg("Nickname dan UID wajib diisi!", true);
+
+            const { error } = await sb.from('team_players').insert([{ team_id: activeTeamId, nickname: nick, game_id: uid }]);
+            if (error) msg(error.message, true);
+            else {
+                msg("Pemain ditambahkan!", false);
+                document.getElementById('player-nick').value = '';
+                document.getElementById('player-uid').value = '';
+                loadPlayers();
+            }
+        }
+
+        async function loadPlayers() {
+            if (!activeTeamId) return;
+            const { data: players, error } = await sb.from('team_players').select('*').eq('team_id', activeTeamId);
+            const list = document.getElementById('player-list');
+            list.innerHTML = '';
+            if (error || !players || players.length === 0) {
+                list.innerHTML = '<li>Belum ada pemain.</li>';
+                return;
+            }
+            players.forEach((p, i) => {
+                list.innerHTML += `<li><span>${i+1}. <b>${p.nickname}</b> (${p.game_id})</span></li>`;
+            });
+        }
+
+        window.onload = () => { checkUser(); };
     </script>
 </body>
 </html>
