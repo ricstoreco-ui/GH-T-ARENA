@@ -1,4 +1,4 @@
-// GH-T ARENA — Script OCR GitHub Actions (V8 - Force Blocks)
+// GH-T ARENA — Script OCR GitHub Actions (V11 - Inverted & Alphanumeric)
 import { createClient } from '@supabase/supabase-js';
 import { createWorker } from 'tesseract.js';
 import sharp from 'sharp';
@@ -30,12 +30,25 @@ async function processOCR() {
       if (dlError) throw new Error(`Gagal download: ${dlError.message}`);
       
       const buffer = Buffer.from(await fileData.arrayBuffer());
-      const processedBuffer = await sharp(buffer).grayscale().normalize().toBuffer();
       
-      // ==========================================
-      // INI KUNCI PERUBAHANNYA: Tambahin {} , { blocks: true }
-      // ==========================================
-      const { data } = await worker.recognize(processedBuffer, {}, { blocks: true });
+      // KUNCI PERUBAHAN: 
+      // 1. resize biar gede
+      // 2. grayscale
+      // 3. negate (INVERT WARNA JADI NEGATIF)
+      // 4. threshold (hitam putih tegas)
+      const processedBuffer = await sharp(buffer)
+        .resize({ width: 2500 }) 
+        .grayscale()
+        .negate() 
+        .normalize()
+        .threshold(150) 
+        .toBuffer();
+      
+      // Longgarin whitelist: Huruf & Angka aja (buang simbol aneh)
+      const { data } = await worker.recognize(processedBuffer, {}, { 
+        blocks: true, 
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789' 
+      });
       
       const allWords = [];
       if (data.blocks) {
@@ -43,21 +56,15 @@ async function processOCR() {
           b.paragraphs.forEach(p => {
             p.lines.forEach(l => {
               l.words.forEach(w => {
-                allWords.push({ text: w.text, confidence: w.confidence, bbox: w.bbox });
+                // Buang teks yang cuma 1 huruf atau simbol
+                if (w.text.trim().length > 1) {
+                  allWords.push({ text: w.text, confidence: w.confidence, bbox: w.bbox });
+                }
               });
             });
           });
         });
       }
-
-      console.log(`\n=========================================`);
-      console.log(`📊 DEBUG INFO:`);
-      console.log(`RAW TEXT:\n${data.text}`);
-      console.log(`Total words (koordinat) yang kebaca: ${allWords.length}`);
-      if (allWords.length > 0) {
-        console.log(`Sampel 5 kata pertama:`, allWords.slice(0, 5));
-      }
-      console.log(`=========================================\n`);
 
       await supabase.from('ocr_uploads').update({ status: 'selesai', error: null }).eq('id', up.id);
 
