@@ -1,4 +1,4 @@
-// GH-T ARENA — Script OCR GitHub Actions (Debug Mode)
+// GH-T ARENA — Script OCR GitHub Actions (V6 FINAL)
 import { createClient } from '@supabase/supabase-js';
 import { createWorker } from 'tesseract.js';
 import sharp from 'sharp';
@@ -30,27 +30,30 @@ async function processOCR() {
       if (dlError) throw new Error(`Gagal download: ${dlError.message}`);
       
       const buffer = Buffer.from(await fileData.arrayBuffer());
-
-      // Pre-processing: Ubah ke grayscale dan naikin kontras (tanpa threshold biar teks nggak ilang)
-      const processedBuffer = await sharp(buffer)
-        .grayscale()
-        .normalize()
-        .toBuffer();
-        
+      const processedBuffer = await sharp(buffer).grayscale().normalize().toBuffer();
+      
       const { data } = await worker.recognize(processedBuffer);
       
-      // ============ DEBUG: LIHAT APA YANG DIBACA ROBOT ============
-      console.log("=========================================");
-      console.log("📝 TEKS YANG DIBACA ROBOT (RAW TEXT):");
-      console.log(data.text);
-      console.log("=========================================");
-      // ============================================================
+      // Ekstrak data 'words' (koordinat kata) dari Tesseract
+      const allWords = [];
+      if (data.blocks) {
+        data.blocks.forEach(b => {
+          b.paragraphs.forEach(p => {
+            p.lines.forEach(l => {
+              l.words.forEach(w => {
+                allWords.push({ text: w.text, confidence: w.confidence, bbox: w.bbox });
+              });
+            });
+          });
+        });
+      }
 
       await supabase.from('ocr_uploads').update({ status: 'selesai', error: null }).eq('id', up.id);
 
-      // AMBIL DATA PEMAIN DARI DATABASE
-      const { data: match } = await supabase.from('br_matches').select('tournament_id, game_maps(name)').eq('id', up.br_match_id).single();
+      // Ambil data turnamen
+      const { data: match } = await supabase.from('br_matches').select('tournament_id').eq('id', up.br_match_id).single();
       
+      // Ambil tim & pemain terdaftar
       const { data: regs } = await supabase.from('registrations').select('id, team_name').eq('tournament_id', match.tournament_id).eq('status', 'resmi_terdaftar');
       
       if (!regs || regs.length === 0) {
@@ -67,28 +70,26 @@ async function processOCR() {
         return { registrationId: p.registration_id, teamName: reg.team_name, nickname: p.nickname };
       });
 
+      // Lempar ke otak OCR
       const result = analyzeBrOcr({
-        words: data.words || [],
-        expectedPlayers,
-        configuredMap: match.game_maps?.name || null
+        words: allWords,
+        expectedPlayers
       });
 
+      // Simpan Draft
       const draftData = {
         br_match_id: up.br_match_id,
         merged_data: { 
-          map: result.map.detected, 
-          map_expected: result.map.configured, 
-          map_ok: null,
           rows: result.rows 
         },
-        warnings: result.warnings,
+        warnings: [],
         status: 'draft',
         version: 1
       };
       
       const { data: existing } = await supabase.from('ocr_drafts').select('id').eq('br_match_id', up.br_match_id).eq('status', 'draft').single();
       if (existing) {
-        await supabase.from('ocr_drafts').update({ merged_data: draftData.merged_data, warnings: draftData.warnings, version: (existing.version||1)+1 }).eq('id', existing.id);
+        await supabase.from('ocr_drafts').update({ merged_data: draftData.merged_data, version: (existing.version||1)+1 }).eq('id', existing.id);
       } else {
         await supabase.from('ocr_drafts').insert(draftData);
       }
