@@ -1,4 +1,5 @@
 // GH-T ARENA — Script OCR GitHub Actions (V6 FINAL)
+// GH-T ARENA — Script OCR GitHub Actions (V7 Debug)
 import { createClient } from '@supabase/supabase-js';
 import { createWorker } from 'tesseract.js';
 import sharp from 'sharp';
@@ -34,7 +35,9 @@ async function processOCR() {
       
       const { data } = await worker.recognize(processedBuffer);
       
-      // Ekstrak data 'words' (koordinat kata) dari Tesseract
+      // ==========================================
+      // DEBUG: EKSTRAK DATA WORDS
+      // ==========================================
       const allWords = [];
       if (data.blocks) {
         data.blocks.forEach(b => {
@@ -48,17 +51,20 @@ async function processOCR() {
         });
       }
 
+      console.log(`\n=========================================`);
+      console.log(`📊 DEBUG INFO:`);
+      console.log(`Total teks utuh: ${data.text.length} karakter`);
+      console.log(`Total words (koordinat) yang kebaca: ${allWords.length}`);
+      console.log(`Sampel 10 kata pertama:`, allWords.slice(0, 10));
+      console.log(`=========================================\n`);
+
       await supabase.from('ocr_uploads').update({ status: 'selesai', error: null }).eq('id', up.id);
 
-      // Ambil data turnamen
       const { data: match } = await supabase.from('br_matches').select('tournament_id').eq('id', up.br_match_id).single();
-      
-      // Ambil tim & pemain terdaftar
       const { data: regs } = await supabase.from('registrations').select('id, team_name').eq('tournament_id', match.tournament_id).eq('status', 'resmi_terdaftar');
       
       if (!regs || regs.length === 0) {
-        console.log('❌ Gagal: Belum ada tim yang resmi terdaftar.');
-        await supabase.from('ocr_uploads').update({ status: 'gagal', error: 'Belum ada tim terdaftar' }).eq('id', up.id);
+        console.log('❌ Gagal: Belum ada tim terdaftar.');
         continue;
       }
 
@@ -70,18 +76,18 @@ async function processOCR() {
         return { registrationId: p.registration_id, teamName: reg.team_name, nickname: p.nickname };
       });
 
-      // Lempar ke otak OCR
+      console.log(`\n📋 DAFTAR PEMAIN YANG DICARI DI DATABASE:`);
+      console.log(expectedPlayers.map(p => p.nickname).join(', '));
+      console.log(`\n`);
+
       const result = analyzeBrOcr({
         words: allWords,
         expectedPlayers
       });
 
-      // Simpan Draft
       const draftData = {
         br_match_id: up.br_match_id,
-        merged_data: { 
-          rows: result.rows 
-        },
+        merged_data: { rows: result.rows },
         warnings: [],
         status: 'draft',
         version: 1
