@@ -1,18 +1,16 @@
-// GH-T ARENA — Script OCR GitHub Actions (V17 - Multi-Model Fallback)
+// GH-T ARENA — Script OCR GitHub Actions (V18 - Fix Predator Nickname)
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const matchId = process.env.MATCH_ID;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// LIST MODEL CADANGAN (Dari yang paling stabil & sepi)
 const GEMINI_MODELS = [
-  'gemini-3.5-flash-lite',      // Pilihan utama (paling ringan & jarang 503)
-  'gemini-3.1-flash-lite',       // Cadangan 1
-  'gemini-flash-lite-latest'     // Cadangan 2 (latest lite)
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-flash-lite-latest'
 ];
 
-// Fungsi Kirim Notif ke Telegram
 async function sendTelegramMessage(text) {
   if (!process.env.BOT_TOKEN || !process.env.ADMIN_ID) return;
   try {
@@ -24,14 +22,13 @@ async function sendTelegramMessage(text) {
   } catch (e) { console.error('Gagal kirim pesan Telegram', e); }
 }
 
-// Fungsi Panggil Gemini dengan Multi-Model Fallback + Timeout
 async function callGeminiWithFallback(prompt, base64Image) {
   for (let i = 0; i < GEMINI_MODELS.length; i++) {
     const modelName = GEMINI_MODELS[i];
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000); // Timeout 45 detik
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     try {
       console.log(`🤖 Mencoba model: ${modelName}...`);
@@ -55,13 +52,11 @@ async function callGeminiWithFallback(prompt, base64Image) {
 
       const errorText = await response.text();
       
-      // Kalau 503 (server penuh), coba model selanjutnya
       if (response.status === 503) {
         console.log(`⚠️ Model ${modelName} penuh (503). Pindah ke model cadangan...`);
         continue; 
       }
       
-      // Kalau error lain (400, 403, 404, dll), langung gagal
       throw new Error(`Gemini API Error: ${response.status} - ${errorText}`);
       
     } catch (e) {
@@ -128,21 +123,40 @@ Baca semua player dan angka kill (Abates) di sebelah kanan namanya. Jika tidak a
       const regIds = regs.map(r => r.id);
       const { data: players } = await supabase.from('registration_players').select('registration_id, nickname').in('registration_id', regIds);
 
+      // KUNCI PERUBAHAN: Simpen 2 versi nickname
       const expectedPlayers = (players || []).map(p => {
         const reg = regs.find(r => r.id === p.registration_id);
-        return { registrationId: p.registration_id, teamName: reg.team_name, nickname: p.nickname.toLowerCase() };
+        return { 
+          registrationId: p.registration_id, 
+          teamName: reg.team_name, 
+          nicknameOriginal: p.nickname,
+          nicknameLower: p.nickname.toLowerCase()
+        };
       });
 
       const teams = {};
       geminiData.forEach(item => {
         const nick = item.nickname.toLowerCase();
-        const matchedPlayer = expectedPlayers.find(p => nick.includes(p.nickname) || p.nickname.includes(nick));
+        const matchedPlayer = expectedPlayers.find(p => 
+          nick.includes(p.nicknameLower) || p.nicknameLower.includes(nick)
+        );
         
         if (matchedPlayer) {
           if (!teams[matchedPlayer.registrationId]) {
-            teams[matchedPlayer.registrationId] = { id: matchedPlayer.registrationId, name: matchedPlayer.teamName, players: [] };
+            teams[matchedPlayer.registrationId] = { 
+              id: matchedPlayer.registrationId, 
+              name: matchedPlayer.teamName, 
+              players: [] 
+            };
           }
-          teams[matchedPlayer.registrationId].players.push({ nickname: item.nickname, kills: item.kills, played: true });
+          // Simpen NICKNAME ASLI DB, bukan versi Gemini
+          if (!teams[matchedPlayer.registrationId].players.find(x => x.nickname === matchedPlayer.nicknameOriginal)) {
+            teams[matchedPlayer.registrationId].players.push({ 
+              nickname: matchedPlayer.nicknameOriginal,
+              kills: item.kills, 
+              played: true 
+            });
+          }
         }
       });
 
