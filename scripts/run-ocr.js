@@ -1,5 +1,4 @@
-// GH-T ARENA — Script OCR GitHub Actions (V6 FINAL)
-// GH-T ARENA — Script OCR GitHub Actions (V7 Debug)
+// GH-T ARENA — Script OCR GitHub Actions (V8 - Force Blocks)
 import { createClient } from '@supabase/supabase-js';
 import { createWorker } from 'tesseract.js';
 import sharp from 'sharp';
@@ -33,11 +32,11 @@ async function processOCR() {
       const buffer = Buffer.from(await fileData.arrayBuffer());
       const processedBuffer = await sharp(buffer).grayscale().normalize().toBuffer();
       
-      const { data } = await worker.recognize(processedBuffer);
+      // ==========================================
+      // INI KUNCI PERUBAHANNYA: Tambahin {} , { blocks: true }
+      // ==========================================
+      const { data } = await worker.recognize(processedBuffer, {}, { blocks: true });
       
-      // ==========================================
-      // DEBUG: EKSTRAK DATA WORDS
-      // ==========================================
       const allWords = [];
       if (data.blocks) {
         data.blocks.forEach(b => {
@@ -53,9 +52,11 @@ async function processOCR() {
 
       console.log(`\n=========================================`);
       console.log(`📊 DEBUG INFO:`);
-      console.log(`Total teks utuh: ${data.text.length} karakter`);
+      console.log(`RAW TEXT:\n${data.text}`);
       console.log(`Total words (koordinat) yang kebaca: ${allWords.length}`);
-      console.log(`Sampel 10 kata pertama:`, allWords.slice(0, 10));
+      if (allWords.length > 0) {
+        console.log(`Sampel 5 kata pertama:`, allWords.slice(0, 5));
+      }
       console.log(`=========================================\n`);
 
       await supabase.from('ocr_uploads').update({ status: 'selesai', error: null }).eq('id', up.id);
@@ -75,10 +76,6 @@ async function processOCR() {
         const reg = regs.find(r => r.id === p.registration_id);
         return { registrationId: p.registration_id, teamName: reg.team_name, nickname: p.nickname };
       });
-
-      console.log(`\n📋 DAFTAR PEMAIN YANG DICARI DI DATABASE:`);
-      console.log(expectedPlayers.map(p => p.nickname).join(', '));
-      console.log(`\n`);
 
       const result = analyzeBrOcr({
         words: allWords,
