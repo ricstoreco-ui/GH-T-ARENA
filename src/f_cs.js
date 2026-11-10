@@ -35,27 +35,27 @@ async function csMatchDetail(env, mid, notice) {
   if (!m) throw new Error('Match tidak ditemukan');
   const t = await getT(env, m.tournament_id);
 
-  // Ambil nama tim (bisa dari registrations atau langsung dari data match jika ada)
   let teamA = 'BYE', teamB = 'BYE';
-  if (m.team_a_id) {
-    const ra = await sb(env, 'GET', `registrations?id=eq.${m.team_a_id}&select=team_name`);
+  if (m.team_a) {
+    const ra = await sb(env, 'GET', `registrations?id=eq.${m.team_a}&select=team_name`);
     teamA = ra?.[0]?.team_name || 'TBD';
   }
-  if (m.team_b_id) {
-    const rb = await sb(env, 'GET', `registrations?id=eq.${m.team_b_id}&select=team_name`);
+  if (m.team_b) {
+    const rb = await sb(env, 'GET', `registrations?id=eq.${m.team_b}&select=team_name`);
     teamB = rb?.[0]?.team_name || 'TBD';
   }
 
   let text = `<b>⚔️ Match ${m.round_label || 'Ronde ' + m.round_no} #${m.match_no}</b>\n`;
   text += `Tim A: <b>${esc(teamA)}</b>\nTim B: <b>${esc(teamB)}</b>\n`;
   text += `Status: ${m.status}\n`;
-  if (m.winner_id) {
-    const rw = await sb(env, 'GET', `registrations?id=eq.${m.winner_id}&select=team_name`);
+  
+  if (m.winner) {
+    const rw = await sb(env, 'GET', `registrations?id=eq.${m.winner}&select=team_name`);
     text += `Pemenang: 🏆 <b>${esc(rw?.[0]?.team_name || '?')}</b>\n`;
   }
 
   const kb = [];
-  if (m.status !== 'selesai' && m.status !== 'wo' && m.status !== 'bye' && m.team_a_id && m.team_b_id) {
+  if (m.status !== 'selesai' && m.status !== 'wo' && m.status !== 'bye' && m.team_a && m.team_b) {
     if (m.status === 'belum_dimulai') kb.push([b('▶️ Mulai Match', 'm:cs:go:' + m.id)]);
     if (m.status === 'berlangsung' || m.status === 'belum_dimulai') {
       kb.push([b(`✅ Menang: ${String(teamA).slice(0, 10)}`, `m:cs:win:${m.id}:a`), b(`✅ Menang: ${String(teamB).slice(0, 10)}`, `m:cs:win:${m.id}:b`)]);
@@ -93,7 +93,7 @@ H.cs = async (env, chat, mid, p) => {
   if (a === 'win') {
     const m = (await sb(env, 'GET', `cs_matches?id=eq.${id}&select=*`))?.[0];
     if (!m) throw new Error('Match tidak ditemukan');
-    const winId = p[4] === 'a' ? m.team_a_id : m.team_b_id;
+    const winId = p[4] === 'a' ? m.team_a : m.team_b; // <--- INI YANG DIBENERIN
     if (!winId) throw new Error('Tim tidak valid');
     await rpc(env, 'admin_cs_set_winner', { p_match: id, p_winner: winId, p_result_type: 'normal' });
     return sh(env, chat, mid, await csMatchDetail(env, id, '✅ Pemenang disimpan, bracket dimajukan.'));
@@ -101,7 +101,7 @@ H.cs = async (env, chat, mid, p) => {
   if (a === 'wo') {
     const m = (await sb(env, 'GET', `cs_matches?id=eq.${id}&select=*`))?.[0];
     if (!m) throw new Error('Match tidak ditemukan');
-    const winId = p[4] === 'a' ? m.team_b_id : m.team_a_id; // Jika A WO, B menang
+    const winId = p[4] === 'a' ? m.team_b : m.team_a; // <--- INI YANG DIBENERIN
     if (!winId) throw new Error('Lawan tidak ada (BYE)');
     await rpc(env, 'admin_cs_set_winner', { p_match: id, p_winner: winId, p_result_type: 'wo' });
     return sh(env, chat, mid, await csMatchDetail(env, id, '✅ WO dicatat, lawan maju.'));
