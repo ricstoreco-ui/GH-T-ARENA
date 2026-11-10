@@ -1,10 +1,16 @@
-// GH-T ARENA — Script OCR GitHub Actions (V16 FINAL - Full File)
+// GH-T ARENA — Script OCR GitHub Actions (V17 - Multi-Model Fallback)
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const matchId = process.env.MATCH_ID;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
+
+// LIST MODEL CADANGAN (Dari yang paling stabil & sepi)
+const GEMINI_MODELS = [
+  'gemini-3.5-flash-lite',      // Pilihan utama (paling ringan & jarang 503)
+  'gemini-3.1-flash-lite',       // Cadangan 1
+  'gemini-flash-lite-latest'     // Cadangan 2 (latest lite)
+];
 
 // Fungsi Kirim Notif ke Telegram
 async function sendTelegramMessage(text) {
@@ -18,46 +24,58 @@ async function sendTelegramMessage(text) {
   } catch (e) { console.error('Gagal kirim pesan Telegram', e); }
 }
 
-// Fungsi Panggil Gemini dengan Auto-Retry + Timeout 30 detik
-async function callGeminiWithRetry(url, apiKey, body, maxRetries = 3) {
-  for (let i = 0; i < maxRetries; i++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // Timeout 30 detik
+// Fungsi Panggil Gemini dengan Multi-Model Fallback + Timeout
+async function callGeminiWithFallback(prompt, base64Image) {
+  for (let i = 0; i < GEMINI_MODELS.length; i++) {
+    const modelName = GEMINI_MODELS[i];
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
     
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // Timeout 45 detik
+
     try {
-      const response = await fetch(`${url}?key=${apiKey}`, {
+      console.log(`🤖 Mencoba model: ${modelName}...`);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: 'image/jpeg', data: base64Image } }] }],
+          generationConfig: { temperature: 0.1 }
+        }),
         signal: controller.signal
       });
+      
       clearTimeout(timeoutId);
 
-      if (response.ok) return await response.json();
+      if (response.ok) {
+        console.log(`✅ Model ${modelName} berhasil merespon!`);
+        return await response.json();
+      }
 
       const errorText = await response.text();
       
+      // Kalau 503 (server penuh), coba model selanjutnya
       if (response.status === 503) {
-        console.log(`⚠️ Server Google penuh (503). Percobaan ${i+1}/${maxRetries}. Tunggu 10 detik...`);
-        if (i < maxRetries - 1) {
-          await new Promise(r => setTimeout(r, 10000));
-          continue;
-        }
+        console.log(`⚠️ Model ${modelName} penuh (503). Pindah ke model cadangan...`);
+        continue; 
       }
       
+      // Kalau error lain (400, 403, 404, dll), langung gagal
       throw new Error(`Gemini API Error: ${response.status} - ${errorText}`);
+      
     } catch (e) {
       clearTimeout(timeoutId);
       if (e.name === 'AbortError') {
-        console.log(`⚠️ Request ke Google timeout (>30 detik). Percobaan ${i+1}/${maxRetries}.`);
-      } else {
-        console.log(`⚠️ Error pada percobaan ${i+1}/${maxRetries}: ${e.message}`);
+        console.log(`⚠️ Model ${modelName} timeout. Pindah ke model cadangan...`);
+        continue;
       }
-      
-      if (i === maxRetries - 1) throw new Error(`Gagal setelah ${maxRetries} percobaan: ${e.message}`);
-      await new Promise(r => setTimeout(r, 10000));
+      if (i === GEMINI_MODELS.length - 1) throw e;
+      console.log(`⚠️ Error pada ${modelName}: ${e.message}. Pindah model...`);
     }
   }
+  
+  throw new Error('Semua model Gemini sedang sibuk. Coba lagi nanti.');
 }
 
 async function processOCR() {
@@ -87,10 +105,7 @@ Kembalikan HANYA JSON array valid (tanpa markdown, tanpa teks lain).
 Format: [{"nickname": "NamaPlayer", "kills": 0}]. 
 Baca semua player dan angka kill (Abates) di sebelah kanan namanya. Jika tidak ada kill, tulis 0.`;
 
-      const result = await callGeminiWithRetry(GEMINI_URL, GEMINI_API_KEY, {
-        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: 'image/jpeg', data: base64Image } }] }],
-        generationConfig: { temperature: 0.1 }
-      });
+      const result = await callGeminiWithFallback(prompt, base64Image);
 
       let textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
       textResponse = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
