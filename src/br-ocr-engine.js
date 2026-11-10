@@ -1,7 +1,7 @@
-// GH-T ARENA — BR OCR ENGINE (V2 - Nickname Based)
+// GH-T ARENA — BR OCR ENGINE (V3 - Anti Spasi)
 export function analyzeBrOcr({
   words = [],
-  expectedPlayers = [], // Array: { registrationId, teamName, nickname }
+  expectedPlayers = [],
   configuredMap = null
 } = {}) {
   const errors = [];
@@ -15,10 +15,12 @@ export function analyzeBrOcr({
     return { success: false, reviewRequired: true, canConfirm: false, errors: ["Belum ada pemain terdaftar di turnamen ini."], warnings, rows: [] };
   }
 
-  // 1. Bersihin & kelompokin kata jadi baris
-  const clean = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+  // Fungsi pembersih: Hapus semua karakter non-alfanumerik (termasuk spasi)
+  const clean = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // 1. Kelompokin kata jadi baris
   const lines = [];
-  const sortedWords = words.filter(w => w.text && w.confidence >= 40).sort((a, b) => a.bbox.y0 - b.bbox.y0);
+  const sortedWords = words.filter(w => w.text && w.confidence >= 30).sort((a, b) => a.bbox.y0 - b.bbox.y0); // Turunin confidence ke 30
 
   for (const w of sortedWords) {
     let line = lines.find(l => Math.abs(l.y - w.bbox.y0) < 20);
@@ -28,47 +30,38 @@ export function analyzeBrOcr({
   lines.sort((a, b) => a.y - b.y);
   lines.forEach(l => l.words.sort((a, b) => a.bbox.x0 - b.bbox.x0));
 
-  // 2. Cari Nickname yang cocok di tiap baris
+  // 2. Cari Nickname
   const foundPlayers = [];
   for (const line of lines) {
-    const lineText = line.words.map(w => w.text).join(' ');
-    let bestMatch = null;
+    const lineTextClean = clean(line.words.map(w => w.text).join(' '));
     
     for (const p of expectedPlayers) {
       const normP = clean(p.nickname);
-      const normLine = clean(lineText);
       if (!normP) continue;
       
-      // Cek kemiripan sederhana
-      if (normLine.includes(normP) || normP.includes(normLine)) {
-        const score = 100;
-        if (!bestMatch || score > bestMatch.score) bestMatch = { player: p, score };
-      }
-    }
-
-    if (bestMatch) {
-      // 3. Cari Kill (Angka di baris yang sama)
-      let kills = 0;
-      let xNick = line.words.find(w => clean(w.text) === clean(bestMatch.player.nickname))?.bbox.x0 || line.words[0].bbox.x0;
-      
-      for (const w of line.words) {
-        if (/^\d+$/.test(w.text) && w.bbox.x0 > xNick) {
-          kills = parseInt(w.text, 10);
-          break; // Angka pertama setelah nickname dianggap kill
+      // Cocokin tanpa spasi
+      if (lineTextClean.includes(normP)) {
+        // Cari Kill (Angka di baris yang sama)
+        let kills = 0;
+        for (const w of line.words) {
+          if (/^\d+$/.test(w.text)) { // Kalau ada angka
+            kills = parseInt(w.text, 10);
+            break; 
+          }
         }
+        
+        foundPlayers.push({
+          registrationId: p.registrationId,
+          teamName: p.teamName,
+          nickname: p.nickname,
+          kills: kills,
+          yPos: line.y
+        });
       }
-      
-      foundPlayers.push({
-        registrationId: bestMatch.player.registrationId,
-        teamName: bestMatch.player.teamName,
-        nickname: bestMatch.player.nickname,
-        kills: kills,
-        yPos: line.y
-      });
     }
   }
 
-  // 4. Gabungin data per Tim (Registration ID)
+  // 3. Gabungin per Tim
   const teams = {};
   for (const p of foundPlayers) {
     if (!teams[p.registrationId]) {
@@ -79,21 +72,24 @@ export function analyzeBrOcr({
         players: []
       };
     }
-    teams[p.registrationId].players.push({ nickname: p.nickname, kills: p.kills, played: true });
+    // Cek biar nggak dobel
+    if (!teams[p.registrationId].players.find(x => x.nickname === p.nickname)) {
+      teams[p.registrationId].players.push({ nickname: p.nickname, kills: p.kills, played: true });
+    }
     if (p.yPos < teams[p.registrationId].minY) teams[p.registrationId].minY = p.yPos;
   }
 
-  // 5. Urutin peringkat berdasarkan posisi Y (paling atas = Rank 1)
+  // 4. Urutin peringkat
   const sortedTeams = Object.values(teams).sort((a, b) => a.minY - b.minY);
 
-  // 6. Format buat draft bot
+  // 5. Format draft
   const rows = sortedTeams.map((t, index) => {
     const totalKills = t.players.reduce((sum, p) => sum + p.kills, 0);
     return {
       registration_id: t.registrationId,
       team_name: t.teamName,
       presence: 'hadir',
-      placement: index + 1, // Peringkat berdasarkan urutan Y
+      placement: index + 1,
       kills: totalKills,
       edited: false,
       conf: 90,
@@ -102,39 +98,33 @@ export function analyzeBrOcr({
     };
   });
 
-  // Tambahin tim yang nggak ketemu di gambar
-  for (const p of expectedPlayers) {
-    if (!teams[p.registrationId]) {
-      // Cek biar nggak dobel masukin
-      if (!rows.find(r => r.registration_id === p.registrationId)) {
-        rows.push({
-          registration_id: p.registrationId,
-          team_name: p.teamName,
-          presence: 'tidak_terdeteksi',
-          placement: null,
-          kills: 0,
-          edited: false,
-          conf: 0,
-          flags: ['Tim tidak terlihat di screenshot'],
-          players: []
-        });
-      }
+  // 6. Masukin tim yang nggak ketemu (Tapi jangan dobel)
+  const regIdsFound = new Set(rows.map(r => r.registration_id));
+  const allRegIds = new Set(expectedPlayers.map(p => p.registrationId));
+  
+  for (const regId of allRegIds) {
+    if (!regIdsFound.has(regId)) {
+      const teamName = expectedPlayers.find(p => p.registrationId === regId)?.teamName || 'Unknown';
+      rows.push({
+        registration_id: regId,
+        team_name: teamName,
+        presence: 'tidak_terdeteksi',
+        placement: null,
+        kills: 0,
+        edited: false,
+        conf: 0,
+        flags: ['Tim tidak terlihat di screenshot'],
+        players: []
+      });
     }
   }
-
-  // Urutin lagi biar tim yang hadir di atas
-  rows.sort((a, b) => {
-    if (a.presence === 'hadir' && b.presence !== 'hadir') return -1;
-    if (a.presence !== 'hadir' && b.presence === 'hadir') return 1;
-    return (a.placement || 99) - (b.placement || 99);
-  });
 
   return {
     success: rows.some(r => r.presence === 'hadir'),
     reviewRequired: true,
     canConfirm: false,
-    map: { detected: null, configured: configuredMap, matches: [] }, // Map skip dulu
-    totalTeamsExpected: new Set(expectedPlayers.map(p => p.registrationId)).size,
+    map: { detected: null, configured: configuredMap, matches: [] },
+    totalTeamsExpected: allRegIds.size,
     totalTeamsDetected: sortedTeams.length,
     rows: rows,
     errors,
