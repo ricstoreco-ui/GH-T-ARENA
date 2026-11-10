@@ -1,4 +1,4 @@
-// GH-T ARENA — BR OCR ENGINE (V7 FINAL - Ambil Angka Apapun)
+// GH-T ARENA — BR OCR ENGINE (V8 - Layout Aware)
 export function analyzeBrOcr({ words = [], expectedPlayers = [] } = {}) {
   const errors = [];
   const warnings = [];
@@ -25,59 +25,61 @@ export function analyzeBrOcr({ words = [], expectedPlayers = [] } = {}) {
       }
     }
     const dist = track[str2.length][str1.length];
-    return dist <= Math.max(1, Math.floor(Math.max(str1.length, str2.length) * 0.4)); 
+    return dist <= Math.max(1, Math.floor(Math.max(str1.length, str2.length) * 0.35)); 
   }
 
-  const lines = [];
-  const sortedWords = words.filter(w => w.text && w.confidence >= 10).sort((a, b) => a.bbox.y0 - b.bbox.y0);
-
-  for (const w of sortedWords) {
-    let line = lines.find(l => Math.abs(l.y - w.bbox.y0) < 20);
-    if (!line) { line = { y: w.bbox.y0, words: [] }; lines.push(line); }
-    line.words.push(w);
-  }
-  
-  lines.sort((a, b) => a.y - b.y);
-  lines.forEach(l => l.words.sort((a, b) => a.bbox.x0 - b.bbox.x0));
-
+  // 1. Filter kata-kata
+  const cleanWords = words.filter(w => w.text && w.confidence >= 10);
   const foundPlayers = [];
-  for (const line of lines) {
-    for (const p of expectedPlayers) {
-      const normP = clean(p.nickname);
-      if (!normP) continue;
 
-      let matchedIndex = line.words.findIndex(w => isSimilar(clean(w.text), normP));
-      
-      if (matchedIndex !== -1) {
-        let kills = 0;
-        let playerX = line.words[matchedIndex].bbox.x0;
+  // 2. Cari tiap nama pemain
+  for (const p of expectedPlayers) {
+    const normP = clean(p.nickname);
+    if (!normP) continue;
 
-        // Cari angka di sebelah kanan nama
-        for (let i = matchedIndex + 1; i < line.words.length; i++) {
-          let w = line.words[i];
-          if (w.bbox.x0 > playerX) {
-            // Ambil angka dari teks (misal "4Abates" jadi 4, atau "diem" gagal)
-            const match = w.text.match(/\d+/); 
-            if (match) {
-              kills = parseInt(match[0], 10);
-              break; 
+    // Cari kata yang cocok sama nickname
+    const nameWord = cleanWords.find(w => isSimilar(clean(w.text), normP));
+    
+    if (nameWord) {
+      let kills = 0;
+      let closestDist = 9999;
+
+      // Cari angka di sebelah kanan nama ini (Jarak Y maksimal 20px)
+      for (const w of cleanWords) {
+        if (w === nameWord) continue;
+        
+        // Angka murni
+        if (/^\d+$/.test(w.text)) {
+          // Posisi Y harus sejajar (satu baris)
+          const yDiff = Math.abs(w.bbox.y0 - nameWord.bbox.y0);
+          // Posisi X harus di kanan nama
+          const xDiff = w.bbox.x0 - nameWord.bbox.x1;
+
+          if (yDiff < 20 && xDiff > -10 && xDiff < 200) {
+            // Ambil angka yang paling dekat dengan nama
+            if (xDiff < closestDist) {
+              closestDist = xDiff;
+              kills = parseInt(w.text, 10);
             }
           }
         }
-        
-        if (!foundPlayers.find(x => x.nickname === p.nickname)) {
-          foundPlayers.push({
-            registrationId: p.registrationId,
-            teamName: p.teamName,
-            nickname: p.nickname,
-            kills: kills,
-            yPos: line.y
-          });
-        }
+      }
+
+      // Simpan data
+      if (!foundPlayers.find(x => x.nickname === p.nickname)) {
+        foundPlayers.push({
+          registrationId: p.registrationId,
+          teamName: p.teamName,
+          nickname: p.nickname,
+          kills: kills,
+          yPos: nameWord.bbox.y0,
+          xPos: nameWord.bbox.x0
+        });
       }
     }
   }
 
+  // 3. Gabungin per Tim (Berdasarkan Y terkecil milik pemain di tim itu)
   const teams = {};
   for (const p of foundPlayers) {
     if (!teams[p.registrationId]) {
@@ -85,15 +87,29 @@ export function analyzeBrOcr({ words = [], expectedPlayers = [] } = {}) {
         registrationId: p.registrationId,
         teamName: p.teamName,
         minY: p.yPos,
+        minX: p.xPos,
         players: []
       };
     }
     teams[p.registrationId].players.push({ nickname: p.nickname, kills: p.kills, played: true });
-    if (p.yPos < teams[p.registrationId].minY) teams[p.registrationId].minY = p.yPos;
+    
+    // Tim dapet posisi Y paling atas dari pemainnya
+    if (p.yPos < teams[p.registrationId].minY) {
+      teams[p.registrationId].minY = p.yPos;
+      teams[p.registrationId].minX = p.xPos;
+    }
   }
 
-  const sortedTeams = Object.values(teams).sort((a, b) => a.minY - b.minY);
+  // 4. Urutin Tim (Rank 1-5 Kiri, 6-11 Kanan)
+  // Kita sort berdasarkan Y dulu. Kalau Y-nya sama (kiri dan kanan sejajar), kita sort berdasarkan X (kiri dulu).
+  const sortedTeams = Object.values(teams).sort((a, b) => {
+    if (Math.abs(a.minY - b.minY) < 30) { 
+      return a.minX - b.minX; // Kalau sejajar, kiri dapet rank lebih dulu
+    }
+    return a.minY - b.minY;
+  });
 
+  // 5. Format Output
   const rows = sortedTeams.map((t, index) => {
     const totalKills = t.players.reduce((sum, p) => sum + p.kills, 0);
     return {
@@ -103,12 +119,13 @@ export function analyzeBrOcr({ words = [], expectedPlayers = [] } = {}) {
       placement: index + 1,
       kills: totalKills,
       edited: false,
-      conf: 80,
+      conf: 85,
       flags: [],
       players: t.players
     };
   });
 
+  // 6. Masukin tim yang nggak ketemu
   const regIdsFound = new Set(rows.map(r => r.registration_id));
   const allRegIds = new Set(expectedPlayers.map(p => p.registrationId));
   
