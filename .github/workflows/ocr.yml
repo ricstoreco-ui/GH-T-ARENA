@@ -3,7 +3,7 @@ name: GH-T Arena OCR Processor
 on:
   repository_dispatch:
     types: [ocr]
-  workflow_dispatch: # Biar bisa dites manual dari tab Actions
+  workflow_dispatch:
 
 jobs:
   process-ocr:
@@ -28,4 +28,5 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           MATCH_ID: ${{ github.event.client_payload.match }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} # <--- INI YANG KURANG
         run: node scripts/run-ocr.js
