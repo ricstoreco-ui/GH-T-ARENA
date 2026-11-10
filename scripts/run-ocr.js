@@ -1,4 +1,4 @@
-// GH-T ARENA — Script OCR GitHub Actions (V2)
+// GH-T ARENA — Script OCR GitHub Actions (Debug Mode)
 import { createClient } from '@supabase/supabase-js';
 import { createWorker } from 'tesseract.js';
 import sharp from 'sharp';
@@ -31,23 +31,34 @@ async function processOCR() {
       
       const buffer = Buffer.from(await fileData.arrayBuffer());
 
-      const processedBuffer = await sharp(buffer).grayscale().normalize().threshold(150).toBuffer();
+      // Pre-processing: Ubah ke grayscale dan naikin kontras (tanpa threshold biar teks nggak ilang)
+      const processedBuffer = await sharp(buffer)
+        .grayscale()
+        .normalize()
+        .toBuffer();
+        
       const { data } = await worker.recognize(processedBuffer);
       
+      // ============ DEBUG: LIHAT APA YANG DIBACA ROBOT ============
+      console.log("=========================================");
+      console.log("📝 TEKS YANG DIBACA ROBOT (RAW TEXT):");
+      console.log(data.text);
+      console.log("=========================================");
+      // ============================================================
+
       await supabase.from('ocr_uploads').update({ status: 'selesai', error: null }).eq('id', up.id);
 
       // AMBIL DATA PEMAIN DARI DATABASE
       const { data: match } = await supabase.from('br_matches').select('tournament_id, game_maps(name)').eq('id', up.br_match_id).single();
       
-      // Ambil semua tim yang resmi terdaftar
       const { data: regs } = await supabase.from('registrations').select('id, team_name').eq('tournament_id', match.tournament_id).eq('status', 'resmi_terdaftar');
+      
       if (!regs || regs.length === 0) {
-        console.log('❌ Gagal: Belum ada tim yang resmi terdaftar di turnamen ini.');
+        console.log('❌ Gagal: Belum ada tim yang resmi terdaftar.');
         await supabase.from('ocr_uploads').update({ status: 'gagal', error: 'Belum ada tim terdaftar' }).eq('id', up.id);
         continue;
       }
 
-      // Ambil semua pemain dari tim yang terdaftar
       const regIds = regs.map(r => r.id);
       const { data: players } = await supabase.from('registration_players').select('registration_id, nickname').in('registration_id', regIds);
 
@@ -56,20 +67,18 @@ async function processOCR() {
         return { registrationId: p.registration_id, teamName: reg.team_name, nickname: p.nickname };
       });
 
-      // Kirim ke engine
       const result = analyzeBrOcr({
         words: data.words || [],
         expectedPlayers,
         configuredMap: match.game_maps?.name || null
       });
 
-      // Simpan draft
       const draftData = {
         br_match_id: up.br_match_id,
         merged_data: { 
           map: result.map.detected, 
           map_expected: result.map.configured, 
-          map_ok: null, // Skip map validation
+          map_ok: null,
           rows: result.rows 
         },
         warnings: result.warnings,
