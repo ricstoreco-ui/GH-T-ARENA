@@ -1,4 +1,4 @@
-// GH-T ARENA — Script OCR GitHub Actions (V18 - Fix Predator Nickname)
+// GH-T ARENA — Script OCR GitHub Actions (V19 - Robust JSON Parser)
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -106,11 +106,24 @@ Baca semua player dan angka kill (Abates) di sebelah kanan namanya. Jika tidak a
       textResponse = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
       console.log('RAW GEMINI RESPONSE:', textResponse);
 
+      // PARSER JSON ANTI GAGAL
       let geminiData = [];
       try {
         geminiData = JSON.parse(textResponse);
       } catch (e) {
-        throw new Error('Gagal parse JSON dari Gemini: ' + textResponse);
+        // Kalau gagal parse, coba ekstrak pake regex dari kurung siku pertama dan terakhir
+        console.log('⚠️ JSON tidak valid, mencoba ekstraksi regex...');
+        const match = textResponse.match(/\[[\s\S]*\]/);
+        if (match) {
+          try {
+            geminiData = JSON.parse(match[0]);
+            console.log('✅ Ekstraksi JSON berhasil!');
+          } catch (e2) {
+            throw new Error('Gagal ekstrak JSON dari Gemini: ' + textResponse.substring(0, 200));
+          }
+        } else {
+          throw new Error('Gagal parse JSON dari Gemini (bukan array): ' + textResponse.substring(0, 200));
+        }
       }
 
       await supabase.from('ocr_uploads').update({ status: 'selesai', error: null }).eq('id', up.id);
@@ -123,7 +136,6 @@ Baca semua player dan angka kill (Abates) di sebelah kanan namanya. Jika tidak a
       const regIds = regs.map(r => r.id);
       const { data: players } = await supabase.from('registration_players').select('registration_id, nickname').in('registration_id', regIds);
 
-      // KUNCI PERUBAHAN: Simpen 2 versi nickname
       const expectedPlayers = (players || []).map(p => {
         const reg = regs.find(r => r.id === p.registration_id);
         return { 
@@ -149,10 +161,9 @@ Baca semua player dan angka kill (Abates) di sebelah kanan namanya. Jika tidak a
               players: [] 
             };
           }
-          // Simpen NICKNAME ASLI DB, bukan versi Gemini
           if (!teams[matchedPlayer.registrationId].players.find(x => x.nickname === matchedPlayer.nicknameOriginal)) {
             teams[matchedPlayer.registrationId].players.push({ 
-              nickname: matchedPlayer.nicknameOriginal,
+              nickname: matchedPlayer.nicknameOriginal, // Pake nama asli DB
               kills: item.kills, 
               played: true 
             });
