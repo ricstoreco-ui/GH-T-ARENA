@@ -1,12 +1,12 @@
-// GH-T ARENA — Script OCR GitHub Actions (V13 - Gemini 2.5 Flash)
+// GH-T ARENA — Script OCR GitHub Actions (V14 - Model Terbaru)
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const matchId = process.env.MATCH_ID;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// MODEL BARU: gemini-2.5-flash
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+// KUNCI PERUBAHANNYA: Ganti ke gemini-3.8-flash
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
 
 async function processOCR() {
   console.log(`Memulai OCR (Gemini) untuk Match ID: ${matchId || 'Semua yang menunggu'}`);
