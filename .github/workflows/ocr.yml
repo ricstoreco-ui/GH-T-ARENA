@@ -21,7 +21,7 @@ jobs:
         run: |
           npm init -y
           npm pkg set type=module
-          npm install @supabase/supabase-js sharp
+          npm install @supabase/supabase-js
 
       - name: Run OCR Script
         env:
