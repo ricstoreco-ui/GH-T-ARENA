@@ -1,11 +1,12 @@
-// GH-T ARENA — Script OCR GitHub Actions (V12 - Gemini Vision FULL)
+// GH-T ARENA — Script OCR GitHub Actions (V13 - Gemini 2.5 Flash)
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const matchId = process.env.MATCH_ID;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+// MODEL BARU: gemini-2.5-flash
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 async function processOCR() {
   console.log(`Memulai OCR (Gemini) untuk Match ID: ${matchId || 'Semua yang menunggu'}`);
@@ -29,7 +30,6 @@ async function processOCR() {
       
       const base64Image = Buffer.from(await fileData.arrayBuffer()).toString('base64');
 
-      // Minta Gemini buat baca Nickname & Kill
       const prompt = `Analisa screenshot Free Fire ini. 
 Kembalikan HANYA JSON array valid (tanpa markdown, tanpa teks lain). 
 Format: [{"nickname": "NamaPlayer", "kills": 0}]. 
@@ -45,7 +45,7 @@ Baca semua player dan angka kill (Abates) di sebelah kanan namanya. Jika tidak a
               { inline_data: { mime_type: 'image/jpeg', data: base64Image } }
             ]
           }],
-          generationConfig: { temperature: 0.1 } // Biar konsisten
+          generationConfig: { temperature: 0.1 }
         })
       });
 
@@ -57,7 +57,6 @@ Baca semua player dan angka kill (Abates) di sebelah kanan namanya. Jika tidak a
       const result = await response.json();
       let textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
       
-      // Bersihin format JSON kalau Gemini ngasih markdown
       textResponse = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
       console.log('RAW GEMINI RESPONSE:', textResponse);
 
@@ -70,7 +69,6 @@ Baca semua player dan angka kill (Abates) di sebelah kanan namanya. Jika tidak a
 
       await supabase.from('ocr_uploads').update({ status: 'selesai', error: null }).eq('id', up.id);
 
-      // Ambil data Tim & Pemain dari DB
       const { data: match } = await supabase.from('br_matches').select('tournament_id').eq('id', up.br_match_id).single();
       const { data: regs } = await supabase.from('registrations').select('id, team_name').eq('tournament_id', match.tournament_id).eq('status', 'resmi_terdaftar');
       
@@ -87,7 +85,6 @@ Baca semua player dan angka kill (Abates) di sebelah kanan namanya. Jika tidak a
         return { registrationId: p.registration_id, teamName: reg.team_name, nickname: p.nickname.toLowerCase() };
       });
 
-      // Cocokin hasil Gemini ke Database
       const teams = {};
       geminiData.forEach(item => {
         const nick = item.nickname.toLowerCase();
@@ -113,7 +110,6 @@ Baca semua player dan angka kill (Abates) di sebelah kanan namanya. Jika tidak a
         };
       });
 
-      // Masukin tim yang nggak ketemu
       const foundIds = new Set(rows.map(r => r.registration_id));
       regs.forEach(r => {
         if (!foundIds.has(r.id)) {
@@ -121,7 +117,6 @@ Baca semua player dan angka kill (Abates) di sebelah kanan namanya. Jika tidak a
         }
       });
 
-      // Simpan Draft
       const draftData = {
         br_match_id: up.br_match_id,
         merged_data: { rows: rows },
