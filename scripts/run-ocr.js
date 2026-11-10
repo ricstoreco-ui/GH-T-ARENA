@@ -1,11 +1,9 @@
-// GH-T ARENA — Script OCR GitHub Actions (V15 - Auto Retry + Telegram Notif)
+// GH-T ARENA — Script OCR GitHub Actions (V16 FINAL - Full File)
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const matchId = process.env.MATCH_ID;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-// KUNCI PERUBAHANNYA: Ganti ke gemini-3.8-flash
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
 
 // Fungsi Kirim Notif ke Telegram
@@ -20,35 +18,44 @@ async function sendTelegramMessage(text) {
   } catch (e) { console.error('Gagal kirim pesan Telegram', e); }
 }
 
-// Fungsi Panggil Gemini dengan Auto-Retry
+// Fungsi Panggil Gemini dengan Auto-Retry + Timeout 30 detik
 async function callGeminiWithRetry(url, apiKey, body, maxRetries = 3) {
   for (let i = 0; i < maxRetries; i++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // Timeout 30 detik
+    
     try {
       const response = await fetch(`${url}?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (response.ok) return await response.json();
 
       const errorText = await response.text();
-      const errorJson = JSON.parse(errorText);
       
-      // Kalau error 503, tunggu 5 detik dan coba lagi
       if (response.status === 503) {
-        console.log(`⚠️ Server Google penuh (503). Percobaan ${i+1}/${maxRetries}. Mencoba lagi dalam 5 detik...`);
+        console.log(`⚠️ Server Google penuh (503). Percobaan ${i+1}/${maxRetries}. Tunggu 10 detik...`);
         if (i < maxRetries - 1) {
-          await new Promise(r => setTimeout(r, 5000));
+          await new Promise(r => setTimeout(r, 10000));
           continue;
         }
       }
       
       throw new Error(`Gemini API Error: ${response.status} - ${errorText}`);
     } catch (e) {
-      if (i === maxRetries - 1) throw e;
-      console.log(`⚠️ Error pada percobaan ${i+1}. Mencoba lagi...`);
-      await new Promise(r => setTimeout(r, 5000));
+      clearTimeout(timeoutId);
+      if (e.name === 'AbortError') {
+        console.log(`⚠️ Request ke Google timeout (>30 detik). Percobaan ${i+1}/${maxRetries}.`);
+      } else {
+        console.log(`⚠️ Error pada percobaan ${i+1}/${maxRetries}: ${e.message}`);
+      }
+      
+      if (i === maxRetries - 1) throw new Error(`Gagal setelah ${maxRetries} percobaan: ${e.message}`);
+      await new Promise(r => setTimeout(r, 10000));
     }
   }
 }
