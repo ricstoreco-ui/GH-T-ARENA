@@ -192,7 +192,13 @@ async function onUpload(env, chat, st, img) {
 U.bn_up = onUpload; U.tb_up = onUpload; U.as_up = onUpload;
 
 // ================= KONFIGURASI =================
-const CFG = [['admin_whatsapp', 'WhatsApp Admin'], ['waitlist_offer_minutes', 'Batas respons Waiting List (menit)']];
+// 👇 INI BAGIAN YANG GUA TAMBAHIN (admin_fee_qris)
+const CFG = [
+  ['admin_whatsapp', 'WhatsApp Admin'], 
+  ['waitlist_offer_minutes', 'Batas respons Waiting List (menit)'], 
+  ['admin_fee_qris', 'Biaya Admin QRIS (Rp)']
+];
+
 async function cfgMenu(env, notice) {
   const rows = (await sb(env, 'GET', `site_settings?key=in.(${CFG.map((c) => c[0]).join(',')})&select=key,value`)) || [];
   const m = Object.fromEntries(rows.map((r) => [r.key, r.value]));
@@ -207,7 +213,9 @@ H.cfg = async (env, chat, mid, p) => {
     const c = CFG[Number(p[3])];
     if (!c) throw new Error('Pilihan tidak valid');
     await setState(env, chat, 'cfg', { key: c[0] });
-    const ask = c[0] === 'admin_whatsapp' ? 'Ketik nomor WhatsApp admin (contoh 628123456789). Ketik - untuk mengosongkan.' : 'Ketik batas waktu respons Waiting List dalam menit (1 sampai 1440).';
+    const ask = c[0] === 'admin_whatsapp' ? 'Ketik nomor WhatsApp admin (contoh 628123456789). Ketik - untuk mengosongkan.' :
+                c[0] === 'admin_fee_qris' ? 'Ketik nominal Biaya Admin (contoh 1000). Ketik 0 jika tidak ada.' :
+                'Ketik batas waktu respons Waiting List dalam menit (1 sampai 1440).';
     return show(env, chat, mid, `<b>✏️ ${esc(c[1])}</b>\n${ask}`, { inline_keyboard: [[b('✖️ Batal', 'm:cfg')]] });
   }
   return sh(env, chat, mid, await cfgMenu(env));
@@ -221,6 +229,10 @@ T.cfg = async (env, chat, st, text) => {
     if (text === '-') val = '';
     else if (/^\+?\d{8,15}$/.test(text.replace(/[\s-]/g, ''))) val = text.replace(/[\s-]/g, '');
     else return show(env, chat, null, '❌ Nomor tidak valid. Contoh: 628123456789. Ketik - untuk mengosongkan.', { inline_keyboard: [[b('✖️ Batal', 'm:cfg')]] });
+  } else if (key === 'admin_fee_qris') {
+    const n = /^\d{1,9}$/.test(text) ? Number(text) : -1;
+    if (n < 0) return show(env, chat, null, '❌ Isi angka 0 atau lebih (tanpa titik/koma).', { inline_keyboard: [[b('✖️ Batal', 'm:cfg')]] });
+    val = n;
   } else {
     const n = /^\d{1,4}$/.test(text) ? Number(text) : 0;
     if (n < 1 || n > 1440) return show(env, chat, null, '❌ Isi angka 1 sampai 1440 (menit).', { inline_keyboard: [[b('✖️ Batal', 'm:cfg')]] });
