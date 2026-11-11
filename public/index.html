@@ -36,12 +36,14 @@ h1,h2,h3{font-family:'Orbitron',sans-serif}.hidden{display:none!important}
 @keyframes neonPulse{from{box-shadow:0 0 5px var(--gold)}to{box-shadow:0 0 20px var(--gold),0 0 40px var(--gold)}}
 @keyframes rippleAnim{to{transform:scale(4);opacity:0}}
 @keyframes flipTag{0%,100%{transform:rotateX(0)}50%{transform:rotateX(180deg)}}
-@keyframes parallaxBg{0%{background-position:0% 0%}100%{background-position:100% 100%}}
+@keyframes twinkle{0%{opacity:0.2;transform:scale(0.8)}100%{opacity:1;transform:scale(1.2);box-shadow:0 0 8px var(--gold)}}
 .view{animation:fadeInUp 0.4s ease-out}
 #intro-screen{position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:opacity 0.8s ease,visibility 0.8s;font-family:'Rajdhani',monospace;overflow:hidden}
 #intro-screen.hidden{opacity:0;visibility:hidden}
 #intro-screen::before{content:'';position:absolute;width:min(75vw,340px);aspect-ratio:1;border:1px solid rgba(255,255,255,0.12);border-radius:50%;box-shadow:0 0 60px rgba(212,175,55,0.08),inset 0 0 40px rgba(255,255,255,0.03);animation:ringSpin 8s linear infinite;z-index:1}
 #intro-screen::after{content:'';position:absolute;width:min(90vw,400px);aspect-ratio:1;border:1px dashed rgba(255,255,255,0.15);border-radius:50%;animation:ringSpin 15s linear infinite reverse;z-index:1}
+.stars-container{position:absolute;inset:0;overflow:hidden;z-index:0}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle 2s infinite alternate}
 .intro-content{text-align:center;display:flex;flex-direction:column;align-items:center;padding:20px;z-index:2}
 .intro-logo{width:120px;margin-bottom:20px;filter:drop-shadow(0 0 25px var(--gold-glow));animation:cinematicZoom 1.5s cubic-bezier(0.16,1,0.3,1) both}
 .intro-title{font-size:2.2rem;color:var(--gold);letter-spacing:8px;margin-bottom:10px;animation:glitchText 0.5s infinite}
@@ -227,6 +229,7 @@ footer a{color:var(--gold);text-decoration:none}
 
 <!-- INTRO SCREEN -->
 <div id="intro-screen">
+  <div class="stars-container" id="stars"></div>
   <div class="intro-flash"></div>
   <div class="intro-content">
     <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="Logo" class="intro-logo" onerror="this.style.display='none'">
@@ -476,7 +479,7 @@ footer a{color:var(--gold);text-decoration:none}
     <div class="form-group"><input type="text" id="new-team-name" placeholder="Nama Tim (Wajib)"></div>
     <div class="form-group"><input type="text" id="new-team-desc" placeholder="Deskripsi (Opsional)"></div>
     <div class="form-group"><label>Upload Logo Tim</label><input type="file" id="new-team-logo" accept="image/*"></div>
-    <button class="btn btn-sm" onclick="createTeam()">Simpan Tim</button>
+    <button class="btn btn-sm" onclick="createTeam(this)">Simpan Tim</button>
   </div>
 
   <div class="glass-card">
@@ -500,7 +503,7 @@ footer a{color:var(--gold);text-decoration:none}
           <option value="sub">Cadangan (Max 2)</option>
         </select>
       </div>
-      <button class="btn btn-sm" style="background:var(--success);color:#fff" onclick="addPlayer()">Tambah Pemain</button>
+      <button class="btn btn-sm" style="background:var(--success);color:#fff" onclick="addPlayer(this)">Tambah Pemain</button>
     </div>
     <div class="roster-grid" id="player-list"></div>
   </div>
@@ -509,7 +512,7 @@ footer a{color:var(--gold);text-decoration:none}
     <h3 class="page-title" style="font-size:0.95rem"><i class="fa-solid fa-wallet"></i> Saldo & DANA</h3>
     <div class="form-group"><label>Nomor DANA</label><input type="text" id="dash-dana-num" placeholder="08xxxxxxxxxx"></div>
     <div class="form-group"><label>Nama Pemilik DANA</label><input type="text" id="dash-dana-name" placeholder="Sesuai akun DANA"></div>
-    <button class="btn btn-sm" onclick="saveDana()">Simpan DANA</button>
+    <button class="btn btn-sm" onclick="saveDana(this)">Simpan DANA</button>
     <button class="btn btn-sm btn-secondary" style="margin-top:10px" onclick="openLedger()">Riwayat Transaksi</button>
     <button class="btn btn-sm btn-secondary" style="margin-top:10px" onclick="openPayouts()">Riwayat Hadiah</button>
   </div>
@@ -556,7 +559,7 @@ footer a{color:var(--gold);text-decoration:none}
       <div class="countdown-timer" id="qr-timer">05:00</div>
       <div id="qr-image-container" style="text-align:center;margin-bottom:15px"></div>
       <div class="form-group"><label>Upload Bukti Transfer</label><input type="file" id="reg-proof-file" accept="image/*"></div>
-      <button class="btn" id="btn-confirm-pay" onclick="finishRegister()">Konfirmasi Bayar</button>
+      <button class="btn" id="btn-confirm-pay" onclick="finishRegister(this)">Konfirmasi Bayar</button>
       <button class="btn btn-secondary" style="margin-top:10px" onclick="updateStepper(3)">Kembali</button>
     </div>
   </div>
@@ -587,14 +590,14 @@ footer a{color:var(--gold);text-decoration:none}
     <div id="auth-login">
       <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="email@example.com"></div>
       <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="********"></div>
-      <button class="btn" onclick="doLogin()">Masuk</button>
+      <button class="btn" onclick="doLogin(this)">Masuk</button>
       <button class="btn btn-secondary" style="margin-top:10px" onclick="forgotPassword()">Lupa Password?</button>
     </div>
     <div id="auth-register" class="hidden">
       <div class="form-group"><label>Username</label><input type="text" id="reg-username" placeholder="Username"></div>
       <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="email@example.com"></div>
       <div class="form-group"><label>Password (Min 6)</label><input type="password" id="reg-password" placeholder="********"></div>
-      <button class="btn" onclick="doRegister()">Daftar Akun</button>
+      <button class="btn" onclick="doRegister(this)">Daftar Akun</button>
     </div>
   </div>
 </div>
@@ -674,8 +677,8 @@ footer a{color:var(--gold);text-decoration:none}
         <option value="sub">Cadangan</option>
       </select>
     </div>
-    <button class="btn" onclick="saveEditPlayer()">Simpan Perubahan</button>
-    <button class="btn btn-danger" style="margin-top:10px" onclick="deletePlayer()">Hapus Pemain</button>
+    <button class="btn" onclick="saveEditPlayer(this)">Simpan Perubahan</button>
+    <button class="btn btn-danger" style="margin-top:10px" onclick="deletePlayer(this)">Hapus Pemain</button>
   </div>
 </div>
 
@@ -686,7 +689,7 @@ footer a{color:var(--gold);text-decoration:none}
     <h3><i class="fa-solid fa-right-from-bracket"></i> Mundur dari Turnamen</h3>
     <p style="font-size:0.8rem;color:var(--silver);margin-bottom:10px">Yakin ingin mundur? Refund akan diproses oleh Admin sesuai kebijakan.</p>
     <div class="form-group"><label>Alasan</label><textarea id="withdraw-reason" rows="3" placeholder="Alasan mundur..."></textarea></div>
-    <button class="btn btn-danger" onclick="submitWithdraw()">Ajukan Mundur</button>
+    <button class="btn btn-danger" onclick="submitWithdraw(this)">Ajukan Mundur</button>
   </div>
 </div>
 
@@ -786,6 +789,37 @@ async function ensureSession() {
 }
 
 // ============================================
+// ANTI TOXIC CHAT FILTER
+// ============================================
+const BAD_WORDS = ['anjing', 'bangsat', 'kontol', 'memek', 'babi', 'goblok', 'tolol', 'idiot', 'peler', 'itil'];
+function censorText(text) {
+  let clean = text;
+  BAD_WORDS.forEach(w => {
+    const regex = new RegExp(w, 'gi');
+    clean = clean.replace(regex, '*'.repeat(w.length));
+  });
+  return clean;
+}
+
+// ============================================
+// CSS STAR PARTICLES (INTRO)
+// ============================================
+function generateStars() {
+  const container = $('stars');
+  for(let i=0; i<60; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 3 + 1;
+    star.style.width = size + 'px';
+    star.style.height = size + 'px';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = Math.random() * 2 + 's';
+    container.appendChild(star);
+  }
+}
+
+// ============================================
 // FITUR BARU: 8 EFEK IKLAN GH TOPUP
 // ============================================
 function triggerRipple(e) {
@@ -852,6 +886,7 @@ function typeTerminal() {
     setTimeout(next, 400);
   })();
 }
+generateStars();
 typeTerminal();
 setTimeout(skipIntro, 3800);
 
@@ -921,12 +956,14 @@ function loadDanaForm() {
   $('dash-dana-name').value = userProfile.dana_name || '';
 }
 
-async function saveDana() {
+async function saveDana(btn) {
   if (!await ensureSession()) return;
   const num = $('dash-dana-num').value.trim();
   const name = $('dash-dana-name').value.trim();
   if (!num || !name) return showToast('Isi Nomor & Nama DANA', 'warning');
+  btn.disabled = true;
   const { error } = await sb.from('profiles').update({ dana_number: num, dana_name: name }).eq('id', currentUser.id);
+  btn.disabled = false;
   if (error) return showToast(translateError(error.message), 'danger');
   userProfile.dana_number = num;
   userProfile.dana_name = name;
@@ -975,11 +1012,11 @@ function switchAuthTab(tab) {
   $('tab-register').classList.toggle('active', tab === 'register');
 }
 
-async function doLogin() {
+async function doLogin(btn) {
   const email = $('login-email').value.trim();
   const password = $('login-password').value;
   if (!email || !password) return showToast('Isi email & password', 'warning');
-  const btn = event.target; btn.disabled = true; btn.innerText = 'Memproses...';
+  btn.disabled = true; btn.innerText = 'Memproses...';
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) { showToast(translateError(error.message), 'danger'); btn.disabled = false; btn.innerText = 'Masuk'; return; }
   currentUser = data.user;
@@ -988,13 +1025,13 @@ async function doLogin() {
   navTo('home');
 }
 
-async function doRegister() {
+async function doRegister(btn) {
   const email = $('reg-email').value.trim();
   const password = $('reg-password').value;
   const username = $('reg-username').value.trim();
   if (!email || !password || !username) return showToast('Lengkapi semua kolom', 'warning');
   if (password.length < 6) return showToast('Password minimal 6 karakter', 'warning');
-  const btn = event.target; btn.disabled = true; btn.innerText = 'Memproses...';
+  btn.disabled = true; btn.innerText = 'Memproses...';
   const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username } } });
   if (error) { showToast(translateError(error.message), 'danger'); btn.disabled = false; btn.innerText = 'Daftar Akun'; return; }
   if (data.session) {
@@ -1025,18 +1062,39 @@ async function loadSettings() {
 }
 
 // ============================================
-// HOME - LOAD TOURNAMENTS
+// HOME - LOAD TOURNAMENTS & BANNER
 // ============================================
+async function loadHeroBanner() {
+  const { data, error } = await sb.from('banners')
+    .select('image_url')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (data && data.image_url) {
+    $('hero-banner').style.backgroundImage = `url('${data.image_url}')`;
+    $('hero-banner').style.backgroundSize = 'cover';
+    $('hero-banner').style.backgroundPosition = 'center';
+  } else {
+    $('hero-banner').style.backgroundImage = `url('https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg')`;
+  }
+}
+
 async function loadTournaments() {
+  loadHeroBanner(); // <--- Panggil Banner dari tabel banners
+  
   const grid = $('tournament-grid');
   grid.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat...</p></div>';
   const { data, error } = await sb.from('v_tournaments_public').select('*').order('created_at', { ascending: false });
+  
   if (error || !data || data.length === 0) {
     grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-ghost"></i><h3>Belum Ada Turnamen</h3><p>Turnamen baru akan muncul di sini.</p></div>`;
     $('hero-title').innerText = 'GH-T ARENA';
     $('hero-prize').innerText = '-'; $('hero-date').innerText = '-'; $('hero-btn').style.display = 'none';
     return;
   }
+  
   grid.innerHTML = data.map(t => `
     <div class="ticket-card" onclick="openDetail('${t.format}','${t.id}')">
       <div class="ticket-banner">
@@ -1051,6 +1109,7 @@ async function loadTournaments() {
       <div class="ticket-footer"><span><i class="fa-solid fa-users"></i> ${t.total_slots} Tim</span><span>${t.format}</span></div>
     </div>
   `).join('');
+  
   const first = data[0];
   $('hero-title').innerText = first.name;
   $('hero-prize').innerText = formatRp(first.prize_pool);
@@ -1233,9 +1292,11 @@ async function loadTournamentChat(tid) {
 async function sendTournamentChat() {
   if (!await ensureSession()) return;
   const input = $('chat-tournament-input');
-  const msg = input.value.trim();
+  let msg = input.value.trim();
   if (!msg) return;
   if (!checkChatRateLimit('tour_' + currentTournamentId)) return;
+  
+  msg = censorText(msg); // Anti Toxic
   
   const { data: reg } = await sb.from('registrations').select('id').eq('tournament_id', currentTournamentId).eq('owner_id', currentUser.id).eq('status', 'resmi_terdaftar').maybeSingle();
   if (!reg) return showToast('Hanya peserta turnamen yang bisa chat!', 'danger');
@@ -1288,9 +1349,11 @@ async function loadGlobalChat() {
 async function sendGlobalChat() {
   if (!await ensureSession()) return;
   const input = $('global-chat-input');
-  const msg = input.value.trim();
+  let msg = input.value.trim();
   if (!msg) return;
   if (!checkChatRateLimit('global')) return;
+  
+  msg = censorText(msg); // Anti Toxic
   
   const { error } = await sb.from('global_chats').insert({ user_id: currentUser.id, username: userProfile?.username || 'Captain', message: msg });
   if (error) return showToast(translateError(error.message), 'danger');
@@ -1396,15 +1459,16 @@ async function loadTeams() {
   `).join('');
 }
 
-async function createTeam() {
+async function createTeam(btn) {
   if (!await ensureSession()) return;
   const name = $('new-team-name').value.trim();
   const desc = $('new-team-desc').value.trim();
   const logoFile = $('new-team-logo').files[0];
   if (!name) return showToast('Nama tim wajib diisi', 'warning');
   
+  btn.disabled = true;
   const { data: games } = await sb.from('games').select('id').limit(1);
-  if (!games || games.length === 0) return showToast('Game belum ada di database', 'danger');
+  if (!games || games.length === 0) { btn.disabled = false; return showToast('Game belum ada di database', 'danger'); }
   
   let logoUrl = null;
   if (logoFile) {
@@ -1415,6 +1479,7 @@ async function createTeam() {
   }
   
   const { error } = await sb.from('teams').insert({ owner_id: currentUser.id, game_id: games[0].id, name, description: desc || null, logo_url: logoUrl });
+  btn.disabled = false;
   if (error) return showToast(translateError(error.message), 'danger');
   
   showToast('Tim berhasil dibuat', 'success');
@@ -1470,7 +1535,7 @@ async function loadPlayers() {
   if (subCount >= 2) { optSub.disabled = true; $('new-player-role').value = 'main'; } else { optSub.disabled = false; }
 }
 
-async function addPlayer() {
+async function addPlayer(btn) {
   if (!await ensureSession()) return;
   const nick = $('new-player-nick').value.trim();
   const uid = $('new-player-uid').value.trim();
@@ -1478,7 +1543,9 @@ async function addPlayer() {
   if (!nick || !uid) return showToast('Nick & UID wajib', 'warning');
   if (!activeTeamId) return showToast('Tim belum dipilih', 'danger');
   
+  btn.disabled = true;
   const { error } = await sb.from('team_players').insert({ team_id: activeTeamId, nickname: nick, game_uid: uid, role });
+  btn.disabled = false;
   if (error) return showToast(translateError(error.message), 'danger');
   showToast('Pemain ditambahkan', 'success');
   $('new-player-nick').value = ''; $('new-player-uid').value = '';
@@ -1493,24 +1560,28 @@ function openEditPlayer(id, nick, uid, role) {
   openModal('modal-edit-player');
 }
 
-async function saveEditPlayer() {
+async function saveEditPlayer(btn) {
   if (!await ensureSession()) return;
   const nick = $('edit-nick').value.trim();
   const uid = $('edit-uid').value.trim();
   const role = $('edit-role').value;
   if (!nick || !uid) return showToast('Nick & UID wajib', 'warning');
   
+  btn.disabled = true;
   const { error } = await sb.from('team_players').update({ nickname: nick, game_uid: uid, role }).eq('id', editingPlayerId);
+  btn.disabled = false;
   if (error) return showToast(translateError(error.message), 'danger');
   showToast('Data pemain diperbarui', 'success');
   closeModal('modal-edit-player');
   loadPlayers();
 }
 
-async function deletePlayer() {
+async function deletePlayer(btn) {
   if (!await ensureSession()) return;
   if (!confirm('Yakin hapus pemain ini?')) return;
+  btn.disabled = true;
   const { error } = await sb.from('team_players').delete().eq('id', editingPlayerId);
+  btn.disabled = false;
   if (error) return showToast(translateError(error.message), 'danger');
   showToast('Pemain dihapus', 'success');
   closeModal('modal-edit-player');
@@ -1613,12 +1684,11 @@ async function loadRosterForReg() {
   `;
 }
 
-async function finishRegister() {
+async function finishRegister(btn) {
   if (!await ensureSession()) return;
   if (!selectedTeamId || !currentTournamentId) return showToast('Data belum lengkap', 'warning');
   const file = $('reg-proof-file').files[0];
   if (!file) return showToast('Upload bukti transfer dulu!', 'warning');
-  const btn = $('btn-confirm-pay');
   btn.disabled = true; btn.innerText = 'Memproses...';
   
   try {
@@ -1738,16 +1808,18 @@ function openWithdraw(regId, tName) {
   openModal('modal-withdraw');
 }
 
-async function submitWithdraw() {
+async function submitWithdraw(btn) {
   if (!await ensureSession()) return;
   if (!currentWithdrawRegId) return;
   const reason = $('withdraw-reason').value.trim();
   if (!reason) return showToast('Isi alasan mundur', 'warning');
   
+  btn.disabled = true;
   const { error } = await sb.from('registrations').update({
     withdraw_requested_at: new Date().toISOString(),
     withdraw_reason: reason
   }).eq('id', currentWithdrawRegId);
+  btn.disabled = false;
   
   if (error) return showToast(translateError(error.message), 'danger');
   closeModal('modal-withdraw');
@@ -1934,4 +2006,4 @@ if (window.location.hash === '#404') {
 }
 </script>
 </body>
-                                                     </html>
+  </html>
