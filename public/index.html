@@ -5,1206 +5,1139 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#050505">
     <title>GH-T ARENA — Gaming House Tour Arena</title>
-    
-    <!-- Fonts: Orbitron, Rajdhani, Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Poppins:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* ================= CSS SAMA SEPERTI SEBELUMNYA ================= */
-        :root {
-            --bg: #050505; --panel: #121212; --panel-glass: rgba(18, 18, 22, 0.92);
-            --gold: #d4af37; --gold-glow: rgba(212, 175, 55, 0.5);
-            --silver: #b0b0b0; --text: #ffffff; --muted: #777777;
-            --border: rgba(212, 175, 55, 0.25); --danger: #e53935;
-            --success: #43a047; --info: #29b6f6; --warning: #fbc02d; --cyan: #00bcd4;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Poppins', sans-serif; user-select: none; }
-        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
-        body { background-color: var(--bg); color: var(--text); overflow-x: hidden; padding-bottom: 90px; background-image: linear-gradient(rgba(212, 175, 55, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(212, 175, 55, 0.03) 1px, transparent 1px); background-size: 40px 40px; background-position: center top; }
-        h1, h2, h3, .font-orbitron { font-family: 'Orbitron', sans-serif; }
-        .hidden { display: none !important; }
-        
-        /* Animasi */
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes crosshairSpin { 0% { transform: rotate(0deg) scale(0.8); opacity: 0; } 50% { opacity: 1; } 100% { transform: rotate(360deg) scale(1); opacity: 1; } }
-        @keyframes glitchText { 0% { text-shadow: 2px 0 red, -2px 0 blue; transform: translate(0); } 20% { text-shadow: -2px 0 red, 2px 0 blue; transform: translate(-2px, 2px); } 40% { text-shadow: 2px 0 red, -2px 0 blue; transform: translate(2px, -2px); } 60% { text-shadow: -2px 0 red, 2px 0 blue; transform: translate(-2px, -2px); } 80% { text-shadow: 2px 0 red, -2px 0 blue; transform: translate(2px, 2px); } 100% { text-shadow: none; transform: translate(0); } }
-        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(229, 57, 53, 0); } 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0); } }
-        @keyframes breatheLogo { 0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 5px var(--gold-glow)); } 50% { opacity: 1; filter: drop-shadow(0 0 15px var(--gold)); } }
-        @keyframes slideInBottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        @keyframes slideInTop { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        @keyframes radarSweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-        @keyframes victoryFlash { 0% { opacity: 0; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0; transform: scale(1.5); } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
-        @keyframes floatUpDown { from { transform: translateY(0); } to { transform: translateY(-8px); } }
-        @keyframes elasticClick { 0% { transform: scale(1); } 50% { transform: scale(0.92); } 100% { transform: scale(1); } }
-        @keyframes scanDown { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
-        @keyframes holographic { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        
-        .view { animation: fadeInUp 0.4s ease-out; }
-        
-        /* Intro */
-        #intro-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.8s ease, visibility 0.8s; font-family: 'Rajdhani', monospace; }
-        #intro-screen.hidden { opacity: 0; visibility: hidden; }
-        .intro-content { text-align: center; display: flex; flex-direction: column; align-items: center; width: 100%; padding: 20px;}
-        .intro-logo { width: 120px; margin-bottom: 20px; filter: drop-shadow(0 0 25px var(--gold-glow)); animation: fadeInUp 1.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
-        .intro-title { font-family: 'Orbitron'; font-size: 2.2rem; color: var(--gold); letter-spacing: 8px; margin-bottom: 10px; animation: glitchText 0.5s infinite; }
-        .intro-subtitle { font-size: 0.8rem; color: var(--silver); letter-spacing: 5px; margin-bottom: 30px; }
-        .terminal-text { font-family: 'Rajdhani', monospace; color: var(--success); font-size: 0.75rem; text-align: left; width: min(300px, 80vw); margin-bottom: 20px; height: 60px; }
-        .terminal-text p { margin: 2px 0; opacity: 0; animation: fadeInUp 0.2s forwards; }
-        .loading-crosshair { font-size: 2rem; color: var(--gold); animation: crosshairSpin 1.5s infinite linear; margin-top: 20px; text-shadow: 0 0 10px var(--gold); }
-        #skip-btn { position: absolute; bottom: 40px; z-index: 3; background: rgba(255,255,255,0.05); color: var(--silver); border: 1px solid rgba(255,255,255,0.2); padding: 8px 24px; border-radius: 20px; cursor: pointer; font-family: 'Orbitron', sans-serif; transition: 0.3s; font-size: 0.75rem; opacity: 0; pointer-events: none; }
-        #skip-btn.show { opacity: 1; pointer-events: auto; animation: fadeInUp 0.5s; }
-        #skip-btn:hover { background: var(--gold); color: #000; border-color: var(--gold); }
+        :root { --bg:#050505;--panel:#121212;--panel-glass:rgba(18,18,22,.92);--gold:#d4af37;--gold-glow:rgba(212,175,55,.5);--silver:#b0b0b0;--text:#fff;--muted:#777;--border:rgba(212,175,55,.25);--danger:#e53935;--success:#43a047;--info:#29b6f6;--warning:#fbc02d;--cyan:#00bcd4; }
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--gold);border-radius:10px}
+        body{background:var(--bg);color:var(--text);font-family:'Poppins',sans-serif;overflow-x:hidden;padding-bottom:90px;background-image:linear-gradient(rgba(212,175,55,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,.03) 1px,transparent 1px);background-size:40px 40px;background-position:center top;user-select:none}
+        h1,h2,h3{font-family:'Orbitron',sans-serif}.hidden{display:none!important}
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes crosshairSpin{0%{transform:rotate(0) scale(.8);opacity:0}50%{opacity:1}100%{transform:rotate(360deg) scale(1);opacity:1}}
+        @keyframes glitchText{0%{text-shadow:2px 0 red,-2px 0 blue}20%{text-shadow:-2px 0 red,2px 0 blue;transform:translate(-2px,2px)}40%{text-shadow:2px 0 red,-2px 0 blue;transform:translate(2px,-2px)}60%{text-shadow:-2px 0 red,2px 0 blue;transform:translate(-2px,-2px)}80%{text-shadow:2px 0 red,-2px 0 blue;transform:translate(2px,2px)}100%{text-shadow:none;transform:translate(0)}}
+        @keyframes pulseRed{0%{box-shadow:0 0 0 0 rgba(229,57,53,.7)}70%{box-shadow:0 0 0 8px rgba(229,57,53,0)}100%{box-shadow:0 0 0 0 rgba(229,57,53,0)}}
+        @keyframes breatheLogo{0%,100%{opacity:.8;filter:drop-shadow(0 0 5px var(--gold-glow))}50%{opacity:1;filter:drop-shadow(0 0 15px var(--gold))}}
+        @keyframes slideInBottom{from{transform:translateY(100%)}to{transform:translateY(0)}}
+        @keyframes slideInTop{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+        @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+        @keyframes radarSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+        @keyframes shake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-5px)}20%,40%,60%,80%{transform:translateX(5px)}}
+        @keyframes floatUpDown{from{transform:translateY(0)}to{transform:translateY(-8px)}}
+        @keyframes elasticClick{0%{transform:scale(1)}50%{transform:scale(.92)}100%{transform:scale(1)}}
+        @keyframes scanDown{0%{top:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
+        @keyframes holographic{0%{background-position:0 50%}50%{background-position:100% 50%}100%{background-position:0 50%}}
+        @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+        .view{animation:fadeInUp .4s ease-out}
 
-        /* Running Text & Kill Feed */
-        .running-text { background: #0a0a0a; color: var(--gold); font-size: 0.65rem; padding: 6px 0; white-space: nowrap; overflow: hidden; border-bottom: 1px solid #222; display: flex; font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 1px; }
-        .running-text span { display: inline-block; padding-left: 100%; animation: marquee 20s linear infinite; }
-        .kill-feed-container { position: fixed; top: 100px; right: 15px; z-index: 98; display: flex; flex-direction: column; gap: 5px; pointer-events: none; }
-        .kill-feed-item { background: rgba(10,10,10,0.85); border: 1px solid #333; border-left: 2px solid var(--danger); padding: 5px 10px; border-radius: 4px; font-size: 0.65rem; color: #fff; animation: slideInTop 0.3s ease-out, fadeOut 0.5s 2.5s forwards; font-family: 'Rajdhani'; font-weight: 600; letter-spacing: 0.5px; }
-        @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
+        #intro-screen{position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:opacity .8s,visibility .8s;font-family:'Rajdhani',monospace}
+        #intro-screen.hidden{opacity:0;visibility:hidden}
+        .intro-content{text-align:center;display:flex;flex-direction:column;align-items:center;padding:20px}
+        .intro-logo{width:120px;margin-bottom:20px;filter:drop-shadow(0 0 25px var(--gold-glow));animation:fadeInUp 1.5s cubic-bezier(.16,1,.3,1) both}
+        .intro-title{font-size:2.2rem;color:var(--gold);letter-spacing:8px;margin-bottom:10px;animation:glitchText .5s infinite}
+        .intro-subtitle{font-size:.8rem;color:var(--silver);letter-spacing:5px;margin-bottom:30px}
+        .terminal-text{font-family:'Rajdhani',monospace;color:var(--success);font-size:.75rem;text-align:left;width:min(300px,80vw);margin-bottom:20px;height:60px}
+        .terminal-text p{margin:2px 0;opacity:0;animation:fadeInUp .2s forwards}
+        .loading-crosshair{font-size:2rem;color:var(--gold);animation:crosshairSpin 1.5s infinite linear;margin-top:20px;text-shadow:0 0 10px var(--gold)}
+        #skip-btn{position:absolute;bottom:40px;background:rgba(255,255,255,.05);color:var(--silver);border:1px solid rgba(255,255,255,.2);padding:8px 24px;border-radius:20px;cursor:pointer;font-family:'Orbitron';font-size:.75rem;opacity:0;pointer-events:none;transition:.3s}
+        #skip-btn.show{opacity:1;pointer-events:auto}
+        #skip-btn:hover{background:var(--gold);color:#000}
 
-        /* Navbar */
-        nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: rgba(5, 5, 5, 0.95); border-bottom: 1px solid #222; position: sticky; top: 0; z-index: 100; height: 60px; transition: 0.3s; }
-        nav.shrink { height: 50px; background: rgba(5, 5, 5, 0.98); }
-        .nav-brand { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .nav-brand img { height: 30px; animation: breatheLogo 3s infinite ease-in-out; transition: 0.3s; }
-        nav.shrink .nav-brand img { height: 24px; }
-        .nav-brand .brand-text { font-family: 'Orbitron'; font-weight: 800; font-size: 1rem; color: var(--gold); letter-spacing: 1px; }
-        .nav-actions { display: flex; align-items: center; gap: 15px; }
-        .nav-icon { background: transparent; border: none; color: var(--silver); font-size: 1.2rem; cursor: pointer; position: relative; transition: 0.3s; }
-        .nav-icon:hover { color: var(--gold); }
-        .badge { position: absolute; top: -5px; right: -8px; background: var(--danger); color: #fff; font-size: 0.55rem; padding: 2px 5px; border-radius: 10px; font-weight: bold; }
-        .server-time { font-family: 'Orbitron'; font-size: 0.65rem; color: var(--cyan); margin-right: 10px; text-shadow: 0 0 5px var(--cyan); }
+        .running-text{background:#0a0a0a;color:var(--gold);font-size:.65rem;padding:6px 0;white-space:nowrap;overflow:hidden;border-bottom:1px solid #222;display:flex;font-family:'Rajdhani';font-weight:700}
+        .running-text span{display:inline-block;padding-left:100%;animation:marquee 20s linear infinite}
 
-        /* Server Status */
-        .server-status { display: flex; justify-content: center; gap: 15px; font-size: 0.6rem; color: var(--muted); background: #080808; padding: 4px 0; border-bottom: 1px solid #111; font-family: 'Rajdhani'; font-weight: 600; }
-        .server-status span { display: flex; align-items: center; gap: 4px; }
-        .dot-online { width: 6px; height: 6px; background: var(--success); border-radius: 50%; box-shadow: 0 0 5px var(--success); }
+        nav{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:rgba(5,5,5,.95);border-bottom:1px solid #222;position:sticky;top:0;z-index:100;height:60px}
+        .nav-brand{display:flex;align-items:center;gap:8px;cursor:pointer}
+        .nav-brand img{height:30px;animation:breatheLogo 3s infinite}
+        .nav-brand .brand-text{font-family:'Orbitron';font-weight:800;font-size:1rem;color:var(--gold)}
+        .nav-actions{display:flex;align-items:center;gap:15px}
+        .nav-icon{background:transparent;border:none;color:var(--silver);font-size:1.2rem;cursor:pointer;position:relative;transition:.3s}
+        .nav-icon:hover{color:var(--gold)}
+        .badge{position:absolute;top:-5px;right:-8px;background:var(--danger);color:#fff;font-size:.55rem;padding:2px 5px;border-radius:10px;font-weight:bold}
+        .server-time{font-family:'Orbitron';font-size:.65rem;color:var(--cyan)}
+        .server-status{display:flex;justify-content:center;gap:15px;font-size:.6rem;color:var(--muted);background:#080808;padding:4px 0;border-bottom:1px solid #111;font-family:'Rajdhani';font-weight:600}
+        .server-status span{display:flex;align-items:center;gap:4px}
+        .dot-online{width:6px;height:6px;background:var(--success);border-radius:50%;box-shadow:0 0 5px var(--success)}
 
-        /* Bottom Nav */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10, 10, 10, 0.98); border-top: 1px solid #222; display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); z-index: 100; }
-        .bottom-nav button { background: transparent; border: none; color: var(--muted); font-size: 0.65rem; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: 0.3s; font-weight: 600; position: relative; width: 60px; font-family: 'Rajdhani'; }
-        .bottom-nav button i { font-size: 1.2rem; margin-bottom: 2px; transition: 0.3s; }
-        .bottom-nav button.active { color: var(--gold); }
-        .bottom-nav button.active i { transform: translateY(-3px); text-shadow: 0 0 10px var(--gold-glow); }
-        .bottom-nav button.active::after { content: ''; position: absolute; top: -8px; width: 20px; height: 3px; background: var(--gold); border-radius: 0 0 5px 5px; box-shadow: 0 0 10px var(--gold); }
+        .bottom-nav{position:fixed;bottom:0;left:0;width:100%;background:rgba(10,10,10,.98);border-top:1px solid #222;display:flex;justify-content:space-around;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:100}
+        .bottom-nav button{background:transparent;border:none;color:var(--muted);font-size:.65rem;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.3s;font-weight:600;position:relative;width:60px;font-family:'Rajdhani'}
+        .bottom-nav button i{font-size:1.2rem;margin-bottom:2px;transition:.3s}
+        .bottom-nav button.active{color:var(--gold)}
+        .bottom-nav button.active i{transform:translateY(-3px);text-shadow:0 0 10px var(--gold-glow)}
+        .bottom-nav button.active::after{content:'';position:absolute;top:-8px;width:20px;height:3px;background:var(--gold);border-radius:0 0 5px 5px;box-shadow:0 0 10px var(--gold)}
 
-        /* Floating */
-        .wa-float { position: fixed; bottom: 85px; right: 20px; width: 50px; height: 50px; background: #25D366; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); z-index: 99; cursor: pointer; transition: 0.3s; border: 2px solid #fff; text-decoration: none; }
-        .wa-float:hover { transform: scale(1.1); }
-        .test-float { position: fixed; bottom: 145px; right: 20px; width: 50px; height: 50px; background: var(--panel); color: var(--info); border: 2px solid var(--info); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; box-shadow: 0 4px 15px rgba(41, 182, 246, 0.3); z-index: 99; cursor: pointer; transition: 0.3s; }
-        .test-float:hover { transform: scale(1.1); background: var(--info); color: #000; }
-        .back-to-top { position: fixed; bottom: 205px; right: 20px; width: 40px; height: 40px; background: var(--panel); color: var(--gold); border: 1px solid var(--gold); border-radius: 50%; display: none; justify-content: center; align-items: center; font-size: 1rem; z-index: 99; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        .back-to-top.show { display: flex; }
+        .wa-float{position:fixed;bottom:85px;right:20px;width:50px;height:50px;background:#25D366;color:#fff;border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:1.5rem;box-shadow:0 4px 15px rgba(37,211,102,.4);z-index:99;border:2px solid #fff;text-decoration:none}
+        .test-float{position:fixed;bottom:145px;right:20px;width:50px;height:50px;background:var(--panel);color:var(--info);border:2px solid var(--info);border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:1.2rem;box-shadow:0 4px 15px rgba(41,182,246,.3);z-index:99;cursor:pointer}
+        .back-to-top{position:fixed;bottom:205px;right:20px;width:40px;height:40px;background:var(--panel);color:var(--gold);border:1px solid var(--gold);border-radius:50%;display:none;justify-content:center;align-items:center;font-size:1rem;z-index:99;cursor:pointer}
+        .back-to-top.show{display:flex}
 
-        /* Container & Cards */
-        .container { max-width: 800px; margin: 15px auto; padding: 0 15px; }
-        .glass-card { background: var(--panel-glass); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-        .page-title { font-size: 1.1rem; color: #fff; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; gap: 8px; font-family: 'Rajdhani'; text-transform: uppercase; letter-spacing: 1px; }
+        .container{max-width:800px;margin:15px auto;padding:0 15px}
+        .glass-card{background:var(--panel-glass);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+        .page-title{font-size:1.1rem;color:#fff;margin-bottom:15px;border-bottom:1px solid #333;padding-bottom:10px;display:flex;align-items:center;gap:8px;font-family:'Rajdhani';text-transform:uppercase}
 
-        /* Home */
-        .hero-banner { position: relative; width: 100%; height: 200px; border-radius: 16px; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--border); background: url('https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg') center/cover; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; }
-        .hero-banner::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.2) 100%); z-index: 1; }
-        .hero-content { position: relative; z-index: 2; }
-        .badge-featured { background: rgba(212, 175, 55, 0.15); color: var(--gold); border: 1px solid var(--gold); padding: 4px 10px; border-radius: 4px; font-size: 0.6rem; font-weight: 700; margin-bottom: 8px; display: inline-block; letter-spacing: 1px; font-family: 'Rajdhani'; }
-        .hero-title { font-size: 1.4rem; color: #fff; margin-bottom: 5px; text-shadow: 0 2px 4px #000; }
-        .hero-meta { display: flex; gap: 15px; font-size: 0.75rem; color: var(--silver); margin-bottom: 15px; font-family: 'Rajdhani'; font-weight: 600; }
-        .btn-hero { background: linear-gradient(135deg, #b8860b, var(--gold)); color: #000; padding: 10px 20px; border-radius: 8px; font-family: 'Orbitron', sans-serif; font-size: 0.75rem; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.3s; }
-        .btn-hero:active { animation: elasticClick 0.3s; }
-        .sponsor-banner { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(90deg, #111, #1a1a1a); border: 1px solid #333; border-radius: 12px; padding: 12px 15px; margin-bottom: 20px; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden; }
-        .sponsor-banner:hover { border-color: var(--gold); }
-        .sponsor-banner img { height: 30px; }
-        .sponsor-text-content { font-size: 0.7rem; color: var(--silver); position: relative; height: 30px; width: 70%; }
-        .sponsor-text { position: absolute; top: 0; left: 0; width: 100%; opacity: 0; transition: 0.5s; font-weight: 600; }
-        .sponsor-text.active { opacity: 1; }
-        .countdown-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .countdown-box { display: flex; gap: 8px; }
-        .cd-item { background: #111; border: 1px solid #333; padding: 5px 10px; border-radius: 6px; text-align: center; min-width: 45px; }
-        .cd-num { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: var(--gold); font-weight: 800; }
-        .cd-lbl { font-size: 0.5rem; color: var(--muted); text-transform: uppercase; font-family: 'Rajdhani'; font-weight: 700; }
-        .tournament-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .ticket-card { background: #121212; border: 1px solid #222; border-radius: 12px; overflow: hidden; transition: 0.3s; position: relative; display: flex; flex-direction: column; cursor: pointer; border-left: 3px solid var(--gold); }
-        .ticket-card:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 5px 15px rgba(212, 175, 55, 0.15); }
-        .ticket-banner { position: relative; width: 100%; height: 100px; }
-        .ticket-banner img.bg-img { width: 100%; height: 100%; object-fit: cover; }
-        .ticket-badge { position: absolute; top: 8px; left: 8px; width: 24px; height: 24px; border-radius: 50%; background: #000; border: 1px solid #333; padding: 2px; }
-        .ticket-info { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; }
-        .status-badge { font-size: 0.55rem; padding: 3px 6px; border-radius: 4px; font-weight: 700; display: inline-block; margin-bottom: 8px; width: fit-content; text-transform: uppercase; font-family: 'Rajdhani'; }
-        .status-live { background: var(--danger); color: #fff; animation: pulseRed 2s infinite; }
-        .status-open { background: rgba(67, 160, 71, 0.2); color: var(--success); border: 1px solid var(--success); }
-        .ticket-title { font-family: 'Orbitron', sans-serif; font-size: 0.75rem; color: #fff; line-height: 1.3; margin-bottom: 8px; height: 2.6em; overflow: hidden; }
-        .ticket-prize { font-size: 0.8rem; color: var(--gold); font-weight: 700; margin-bottom: 10px; font-family: 'Rajdhani'; }
-        .ticket-divider { border-top: 1px dashed #444; margin: 0 12px; position: relative; }
-        .ticket-divider::before, .ticket-divider::after { content: ''; position: absolute; top: -6px; width: 12px; height: 12px; background: var(--bg); border-radius: 50%; border: 1px solid #222; }
-        .ticket-divider::before { left: -19px; border-right-color: transparent; border-top-color: transparent; transform: rotate(45deg); }
-        .ticket-divider::after { right: -19px; border-left-color: transparent; border-bottom-color: transparent; transform: rotate(45deg); }
-        .ticket-footer { padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; color: var(--muted); font-family: 'Rajdhani'; font-weight: 600; }
-        .hall-of-fame { display: flex; justify-content: space-around; align-items: flex-end; height: 100px; margin-top: 10px; }
-        .hof-item { text-align: center; width: 30%; }
-        .hof-avatar { width: 40px; height: 40px; background: #222; margin: 0 auto 5px; border: 2px solid #444; display: flex; justify-content: center; align-items: center; font-size: 1rem; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
-        .hof-1 .hof-avatar { width: 55px; height: 55px; border-color: var(--gold); box-shadow: 0 0 15px var(--gold-glow); font-size: 1.5rem; animation: floatUpDown 2s infinite alternate; }
-        .hof-name { font-size: 0.65rem; font-weight: bold; color: #fff; font-family: 'Rajdhani'; }
-        .hof-pts { font-size: 0.55rem; color: var(--gold); font-family: 'Rajdhani'; }
+        .hero-banner{position:relative;width:100%;height:200px;border-radius:16px;overflow:hidden;margin-bottom:20px;border:1px solid var(--border);background:url('https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg') center/cover;display:flex;flex-direction:column;justify-content:flex-end;padding:20px}
+        .hero-banner::before{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.95) 10%,rgba(0,0,0,.2) 100%);z-index:1}
+        .hero-content{position:relative;z-index:2}
+        .badge-featured{background:rgba(212,175,55,.15);color:var(--gold);border:1px solid var(--gold);padding:4px 10px;border-radius:4px;font-size:.6rem;font-weight:700;margin-bottom:8px;display:inline-block;font-family:'Rajdhani'}
+        .hero-title{font-size:1.4rem;color:#fff;margin-bottom:5px}
+        .hero-meta{display:flex;gap:15px;font-size:.75rem;color:var(--silver);margin-bottom:15px;font-family:'Rajdhani';font-weight:600}
+        .btn-hero{background:linear-gradient(135deg,#b8860b,var(--gold));color:#000;padding:10px 20px;border-radius:8px;font-family:'Orbitron';font-size:.75rem;font-weight:700;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
 
-        /* Detail */
-        .detail-banner { width: 100%; height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
-        .detail-title { font-size: 1.2rem; color: var(--gold); margin-bottom: 5px; }
-        .map-pool-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; scrollbar-width: none; }
-        .map-pool-container::-webkit-scrollbar { display: none; }
-        .map-card { min-width: 120px; background: #111; border: 1px solid #333; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; }
-        .map-card img { width: 100%; height: 60px; object-fit: cover; }
-        .map-info { padding: 5px; text-align: center; }
-        .map-name { font-size: 0.7rem; font-weight: bold; color: var(--gold); font-family: 'Rajdhani'; }
-        .map-match { font-size: 0.55rem; color: var(--muted); font-family: 'Rajdhani'; }
-        .map-status { position: absolute; top: 5px; right: 5px; font-size: 0.5rem; padding: 2px 5px; border-radius: 3px; font-weight: bold; font-family: 'Rajdhani'; }
-        .ms-done { background: var(--success); color: #fff; }
-        .ms-live { background: var(--danger); color: #fff; animation: pulseRed 1s infinite; }
-        .ms-next { background: #333; color: #fff; }
-        .live-stream-box { background: #111; border: 1px solid #333; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 15px; position: relative; overflow: hidden; }
-        .radar-sweep { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(229, 57, 53, 0.15), transparent); animation: radarSweep 2.5s infinite linear; pointer-events: none; }
-        .live-icon { font-size: 2rem; color: var(--danger); margin-bottom: 10px; animation: pulseRed 2s infinite; border-radius: 50%; display: inline-block; padding: 10px; }
-        .live-text { font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: #fff; font-weight: bold; }
-        .live-sub { font-size: 0.65rem; color: var(--muted); margin-top: 5px; font-family: 'Rajdhani'; }
-        .detail-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .meta-box { background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; text-align: center; }
-        .meta-box span { display: block; font-size: 0.65rem; color: var(--muted); margin-bottom: 4px; font-family: 'Rajdhani'; }
-        .meta-box strong { font-size: 0.85rem; color: var(--gold); font-family: 'Orbitron', sans-serif; }
-        .podium-container { display: flex; align-items: flex-end; justify-content: center; gap: 10px; margin: 20px 0; height: 150px; }
-        .podium-box { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 32%; border-radius: 8px 8px 0 0; padding: 10px 5px; border: 1px solid #333; border-bottom: none; text-align: center; position: relative; }
-        .podium-box .medal { font-size: 1.5rem; margin-bottom: 5px; }
-        .podium-box .p-name { font-size: 0.65rem; color: #fff; font-weight: 700; font-family: 'Rajdhani'; line-height: 1; margin-bottom: 3px; }
-        .podium-box .p-prize { font-size: 0.7rem; color: var(--gold); font-weight: 800; font-family: 'Rajdhani'; white-space: nowrap; }
-        .podium-1 { height: 100%; background: linear-gradient(to top, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05)); border-color: var(--gold); z-index: 2; box-shadow: 0 -10px 20px rgba(212,175,55,0.1); }
-        .podium-2 { height: 75%; background: linear-gradient(to top, rgba(176, 176, 176, 0.15), transparent); }
-        .podium-3 { height: 60%; background: linear-gradient(to top, rgba(205, 127, 50, 0.15), transparent); }
-        .tabs { display: flex; gap: 10px; margin-bottom: 15px; background: #111; padding: 5px; border-radius: 10px; border: 1px solid #222; overflow-x: auto; scrollbar-width: none; }
-        .tab-btn { padding: 10px 15px; background: transparent; border: none; color: var(--muted); border-radius: 8px; font-family: 'Rajdhani', sans-serif; cursor: pointer; transition: 0.3s; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
-        .tab-btn.active { background: var(--gold); color: #000; }
-        details { background: #111; border: 1px solid #222; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.8rem; transition: 0.3s; }
-        details[open] { border-color: var(--gold); }
-        summary { cursor: pointer; color: var(--gold); font-weight: 600; outline: none; display: flex; justify-content: space-between; font-family: 'Rajdhani'; font-size: 0.9rem; }
-        details p { margin-top: 10px; color: var(--silver); line-height: 1.6; }
-        .fake-chat { background: #111; border: 1px solid #333; border-radius: 8px; padding: 10px; margin-top: 15px; height: 100px; overflow: hidden; position: relative; }
-        .chat-message { font-size: 0.7rem; color: var(--silver); margin-bottom: 5px; animation: fadeInUp 0.5s; }
-        .chat-name { color: var(--cyan); font-weight: bold; }
-        .chat-name.admin { color: var(--gold); }
-        .participant-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .participant-item { display: flex; align-items: center; gap: 10px; background: #111; padding: 8px 12px; border-radius: 8px; border: 1px solid #222; position: relative; }
-        .participant-item img { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #333; }
-        .participant-item span { font-size: 0.75rem; font-weight: 600; color: var(--silver); font-family: 'Rajdhani'; }
-        .verified-badge { position: absolute; right: 10px; color: var(--cyan); font-size: 0.8rem; text-shadow: 0 0 5px var(--cyan); }
+        .sponsor-banner{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,#111,#1a1a1a);border:1px solid #333;border-radius:12px;padding:12px 15px;margin-bottom:20px;cursor:pointer}
+        .sponsor-banner img{height:30px}
+        .sponsor-text-content{font-size:.7rem;color:var(--silver);position:relative;height:30px;width:70%}
+        .sponsor-text{position:absolute;top:0;left:0;width:100%;opacity:0;transition:.5s;font-weight:600}
+        .sponsor-text.active{opacity:1}
 
-        /* Forms */
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; font-weight: 500; font-family: 'Rajdhani'; }
-        input, select { width: 100%; padding: 12px 15px; background: rgba(0,0,0,0.6); border: 1px solid #333; border-radius: 8px; color: #fff; font-family: 'Poppins', sans-serif; transition: 0.3s; }
-        input:focus, select:focus { outline: none; border-color: var(--gold); }
-        .input-valid { border-color: var(--success) !important; }
-        .input-invalid { border-color: var(--danger) !important; animation: shake 0.3s; }
-        select { appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23d4af37%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
-        button.btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #b8860b, var(--gold)); color: #000; border: none; border-radius: 8px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        button.btn:active { animation: elasticClick 0.3s; filter: brightness(0.8); }
-        button.btn:disabled { background: #333; color: #777; cursor: not-allowed; transform: none; }
-        button.btn-secondary { background: transparent; border: 1px solid #555; color: var(--silver); }
-        button.btn-danger { background: rgba(229, 57, 53, 0.1); border: 1px solid var(--danger); color: var(--danger); }
-        button.btn-sm { width: auto; padding: 8px 15px; font-size: 0.7rem; }
+        .countdown-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+        .countdown-box{display:flex;gap:8px}
+        .cd-item{background:#111;border:1px solid #333;padding:5px 10px;border-radius:6px;text-align:center;min-width:45px}
+        .cd-num{font-family:'Orbitron';font-size:1.1rem;color:var(--gold);font-weight:800}
+        .cd-lbl{font-size:.5rem;color:var(--muted);font-family:'Rajdhani';font-weight:700}
 
-        /* Dashboard */
-        .id-card-wrap { perspective: 1000px; margin-bottom: 20px; }
-        .id-card { background: linear-gradient(135deg, #1a1a1a, #0a0a0a); border: 1px solid var(--gold); border-radius: 16px; padding: 20px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(212, 175, 55, 0.15); transition: transform 0.1s ease-out; transform-style: preserve-3d; }
-        .id-card::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.05) 50%, transparent 60%); animation: holographic 5s infinite linear; pointer-events: none; }
-        .id-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(212, 175, 55, 0.2); padding-bottom: 15px; transform: translateZ(30px); }
-        .id-avatar-wrap { position: relative; width: 60px; height: 60px; }
-        .id-avatar-ring { position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(var(--gold) 75%, #333 0); z-index: 0; }
-        .id-avatar { position: relative; width: 100%; height: 100%; border-radius: 50%; background: #111; color: var(--gold); display: flex; justify-content: center; align-items: center; font-size: 1.8rem; border: 2px solid #111; z-index: 1; }
-        .id-info h3 { font-size: 1.1rem; color: #fff; margin-bottom: 3px; display: flex; align-items: center; gap: 5px; font-family: 'Orbitron'; }
-        .tier-badge { font-size: 0.55rem; background: #333; padding: 2px 6px; border-radius: 4px; color: var(--gold); border: 1px solid var(--gold); font-family: 'Rajdhani'; }
-        .id-info p { font-size: 0.7rem; color: var(--silver); font-family: 'Rajdhani'; }
-        .id-body { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; transform: translateZ(20px); }
-        .id-stat span { display: block; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-family: 'Rajdhani'; }
-        .id-stat strong { font-size: 0.9rem; color: var(--gold); font-family: 'Orbitron', sans-serif; display: flex; align-items: center; gap: 5px; }
-        .copy-icon { cursor: pointer; color: var(--silver); font-size: 0.7rem; transition: 0.2s; }
-        .copy-icon:hover { color: var(--gold); }
-        .roster-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .flip-card { background-color: transparent; width: 100%; height: 120px; perspective: 1000px; cursor: pointer; }
-        .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
-        .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
-        .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 12px; border: 1px solid #333; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; }
-        .flip-card-front { background: #111; color: white; }
-        .flip-card-back { background: linear-gradient(135deg, #1a1a1a, #2a2a2a); color: white; transform: rotateY(180deg); border-color: var(--gold); }
-        .fc-nick { font-family: 'Orbitron', sans-serif; font-weight: bold; color: var(--gold); font-size: 0.9rem; margin-bottom: 5px; }
-        .fc-uid { font-size: 0.65rem; color: var(--muted); }
-        .fc-role { margin-top: 10px; font-size: 0.6rem; padding: 2px 8px; border-radius: 4px; font-family: 'Rajdhani'; font-weight: 700; }
-        .fc-role.main { background: rgba(212, 175, 55, 0.2); color: var(--gold); }
-        .fc-role.sub { background: rgba(255, 255, 255, 0.1); color: var(--silver); }
-        .fc-stat { font-size: 0.7rem; margin: 3px 0; color: var(--silver); font-family: 'Rajdhani'; }
+        .tournament-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+        .ticket-card{background:#121212;border:1px solid #222;border-radius:12px;overflow:hidden;transition:.3s;position:relative;display:flex;flex-direction:column;cursor:pointer;border-left:3px solid var(--gold)}
+        .ticket-card:hover{border-color:var(--gold);transform:translateY(-4px)}
+        .ticket-banner{position:relative;width:100%;height:100px}
+        .ticket-banner img.bg-img{width:100%;height:100%;object-fit:cover}
+        .ticket-badge{position:absolute;top:8px;left:8px;width:24px;height:24px;border-radius:50%;background:#000;border:1px solid #333;padding:2px}
+        .ticket-info{padding:12px;flex-grow:1;display:flex;flex-direction:column}
+        .status-badge{font-size:.55rem;padding:3px 6px;border-radius:4px;font-weight:700;display:inline-block;margin-bottom:8px;width:fit-content;text-transform:uppercase;font-family:'Rajdhani'}
+        .status-live{background:var(--danger);color:#fff;animation:pulseRed 2s infinite}
+        .status-open{background:rgba(67,160,71,.2);color:var(--success);border:1px solid var(--success)}
+        .ticket-title{font-family:'Orbitron';font-size:.75rem;color:#fff;line-height:1.3;margin-bottom:8px;height:2.6em;overflow:hidden}
+        .ticket-prize{font-size:.8rem;color:var(--gold);font-weight:700;margin-bottom:10px;font-family:'Rajdhani'}
+        .ticket-divider{border-top:1px dashed #444;margin:0 12px;position:relative}
+        .ticket-divider::before,.ticket-divider::after{content:'';position:absolute;top:-6px;width:12px;height:12px;background:var(--bg);border-radius:50%;border:1px solid #222}
+        .ticket-divider::before{left:-19px;border-right-color:transparent;border-top-color:transparent;transform:rotate(45deg)}
+        .ticket-divider::after{right:-19px;border-left-color:transparent;border-bottom-color:transparent;transform:rotate(45deg)}
+        .ticket-footer{padding:8px 12px;display:flex;justify-content:space-between;align-items:center;font-size:.6rem;color:var(--muted);font-family:'Rajdhani';font-weight:600}
 
-        /* Tabel Leaderboard */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #222; font-size: 0.8rem; }
-        th { background: #111; color: var(--gold); font-family: 'Rajdhani', sans-serif; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
-        .my-team-row { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
-        .my-team-row td { color: var(--gold); font-weight: bold; }
-        .glitch-num { animation: glitchText 0.3s; }
-        .bracket-container { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 15px; }
-        .bracket-col { display: flex; flex-direction: column; justify-content: space-around; gap: 20px; min-width: 140px; }
-        .bracket-match { background: #111; border: 1px solid #333; border-radius: 8px; overflow: hidden; position: relative; }
-        .bracket-match::after { content: ''; position: absolute; right: -20px; top: 50%; width: 20px; height: 1px; background: #444; }
-        .bracket-match:last-child::after { display: none; }
-        .bracket-team { padding: 10px; font-size: 0.75rem; border-bottom: 1px solid #222; display: flex; justify-content: space-between; }
-        .bracket-team.winner { color: var(--gold); font-weight: bold; background: rgba(212, 175, 55, 0.1); }
-        .bracket-team.my-team { border: 1px solid var(--gold); background: rgba(212, 175, 55, 0.15); }
+        .empty-state{grid-column:1/-1;text-align:center;padding:50px 20px;background:#0a0a0a;border:1px dashed #333;border-radius:12px}
+        .empty-state i{font-size:3.5rem;color:#222;margin-bottom:15px;display:block}
+        .empty-state h3{font-size:.95rem;color:#555;margin-bottom:8px;font-family:'Rajdhani'}
+        .empty-state p{font-size:.75rem;color:#444}
 
-        /* Notifikasi */
-        #notif-container { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-        .toast-notif { background: var(--panel); border: 1px solid #333; border-radius: 10px; padding: 15px; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.8); animation: slideInTop 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; pointer-events: auto; position: relative; overflow: hidden; }
-        .toast-notif.hide { animation: slideOutTop 0.3s forwards; }
-        @keyframes slideOutTop { to { transform: translateY(-20px); opacity: 0; } }
-        .toast-icon { font-size: 1.2rem; flex-shrink: 0; }
-        .toast-content { flex-grow: 1; }
-        .toast-title { font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 3px; font-family: 'Rajdhani'; font-size: 0.95rem; }
-        .toast-msg { font-size: 0.7rem; color: var(--silver); line-height: 1.4; }
-        .toast-action { margin-top: 8px; }
-        .toast-action button { background: transparent; border: 1px solid #555; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 0.65rem; cursor: pointer; }
-        .toast-close { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 0; margin-left: 5px; font-size: 1rem; }
-        .tn-info { border-left: 4px solid var(--info); } .tn-info .toast-icon { color: var(--info); }
-        .tn-warning { border-left: 4px solid var(--warning); } .tn-warning .toast-icon { color: var(--warning); }
-        .tn-danger { border-left: 4px solid var(--danger); } .tn-danger .toast-icon { color: var(--danger); }
-        .tn-success { border-left: 4px solid var(--success); } .tn-success .toast-icon { color: var(--success); }
-        .tn-gold { border-left: 4px solid var(--gold); background: linear-gradient(90deg, rgba(212,175,55,0.1), var(--panel)); } .tn-gold .toast-icon { color: var(--gold); }
-        .tn-victory { border: 2px solid var(--gold); background: linear-gradient(135deg, #1a1a1a, #2a2a2a); text-align: center; box-shadow: 0 0 20px var(--gold-glow); }
-        .tn-victory .toast-icon { font-size: 2rem; color: var(--gold); margin-bottom: 5px; }
-        .tn-victory .toast-title { font-family: 'Orbitron'; font-size: 1.1rem; color: var(--gold); }
+        .hall-of-fame{display:flex;justify-content:space-around;align-items:flex-end;height:100px;margin-top:10px}
+        .hof-item{text-align:center;width:30%}
+        .hof-avatar{width:40px;height:40px;background:#222;margin:0 auto 5px;border:2px solid #444;display:flex;justify-content:center;align-items:center;font-size:1rem;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+        .hof-1 .hof-avatar{width:55px;height:55px;border-color:var(--gold);box-shadow:0 0 15px var(--gold-glow);font-size:1.5rem;animation:floatUpDown 2s infinite alternate}
+        .hof-name{font-size:.65rem;font-weight:bold;color:#fff;font-family:'Rajdhani'}
+        .hof-pts{font-size:.55rem;color:var(--gold);font-family:'Rajdhani'}
 
-        /* Modal */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(3px); }
-        .modal-overlay.active { display: flex; }
-        .modal-box { background: #0f0f0f; border-top: 1px solid var(--gold); border-radius: 20px 20px 0 0; padding: 25px 20px calc(25px + env(safe-area-inset-bottom)); width: 100%; max-width: 500px; animation: slideInBottom 0.3s ease-out forwards; position: relative; max-height: 90dvh; overflow-y: auto; }
-        .modal-box h3 { color: var(--gold); margin-bottom: 15px; text-align: center; font-size: 1.1rem; font-family: 'Orbitron'; }
-        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 1.2rem; color: var(--muted); cursor: pointer; }
-        .stepper { display: flex; justify-content: space-between; margin-bottom: 20px; position: relative; }
-        .stepper::before { content: ''; position: absolute; top: 15px; left: 0; width: 100%; height: 2px; background: #333; z-index: 1; }
-        .step { width: 30px; height: 30px; border-radius: 50%; background: #222; border: 2px solid #333; display: flex; justify-content: center; align-items: center; font-size: 0.7rem; font-weight: bold; color: var(--muted); position: relative; z-index: 2; transition: 0.3s; }
-        .step.active { background: var(--gold); border-color: var(--gold); color: #000; box-shadow: 0 0 10px var(--gold-glow); }
-        .step.completed { background: var(--success); border-color: var(--success); color: #fff; }
-        .receipt { background: #fff; color: #000; padding: 20px; font-family: 'Courier New', monospace; border-radius: 8px; position: relative; margin-bottom: 15px; }
-        .receipt::before, .receipt::after { content: ''; position: absolute; left: 0; width: 100%; height: 10px; background-size: 20px 20px; }
-        .receipt::before { top: -10px; background-image: radial-gradient(circle, transparent 60%, #fff 60%); background-size: 10px 10px; }
-        .receipt::after { bottom: -10px; background-image: radial-gradient(circle, transparent 60%, #fff 60%); background-size: 10px 10px; transform: rotate(180deg); }
-        .receipt-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
-        .receipt-total { font-weight: bold; font-size: 1rem; margin-top: 10px; border-bottom: none; }
-        .countdown-box { text-align: center; margin-bottom: 15px; }
-        .countdown-timer { font-family: 'Orbitron', sans-serif; font-size: 1.5rem; color: var(--danger); font-weight: 800; }
-        .countdown-text { font-size: 0.65rem; color: var(--muted); font-family: 'Rajdhani'; }
-        .test-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .test-grid button { font-size: 0.7rem; padding: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; cursor: pointer; transition: 0.2s; font-family: 'Rajdhani'; font-weight: 700; }
-        .test-grid button:hover { background: #333; border-color: var(--info); }
-        .test-grid button.mode-btn { background: var(--gold); color: #000; font-weight: bold; }
-        .glitch-404 { font-family: 'Orbitron'; font-size: 6rem; font-weight: 900; color: var(--danger); animation: glitchText 0.5s infinite; text-shadow: 0 0 20px rgba(229, 57, 53, 0.5); }
-        .faq-cat-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
-        .faq-cat { padding: 6px 12px; background: #222; border: 1px solid #333; border-radius: 20px; font-size: 0.7rem; color: var(--muted); cursor: pointer; font-family: 'Rajdhani'; font-weight: 600; white-space: nowrap; }
-        .faq-cat.active { background: var(--gold); color: #000; border-color: var(--gold); }
-        footer { text-align: center; padding: 20px 0; font-size: 0.65rem; color: var(--muted); border-top: 1px solid #222; margin-top: 20px; font-family: 'Rajdhani'; }
-        footer a { color: var(--gold); text-decoration: none; }
-        @media (max-width: 480px) { .tournament-grid { grid-template-columns: 1fr; } .detail-meta { grid-template-columns: 1fr; } .participant-list { grid-template-columns: 1fr; } .id-body { grid-template-columns: 1fr 1fr; } .roster-grid { grid-template-columns: 1fr; } .test-grid { grid-template-columns: 1fr; } }
+        .detail-banner{width:100%;height:180px;object-fit:cover;border-radius:12px;margin-bottom:15px;border:1px solid #333}
+        .detail-title{font-size:1.2rem;color:var(--gold);margin-bottom:5px}
+        .map-pool-container{display:flex;gap:10px;overflow-x:auto;padding-bottom:10px;margin-bottom:15px}
+        .map-card{min-width:120px;background:#111;border:1px solid #333;border-radius:8px;overflow:hidden}
+        .map-card img{width:100%;height:60px;object-fit:cover}
+        .map-info{padding:5px;text-align:center}
+        .map-name{font-size:.7rem;font-weight:bold;color:var(--gold);font-family:'Rajdhani'}
+        .map-match{font-size:.55rem;color:var(--muted);font-family:'Rajdhani'}
+        .live-stream-box{background:#111;border:1px solid #333;border-radius:12px;padding:20px;text-align:center;margin-bottom:15px;position:relative;overflow:hidden}
+        .radar-sweep{position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(229,57,53,.15),transparent);animation:radarSweep 2.5s infinite linear;pointer-events:none}
+        .live-icon{font-size:2rem;color:var(--danger);margin-bottom:10px;animation:pulseRed 2s infinite;border-radius:50%;display:inline-block;padding:10px}
+        .live-text{font-family:'Orbitron';font-size:.8rem;color:#fff;font-weight:bold}
+        .live-sub{font-size:.65rem;color:var(--muted);margin-top:5px;font-family:'Rajdhani'}
+        .detail-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+        .meta-box{background:#111;padding:12px;border-radius:8px;border:1px solid #222;text-align:center}
+        .meta-box span{display:block;font-size:.65rem;color:var(--muted);margin-bottom:4px;font-family:'Rajdhani'}
+        .meta-box strong{font-size:.85rem;color:var(--gold);font-family:'Orbitron'}
+
+        .podium-container{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:20px 0;height:150px}
+        .podium-box{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:32%;border-radius:8px 8px 0 0;padding:10px 5px;border:1px solid #333;border-bottom:none;text-align:center}
+        .podium-box .medal{font-size:1.5rem;margin-bottom:5px}
+        .podium-box .p-name{font-size:.65rem;color:#fff;font-weight:700;font-family:'Rajdhani';line-height:1;margin-bottom:3px}
+        .podium-box .p-prize{font-size:.7rem;color:var(--gold);font-weight:800;font-family:'Rajdhani';white-space:nowrap}
+        .podium-1{height:100%;background:linear-gradient(to top,rgba(212,175,55,.2),rgba(212,175,55,.05));border-color:var(--gold);z-index:2}
+        .podium-2{height:75%;background:linear-gradient(to top,rgba(176,176,176,.15),transparent)}
+        .podium-3{height:60%;background:linear-gradient(to top,rgba(205,127,50,.15),transparent)}
+
+        .tabs{display:flex;gap:10px;margin-bottom:15px;background:#111;padding:5px;border-radius:10px;border:1px solid #222;overflow-x:auto}
+        .tab-btn{padding:10px 15px;background:transparent;border:none;color:var(--muted);border-radius:8px;font-family:'Rajdhani';cursor:pointer;font-size:.8rem;font-weight:700;white-space:nowrap}
+        .tab-btn.active{background:var(--gold);color:#000}
+        details{background:#111;border:1px solid #222;border-radius:8px;padding:12px;margin-bottom:10px;font-size:.8rem}
+        details[open]{border-color:var(--gold)}
+        summary{cursor:pointer;color:var(--gold);font-weight:600;outline:none;display:flex;justify-content:space-between;font-family:'Rajdhani';font-size:.9rem}
+        details p{margin-top:10px;color:var(--silver);line-height:1.6}
+        .participant-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+        .participant-item{display:flex;align-items:center;gap:10px;background:#111;padding:8px 12px;border-radius:8px;border:1px solid #222;position:relative}
+        .participant-item span{font-size:.75rem;font-weight:600;color:var(--silver);font-family:'Rajdhani'}
+
+        .form-group{margin-bottom:15px}
+        .form-group label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:6px;font-family:'Rajdhani'}
+        input,select{width:100%;padding:12px 15px;background:rgba(0,0,0,.6);border:1px solid #333;border-radius:8px;color:#fff;font-family:'Poppins'}
+        input:focus,select:focus{outline:none;border-color:var(--gold)}
+        button.btn{width:100%;padding:14px;background:linear-gradient(135deg,#b8860b,var(--gold));color:#000;border:none;border-radius:8px;font-family:'Orbitron';font-weight:800;font-size:.85rem;cursor:pointer;text-transform:uppercase;letter-spacing:1px;position:relative;overflow:hidden;display:flex;justify-content:center;align-items:center;gap:8px}
+        button.btn:active{animation:elasticClick .3s}
+        button.btn:disabled{background:#333;color:#777;cursor:not-allowed}
+        button.btn-secondary{background:transparent;border:1px solid #555;color:var(--silver)}
+        button.btn-danger{background:rgba(229,57,53,.1);border:1px solid var(--danger);color:var(--danger)}
+        button.btn-sm{width:auto;padding:8px 15px;font-size:.7rem}
+
+        .id-card-wrap{perspective:1000px;margin-bottom:20px}
+        .id-card{background:linear-gradient(135deg,#1a1a1a,#0a0a0a);border:1px solid var(--gold);border-radius:16px;padding:20px;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(212,175,55,.15)}
+        .id-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent 40%,rgba(255,255,255,.05) 50%,transparent 60%);animation:holographic 5s infinite linear;pointer-events:none}
+        .id-header{display:flex;align-items:center;gap:15px;margin-bottom:15px;border-bottom:1px solid rgba(212,175,55,.2);padding-bottom:15px}
+        .id-avatar-wrap{position:relative;width:60px;height:60px}
+        .id-avatar-ring{position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(var(--gold) 75%,#333 0)}
+        .id-avatar{position:relative;width:100%;height:100%;border-radius:50%;background:#111;color:var(--gold);display:flex;justify-content:center;align-items:center;font-size:1.8rem;border:2px solid #111}
+        .id-info h3{font-size:1.1rem;color:#fff;margin-bottom:3px;display:flex;align-items:center;gap:5px}
+        .tier-badge{font-size:.55rem;background:#333;padding:2px 6px;border-radius:4px;color:var(--gold);border:1px solid var(--gold);font-family:'Rajdhani'}
+        .id-info p{font-size:.7rem;color:var(--silver);font-family:'Rajdhani'}
+        .id-body{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .id-stat span{display:block;font-size:.6rem;color:var(--muted);text-transform:uppercase;font-family:'Rajdhani'}
+        .id-stat strong{font-size:.9rem;color:var(--gold);font-family:'Orbitron';display:flex;align-items:center;gap:5px}
+        .copy-icon{cursor:pointer;color:var(--silver);font-size:.7rem}
+        .copy-icon:hover{color:var(--gold)}
+
+        .roster-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+        .flip-card{background:transparent;width:100%;height:120px;perspective:1000px;cursor:pointer}
+        .flip-card-inner{position:relative;width:100%;height:100%;transition:transform .6s;transform-style:preserve-3d}
+        .flip-card.flipped .flip-card-inner{transform:rotateY(180deg)}
+        .flip-card-front,.flip-card-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;border:1px solid #333;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:10px}
+        .flip-card-front{background:#111;color:#fff}
+        .flip-card-back{background:linear-gradient(135deg,#1a1a1a,#2a2a2a);color:#fff;transform:rotateY(180deg);border-color:var(--gold)}
+        .fc-nick{font-family:'Orbitron';font-weight:bold;color:var(--gold);font-size:.9rem;margin-bottom:5px}
+        .fc-uid{font-size:.65rem;color:var(--muted)}
+        .fc-role{margin-top:10px;font-size:.6rem;padding:2px 8px;border-radius:4px;font-family:'Rajdhani';font-weight:700}
+        .fc-role.main{background:rgba(212,175,55,.2);color:var(--gold)}
+        .fc-role.sub{background:rgba(255,255,255,.1);color:var(--silver)}
+        .fc-stat{font-size:.7rem;margin:3px 0;color:var(--silver);font-family:'Rajdhani'}
+
+        table{width:100%;border-collapse:collapse;margin-top:10px}
+        th,td{padding:12px 10px;text-align:left;border-bottom:1px solid #222;font-size:.8rem}
+        th{background:#111;color:var(--gold);font-family:'Rajdhani';font-size:.75rem;text-transform:uppercase}
+        .my-team-row{background:rgba(212,175,55,.1);border-left:3px solid var(--gold)}
+        .my-team-row td{color:var(--gold);font-weight:bold}
+
+        #notif-container{position:fixed;top:70px;left:50%;transform:translateX(-50%);width:90%;max-width:400px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+        .toast-notif{background:var(--panel);border:1px solid #333;border-radius:10px;padding:15px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 5px 20px rgba(0,0,0,.8);animation:slideInTop .4s;pointer-events:auto;position:relative}
+        .toast-icon{font-size:1.2rem;flex-shrink:0}
+        .toast-content{flex-grow:1}
+        .toast-title{font-size:.8rem;font-weight:bold;color:#fff;font-family:'Rajdhani'}
+        .toast-msg{font-size:.7rem;color:var(--silver);line-height:1.4}
+        .toast-close{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:1rem}
+        .tn-info{border-left:4px solid var(--info)}.tn-info .toast-icon{color:var(--info)}
+        .tn-warning{border-left:4px solid var(--warning)}.tn-warning .toast-icon{color:var(--warning)}
+        .tn-danger{border-left:4px solid var(--danger)}.tn-danger .toast-icon{color:var(--danger)}
+        .tn-success{border-left:4px solid var(--success)}.tn-success .toast-icon{color:var(--success)}
+        .tn-gold{border-left:4px solid var(--gold)}.tn-gold .toast-icon{color:var(--gold)}
+
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:none;align-items:flex-end;justify-content:center}
+        .modal-overlay.active{display:flex}
+        .modal-box{background:#0f0f0f;border-top:1px solid var(--gold);border-radius:20px 20px 0 0;padding:25px 20px;width:100%;max-width:500px;animation:slideInBottom .3s;position:relative;max-height:90dvh;overflow-y:auto}
+        .modal-box h3{color:var(--gold);margin-bottom:15px;text-align:center;font-family:'Orbitron'}
+        .close-modal{position:absolute;top:15px;right:15px;font-size:1.2rem;color:var(--muted);cursor:pointer}
+
+        .stepper{display:flex;justify-content:space-between;margin-bottom:20px;position:relative}
+        .stepper::before{content:'';position:absolute;top:15px;left:0;width:100%;height:2px;background:#333;z-index:1}
+        .step{width:30px;height:30px;border-radius:50%;background:#222;border:2px solid #333;display:flex;justify-content:center;align-items:center;font-size:.7rem;font-weight:bold;color:var(--muted);position:relative;z-index:2}
+        .step.active{background:var(--gold);border-color:var(--gold);color:#000}
+        .step.completed{background:var(--success);border-color:var(--success);color:#fff}
+        .receipt{background:#fff;color:#000;padding:20px;font-family:'Courier New',monospace;border-radius:8px;margin-bottom:15px}
+        .receipt-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:.8rem;border-bottom:1px dashed #ccc;padding-bottom:5px}
+        .receipt-total{font-weight:bold;font-size:1rem;margin-top:10px;border-bottom:none}
+        .countdown-timer{font-family:'Orbitron';font-size:1.5rem;color:var(--danger);font-weight:800;text-align:center;margin-bottom:15px}
+
+        .test-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .test-grid button{font-size:.7rem;padding:10px;background:#222;border:1px solid #444;color:#fff;border-radius:8px;cursor:pointer;font-family:'Rajdhani';font-weight:700}
+        .test-grid button:hover{background:#333;border-color:var(--info)}
+
+        .glitch-404{font-family:'Orbitron';font-size:6rem;font-weight:900;color:var(--danger);animation:glitchText .5s infinite;text-align:center;padding-top:50px}
+        .faq-cat-tabs{display:flex;gap:5px;margin-bottom:15px;overflow-x:auto}
+        .faq-cat{padding:6px 12px;background:#222;border:1px solid #333;border-radius:20px;font-size:.7rem;color:var(--muted);cursor:pointer;font-family:'Rajdhani';font-weight:600;white-space:nowrap}
+        .faq-cat.active{background:var(--gold);color:#000;border-color:var(--gold)}
+        footer{text-align:center;padding:20px 0;font-size:.65rem;color:var(--muted);border-top:1px solid #222;margin-top:20px;font-family:'Rajdhani'}
+        footer a{color:var(--gold);text-decoration:none}
+        @media(max-width:480px){.tournament-grid{grid-template-columns:1fr}.detail-meta{grid-template-columns:1fr}.participant-list{grid-template-columns:1fr}.roster-grid{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
 
-    <!-- INTRO SCREEN -->
-    <div id="intro-screen">
-        <div class="intro-content">
-            <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="Logo" class="intro-logo" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='block';">
-            <i class="fa-solid fa-shield-halved" id="fallback-logo" style="display:none; font-size: 5rem; color: var(--gold); margin-bottom: 20px;"></i>
-            <h1 class="intro-title">GH-T ARENA</h1>
-            <p class="intro-subtitle">GAMING HOUSE TOUR ARENA</p>
-            <div class="terminal-text" id="terminal-output"></div>
-            <i class="fa-solid fa-crosshairs loading-crosshair"></i>
+<div id="intro-screen">
+    <div class="intro-content">
+        <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="Logo" class="intro-logo" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='block';">
+        <i class="fa-solid fa-shield-halved" id="fallback-logo" style="display:none;font-size:5rem;color:var(--gold);margin-bottom:20px"></i>
+        <h1 class="intro-title">GH-T ARENA</h1>
+        <p class="intro-subtitle">GAMING HOUSE TOUR ARENA</p>
+        <div class="terminal-text" id="terminal-output"></div>
+        <i class="fa-solid fa-crosshairs loading-crosshair"></i>
+    </div>
+    <button id="skip-btn" onclick="skipIntro()">LEWATI INTRO ↗</button>
+</div>
+
+<div class="running-text"><span>🔥 SELAMAT DATANG DI GH-T ARENA 🔥 DAFTARKAN TIM MU SEKARANG DAN RAIH HADIAH JUTAAN RUPIAH! 🔥</span></div>
+
+<nav id="main-nav" class="hidden">
+    <div class="nav-brand" onclick="navTo('home')">
+        <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="GH-T" onerror="this.style.display='none';">
+        <span class="brand-text">GH-T ARENA</span>
+    </div>
+    <div class="nav-actions">
+        <span class="server-time" id="clock">00:00:00</span>
+        <button class="nav-icon" onclick="navTo('notifications')"><i class="fa-solid fa-bell"></i><span class="badge hidden" id="notif-badge">0</span></button>
+        <button class="nav-icon" onclick="navTo('dashboard')"><i class="fa-solid fa-circle-user"></i></button>
+    </div>
+</nav>
+
+<div class="server-status hidden" id="server-status">
+    <span><div class="dot-online"></div> Server: Online</span>
+    <span>Ping: 15ms</span>
+    <span>Region: ID</span>
+</div>
+
+<div id="notif-container"></div>
+
+<div class="container" id="main-content">
+
+    <!-- HOME -->
+    <div id="view-home" class="view hidden">
+        <div class="hero-banner">
+            <div class="hero-content">
+                <span class="badge-featured">FEATURED EVENT</span>
+                <h2 class="hero-title brand-font" id="hero-title">GH-T Arena</h2>
+                <div class="hero-meta">
+                    <span><i class="fa-solid fa-trophy"></i> <span id="jackpot-prize">-</span></span>
+                    <span><i class="fa-solid fa-calendar"></i> <span id="hero-date">-</span></span>
+                </div>
+                <button class="btn-hero" id="hero-btn" style="display:none;" onclick="openDetailHero()">Lihat Detail <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
         </div>
-        <button id="skip-btn" onclick="skipIntro()">LEWATI INTRO ↗</button>
+
+        <div class="sponsor-banner" onclick="window.open('https://ghtopup-v2.pages.dev', '_blank')">
+            <div class="sponsor-text-content">
+                <div class="sponsor-text active">⚡ Butuh Diamond Murah?</div>
+                <div class="sponsor-text">🚀 Proses Otomatis 1 Menit!</div>
+                <div class="sponsor-text">🛡️ 100% Aman & Terpercaya!</div>
+            </div>
+            <img src="https://i.ibb.co.com/WW9NXHjZ/1000367499-removebg-preview.png" alt="GH TopUp" onerror="this.style.display='none'">
+        </div>
+
+        <div class="countdown-header">
+            <div style="font-family:'Orbitron';font-size:0.9rem;font-weight:bold;color:#fff;">NEXT TOURNAMENT</div>
+            <div class="countdown-box">
+                <div class="cd-item"><div class="cd-num" id="cd-d">00</div><div class="cd-lbl">Hari</div></div>
+                <div class="cd-item"><div class="cd-num" id="cd-h">00</div><div class="cd-lbl">Jam</div></div>
+                <div class="cd-item"><div class="cd-num" id="cd-m">00</div><div class="cd-lbl">Mnt</div></div>
+                <div class="cd-item"><div class="cd-num" id="cd-s">00</div><div class="cd-lbl">Dtk</div></div>
+            </div>
+        </div>
+
+        <h2 class="page-title">Turnamen Tersedia</h2>
+        <div class="tournament-grid" id="tournament-grid"></div>
+
+        <div class="glass-card" style="margin-top:20px;">
+            <h3 class="page-title" style="font-size:0.9rem;text-align:center;justify-content:center;border:none;">👑 HALL OF FAME 👑</h3>
+            <div class="hall-of-fame">
+                <div class="hof-item hof-2"><div class="hof-avatar">🥈</div><div class="hof-name">-</div><div class="hof-pts">-</div></div>
+                <div class="hof-item hof-1"><div class="hof-avatar">🥇</div><div class="hof-name">-</div><div class="hof-pts">-</div></div>
+                <div class="hof-item hof-3"><div class="hof-avatar">🥉</div><div class="hof-name">-</div><div class="hof-pts">-</div></div>
+            </div>
+            <p style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:15px;">Belum ada juara sebelumnya.</p>
+        </div>
+
+        <div class="glass-card" style="margin-top:20px;">
+            <h3 class="page-title"><i class="fa-solid fa-book"></i> Panduan Singkat</h3>
+            <div class="faq-cat-tabs">
+                <button class="faq-cat active" onclick="switchFaq('umum')">Umum</button>
+                <button class="faq-cat" onclick="switchFaq('bayar')">Pembayaran</button>
+            </div>
+            <div id="faq-umum">
+                <details><summary>Bagaimana cara daftar? <i class="fa-solid fa-chevron-down"></i></summary><p>Login, buat tim, isi roster, lalu pilih turnamen dan bayar.</p></details>
+                <details><summary>Apakah bisa ganti pemain? <i class="fa-solid fa-chevron-down"></i></summary><p>Bisa sebelum 1 jam jadwal turnamen dimulai.</p></details>
+            </div>
+            <div id="faq-bayar" class="hidden">
+                <details><summary>Metode pembayaran apa saja? <i class="fa-solid fa-chevron-down"></i></summary><p>Hanya QRIS untuk pendaftaran.</p></details>
+                <details><summary>Bagaimana jika turnamen batal? <i class="fa-solid fa-chevron-down"></i></summary><p>Dana akan dikembalikan 100% ke Saldo akun kamu.</p></details>
+            </div>
+        </div>
     </div>
 
-    <!-- RUNNING TEXT -->
-    <div class="running-text"><span>🔥 SELAMAT DATANG DI GH-T ARENA 🔥 DAFTARKAN TIM MU SEKARANG DAN RAIH HADIAH JUTAAN RUPIAH! 🔥 TOP UP DIAMOND MURAH DI GH TOPUP 🔥</span></div>
-
-    <!-- NAVBAR -->
-    <nav id="main-nav" class="hidden">
-        <div class="nav-brand" onclick="navTo('home')">
-            <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="GH-T" onerror="this.style.display='none';">
-            <span class="brand-text">GH-T ARENA</span>
+    <!-- DETAIL -->
+    <div id="view-tournament-detail" class="view hidden">
+        <button class="btn btn-secondary btn-sm" style="width:auto;margin-bottom:15px;" onclick="navTo('home')"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+        <div class="glass-card">
+            <img src="" class="detail-banner" id="detail-banner-img">
+            <h1 class="detail-title brand-font" id="detail-title">-</h1>
+            <span class="status-badge status-open" style="margin-bottom:15px;" id="detail-status">-</span>
+            <div class="detail-meta">
+                <div class="meta-box"><span>Total Hadiah</span><strong id="detail-prize">-</strong></div>
+                <div class="meta-box"><span>Biaya Masuk</span><strong id="detail-fee">-</strong></div>
+                <div class="meta-box"><span>Slot Tersedia</span><strong id="detail-slots">-</strong></div>
+                <div class="meta-box"><span>Jadwal Mulai</span><strong id="detail-date">-</strong></div>
+            </div>
+            <div id="detail-content-br">
+                <h3 class="page-title">Map Pool BR</h3>
+                <div class="map-pool-container">
+                    <div class="map-card"><img src="https://i.ibb.co.com/JSyg2V6/image-search-1768105911966.webp"><div class="map-info"><div class="map-name">Bermuda</div><div class="map-match">Match 1</div></div></div>
+                    <div class="map-card"><img src="https://i.ibb.co.com/TM1G5F2P/image-search-1768105946838.jpg"><div class="map-info"><div class="map-name">Kalahari</div><div class="map-match">Match 2</div></div></div>
+                    <div class="map-card"><img src="https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg"><div class="map-info"><div class="map-name">Purgatory</div><div class="map-match">Match 3</div></div></div>
+                </div>
+            </div>
+            <div id="detail-content-cs" class="hidden">
+                <h3 class="page-title">Bracket CS</h3>
+                <div style="background:#111;border:1px solid #222;border-radius:8px;padding:20px;text-align:center;color:var(--muted);font-size:0.8rem;">Bracket akan muncul setelah turnamen dimulai.</div>
+            </div>
+            <h3 class="page-title" style="margin-top:20px;">Distribusi Hadiah</h3>
+            <div class="podium-container">
+                <div class="podium-box podium-2"><div class="medal">🥈</div><div class="p-name">Juara 2</div><div class="p-prize" id="prize-2">-</div></div>
+                <div class="podium-box podium-1"><div class="medal">🥇</div><div class="p-name">Juara 1</div><div class="p-prize" id="prize-1">-</div></div>
+                <div class="podium-box podium-3"><div class="medal">🥉</div><div class="p-name">Juara 3</div><div class="p-prize" id="prize-3">-</div></div>
+            </div>
+            <h3 class="page-title">Aturan</h3>
+            <details><summary>Ketentuan Umum <i class="fa-solid fa-chevron-down"></i></summary><p>Wajib menggunakan nickname yang sama dengan UID. Dilarang menggunakan cheat, emulator. Keputusan admin mutlak.</p></details>
+            <h3 class="page-title">Peserta</h3>
+            <div class="participant-list" id="participant-list"><p style="color:var(--muted);font-size:0.8rem;">Belum ada peserta.</p></div>
+            <div class="live-stream-box" style="margin-top:20px;">
+                <div class="radar-sweep"></div>
+                <div class="live-icon"><i class="fa-brands fa-youtube"></i></div>
+                <div class="live-text">🔴 LIVE STREAMING</div>
+                <div class="live-sub">Coming Soon</div>
+            </div>
+            <button class="btn" style="margin-top:20px;" onclick="openRegisterWizard()">Daftar Sekarang</button>
         </div>
-        <div class="nav-actions">
-            <span class="server-time" id="clock">00:00:00</span>
-            <button class="nav-icon" onclick="navTo('notifications')"><i class="fa-solid fa-bell"></i><span class="badge hidden" id="notif-badge">0</span></button>
-            <button class="nav-icon" onclick="navTo('dashboard')"><i class="fa-solid fa-circle-user"></i></button>
-        </div>
-    </nav>
-
-    <!-- SERVER STATUS -->
-    <div class="server-status hidden" id="server-status">
-        <span><div class="dot-online"></div> Server: Online</span>
-        <span>Ping: 15ms</span>
-        <span>Region: ID</span>
     </div>
 
-    <!-- KILL FEED CONTAINER -->
-    <div class="kill-feed-container" id="kill-feed"></div>
+    <!-- REGISTER WIZARD -->
+    <div id="view-register-step" class="view hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+            <h2 class="page-title" style="margin:0;border:none;">Pendaftaran</h2>
+            <button class="btn btn-sm btn-danger" onclick="navTo('home')">Batal</button>
+        </div>
+        <div class="stepper">
+            <div class="step active" id="step-1-ind">1</div>
+            <div class="step" id="step-2-ind">2</div>
+            <div class="step" id="step-3-ind">3</div>
+            <div class="step" id="step-4-ind">4</div>
+        </div>
+        <div class="glass-card">
+            <div id="reg-step-1">
+                <h3 style="color:var(--gold);margin-bottom:15px;font-family:'Rajdhani';">1. Data DANA</h3>
+                <div class="form-group"><label>Nomor DANA</label><input type="text" id="reg-dana-num" placeholder="08xxxxxxxxxx"></div>
+                <div class="form-group"><label>Nama Pemilik</label><input type="text" id="reg-dana-name" placeholder="Nama sesuai akun DANA"></div>
+                <button class="btn" onclick="updateStepper(2)">Lanjut <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+            <div id="reg-step-2" class="hidden">
+                <h3 style="color:var(--gold);margin-bottom:15px;font-family:'Rajdhani';">2. Pilih Tim</h3>
+                <div id="reg-team-list"><p style="color:var(--muted);font-size:0.8rem;">Memuat tim...</p></div>
+                <button class="btn" style="margin-top:15px;" onclick="updateStepper(3)">Lanjut <i class="fa-solid fa-arrow-right"></i></button>
+                <button class="btn btn-secondary" style="margin-top:10px;" onclick="updateStepper(1)">Kembali</button>
+            </div>
+            <div id="reg-step-3" class="hidden">
+                <h3 style="color:var(--gold);margin-bottom:15px;font-family:'Rajdhani';">3. Roster</h3>
+                <div id="reg-roster-fields"><p style="color:var(--muted);font-size:0.8rem;">Memuat...</p></div>
+                <button class="btn" style="margin-top:15px;" onclick="updateStepper(4)">Lanjut <i class="fa-solid fa-arrow-right"></i></button>
+                <button class="btn btn-secondary" style="margin-top:10px;" onclick="updateStepper(2)">Kembali</button>
+            </div>
+            <div id="reg-step-4" class="hidden">
+                <h3 style="color:var(--gold);margin-bottom:15px;font-family:'Rajdhani';">4. Bayar</h3>
+                <div class="receipt" id="reg-receipt"></div>
+                <div class="countdown-timer" id="qr-timer">05:00</div>
+                <img src="https://i.ibb.co.com/Cs6B5Hwn/20261025-190253.png" style="width:180px;margin:0 auto 15px;display:block;border-radius:8px;border:2px solid #333;" onerror="this.src='https://dummyimage.com/200x200/000/fff&text=QR'">
+                <button class="btn" onclick="finishRegister()">Konfirmasi Bayar</button>
+                <button class="btn btn-secondary" style="margin-top:10px;" onclick="updateStepper(3)">Kembali</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- NOTIFIKASI POP-UP CONTAINER -->
-    <div id="notif-container"></div>
+    <!-- MY TOURNAMENTS -->
+    <div id="view-my-tournaments" class="view hidden">
+        <h2 class="page-title">Turnamen Saya</h2>
+        <div id="my-tournaments-list"><p style="padding:20px;text-align:center;color:var(--muted);font-size:0.85rem;">Kamu belum mengikuti turnamen apapun.</p></div>
+    </div>
 
-    <div class="container" id="main-content">
+    <!-- DASHBOARD -->
+    <div id="view-dashboard" class="view hidden">
+        <h2 class="page-title">Dashboard Captain</h2>
+        <div class="id-card-wrap">
+            <div class="id-card">
+                <div class="id-header">
+                    <div class="id-avatar-wrap">
+                        <div class="id-avatar-ring"></div>
+                        <div class="id-avatar"><i class="fa-solid fa-user-ninja"></i></div>
+                    </div>
+                    <div class="id-info">
+                        <h3 id="dash-username">Memuat... <span class="tier-badge">🥇 Gold</span></h3>
+                        <p id="dash-email">...</p>
+                    </div>
+                </div>
+                <div class="id-body">
+                    <div class="id-stat"><span>Saldo</span><strong id="dash-balance">Rp 0</strong></div>
+                    <div class="id-stat"><span>Total Tim</span><strong id="dash-team-count">0 Tim</strong></div>
+                    <div class="id-stat"><span>DANA</span><strong id="dash-dana">Belum diisi</strong></div>
+                    <div class="id-stat"><span>Status</span><strong style="color:var(--success);">Aktif</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card" style="padding:15px;">
+            <h3 class="page-title" style="font-size:0.95rem;"><i class="fa-solid fa-plus"></i> Buat Tim Baru</h3>
+            <div class="form-group"><input type="text" id="new-team-name" placeholder="Nama Tim (Wajib)"></div>
+            <div class="form-group"><input type="text" id="new-team-desc" placeholder="Deskripsi (Opsional)"></div>
+            <button class="btn btn-sm" onclick="createTeam()">Simpan Tim</button>
+        </div>
+
+        <div class="glass-card">
+            <h3 class="page-title" style="font-size:0.95rem;"><i class="fa-solid fa-shield-halved"></i> Tim Saya</h3>
+            <ul id="team-list" style="list-style:none;"></ul>
+        </div>
+
+        <div class="glass-card hidden" id="sec-roster">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                <h3 class="page-title" style="margin:0;border:none;font-size:0.95rem;"><i class="fa-solid fa-users"></i> <span id="roster-team-name">Roster</span></h3>
+                <button class="btn btn-sm btn-danger" onclick="closeRoster()">Tutup</button>
+            </div>
+            <div style="background:#111;padding:10px;border-radius:8px;margin-bottom:15px;border:1px solid #333;">
+                <div class="form-group"><input type="text" id="new-player-nick" placeholder="Nickname FF"></div>
+                <div class="form-group"><input type="text" id="new-player-uid" placeholder="UID FF"></div>
+                <div class="form-group"><select id="new-player-role"><option value="main">Main</option><option value="sub">Cadangan</option></select></div>
+                <button class="btn btn-sm" style="background:var(--success);color:#fff;" onclick="addPlayer()">Tambah Pemain</button>
+            </div>
+            <div class="roster-grid" id="player-list"></div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div id="view-notifications" class="view hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+            <h2 class="page-title" style="margin:0;border:none;">Notifikasi</h2>
+            <button class="btn btn-sm btn-secondary" onclick="markAllRead()">Tandai Dibaca</button>
+        </div>
+        <div class="glass-card" style="padding:0;" id="notif-list">
+            <p style="padding:15px;font-size:0.8rem;color:var(--muted);text-align:center;">Belum ada notifikasi.</p>
+        </div>
+    </div>
+
+    <!-- AUTH -->
+    <div id="view-auth" class="view hidden">
+        <div style="text-align:center;margin:20px 0;">
+            <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="Logo" style="width:80px;margin-bottom:10px;" onerror="this.style.display='none';">
+            <h2 class="page-title" style="justify-content:center;border:none;">CAPTAIN ACCESS</h2>
+        </div>
+        <div class="glass-card" style="max-width:400px;margin:0 auto;">
+            <div class="tabs" style="margin-bottom:15px;">
+                <button class="tab-btn active" id="tab-login" onclick="switchAuthTab('login')">Login</button>
+                <button class="tab-btn" id="tab-register" onclick="switchAuthTab('register')">Register</button>
+            </div>
+            <div id="auth-login">
+                <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="email@example.com"></div>
+                <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="********"></div>
+                <button class="btn" onclick="doLogin()">Masuk</button>
+            </div>
+            <div id="auth-register" class="hidden">
+                <div class="form-group"><label>Username</label><input type="text" id="reg-username" placeholder="Username"></div>
+                <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="email@example.com"></div>
+                <div class="form-group"><label>Password (Min 6)</label><input type="password" id="reg-password" placeholder="********"></div>
+                <button class="btn" onclick="doRegister()">Daftar Akun</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 404 -->
+    <div id="view-404" class="view hidden">
+        <h1 class="glitch-404">404</h1>
+        <h2 style="color:#fff;text-align:center;font-family:'Orbitron';">AREA RESTRICTED</h2>
+        <p style="color:var(--muted);text-align:center;margin:10px 0 20px;">YOU HAVE BEEN ELIMINATED</p>
+        <div style="text-align:center;"><button class="btn btn-danger btn-sm" onclick="navTo('home')">Kembali</button></div>
+    </div>
+
+    <!-- LOADING STATE -->
+    <div id="view-loading" class="view hidden">
+        <div style="text-align:center;padding:80px 20px;">
+            <i class="fa-solid fa-crosshairs" style="font-size:3rem;color:var(--gold);animation:spin 1s linear infinite;"></i>
+            <p style="color:var(--muted);margin-top:20px;font-size:0.85rem;">Memuat data...</p>
+        </div>
+    </div>
+
+</div>
+
+<footer>&copy; 2026 GH-T ARENA. <a href="#" onclick="showToast('Syarat & Ketentuan Berlaku','info');return false;">Syarat & Ketentuan Berlaku.</a></footer>
+
+<div class="bottom-nav hidden" id="bottom-nav">
+    <button class="active" data-view="home" onclick="navTo('home')"><i class="fa-solid fa-house"></i>Home</button>
+    <button data-view="my-tournaments" onclick="navTo('my-tournaments')"><i class="fa-solid fa-list-check"></i>Turnamen</button>
+    <button data-view="dashboard" onclick="navTo('dashboard')"><i class="fa-solid fa-shield-halved"></i>Dash</button>
+    <button data-view="notifications" onclick="navTo('notifications')"><i class="fa-solid fa-bell"></i>Notif</button>
+</div>
+
+<a href="https://wa.me/6283848591646" target="_blank" class="wa-float"><i class="fa-brands fa-whatsapp"></i></a>
+
+<div class="modal-overlay" id="modal-test" onclick="if(event.target===this)closeTestPanel()">
+    <div class="modal-box">
+        <i class="fa-solid fa-xmark close-modal" onclick="closeTestPanel()"></i>
+        <h3><i class="fa-solid fa-flask"></i> Test Panel</h3>
+        <div class="test-grid">
+            <button onclick="triggerNotif('success')">Notif Sukses</button>
+            <button onclick="triggerNotif('danger')">Notif Danger</button>
+            <button onclick="triggerNotif('warning')">Notif Warning</button>
+            <button onclick="triggerNotif('gold')">Notif Gold</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentUser = null, userProfile = null, userTeams = [];
+    let activeTeamId = null, currentTournamentId = null, currentTournamentMode = 'BR', selectedTeamId = null;
+    let isIntroSkipped = false;
+
+    const formatRp = n => 'Rp ' + Number(n||0).toLocaleString('id-ID');
+    const $ = id => document.getElementById(id);
+
+    // =================== INTRO ===================
+    function typeTerminal() {
+        const lines = ['> Initializing GH-T Arena...','> Loading Data...','> Connecting...','> Welcome, Captain.'];
+        const c = $('terminal-output'); let i = 0;
+        (function next() {
+            if (i >= lines.length) { $('skip-btn').classList.add('show'); return; }
+            const p = document.createElement('p'); p.textContent = lines[i]; c.appendChild(p); i++;
+            setTimeout(next, 400);
+        })();
+    }
+    typeTerminal();
+    setTimeout(skipIntro, 3800);
+
+    function skipIntro() {
+        if (isIntroSkipped) return;
+        isIntroSkipped = true;
+        $('intro-screen').classList.add('hidden');
+        $('main-nav').classList.remove('hidden');
+        $('server-status').classList.remove('hidden');
+        $('bottom-nav').classList.remove('hidden');
+        startClock();
+        initAuth();
+    }
+
+    // =================== AUTH ===================
+    async function initAuth() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+            currentUser = session.user;
+            await ensureProfile();
+            navTo('home');
+        } else {
+            showAuthScreen();
+        }
+    }
+
+    function showAuthScreen() {
+        navTo('auth');
+    }
+
+    async function ensureProfile() {
+        // Cek profil di DB
+        let { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
         
-        <!-- VIEW HOME -->
-        <div id="view-home" class="view hidden">
-            <div class="hero-banner" id="hero-banner">
-                <div class="hero-content">
-                    <span class="badge-featured">FEATURED EVENT</span>
-                    <h2 class="hero-title brand-font" id="hero-title">Memuat...</h2>
-                    <div class="hero-meta">
-                        <span><i class="fa-solid fa-trophy"></i> <span id="jackpot-prize">Rp 0</span></span>
-                        <span><i class="fa-solid fa-calendar"></i> <span id="hero-date">-</span></span>
-                    </div>
-                    <button class="btn-hero" onclick="openDetail('BR')">Lihat Detail <i class="fa-solid fa-arrow-right"></i></button>
-                </div>
-            </div>
-
-            <!-- Sponsor -->
-            <div class="sponsor-banner" onclick="window.open('https://ghtopup-v2.pages.dev', '_blank')">
-                <div class="sponsor-text-content">
-                    <div class="sponsor-text active">⚡ Butuh Diamond Murah?</div>
-                    <div class="sponsor-text">🚀 Proses Otomatis 1 Menit!</div>
-                    <div class="sponsor-text">🛡️ 100% Aman & Terpercaya!</div>
-                </div>
-                <img src="https://i.ibb.co.com/WW9NXHjZ/1000367499-removebg-preview.png" alt="GH TopUp" onerror="this.style.display='none'">
-            </div>
-
-            <!-- Countdown -->
-            <div class="countdown-header">
-                <div style="font-family:'Orbitron'; font-size:0.9rem; font-weight:bold; color:#fff;">NEXT TOURNAMENT</div>
-                <div class="countdown-box">
-                    <div class="cd-item"><div class="cd-num" id="cd-d">00</div><div class="cd-lbl">Hari</div></div>
-                    <div class="cd-item"><div class="cd-num" id="cd-h">00</div><div class="cd-lbl">Jam</div></div>
-                    <div class="cd-item"><div class="cd-num" id="cd-m">00</div><div class="cd-lbl">Mnt</div></div>
-                    <div class="cd-item"><div class="cd-num" id="cd-s">00</div><div class="cd-lbl">Dtk</div></div>
-                </div>
-            </div>
-
-            <h2 class="page-title">Turnamen Tersedia</h2>
-            <div class="tournament-grid stagger-container" id="tournament-grid">
-                <!-- Data dari Supabase -->
-                <p style="font-size:0.8rem; color:var(--muted);">Memuat data turnamen...</p>
-            </div>
-
-            <!-- Hall of Fame (Static Dummy) -->
-            <div class="glass-card" style="margin-top:20px;">
-                <h3 class="page-title" style="font-size:0.9rem; text-align:center; justify-content:center; border:none;">👑 HALL OF FAME (Turnamen Terakhir) 👑</h3>
-                <div class="hall-of-fame">
-                    <div class="hof-item hof-2"><div class="hof-avatar">🥈</div><div class="hof-name">Tim Elang</div><div class="hof-pts">120 Poin</div></div>
-                    <div class="hof-item hof-1"><div class="hof-avatar">🥇</div><div class="hof-name">Tim Garuda</div><div class="hof-pts">150 Poin</div></div>
-                    <div class="hof-item hof-3"><div class="hof-avatar">🥉</div><div class="hof-name">Tim Rajawali</div><div class="hof-pts">90 Poin</div></div>
-                </div>
-                <div style="text-align:center; margin-top:20px; border-top:1px dashed #333; padding-top:15px;">
-                    <p style="font-size:0.75rem; color:var(--muted); margin-bottom:5px; font-family:'Rajdhani';">Predator Turnamen Ini:</p>
-                    <p style="font-family:'Orbitron'; color:var(--gold); font-weight:bold; font-size:1rem;">💀 Garuda01 <span style="color:#fff; font-size:0.8rem;">(25 Kill)</span></p>
-                </div>
-            </div>
-
-            <!-- FAQ -->
-            <div class="glass-card" style="margin-top:20px;">
-                <h3 class="page-title"><i class="fa-solid fa-book"></i> Panduan Singkat</h3>
-                <div class="faq-cat-tabs">
-                    <button class="faq-cat active" onclick="switchFaq('umum')">Umum</button>
-                    <button class="faq-cat" onclick="switchFaq('bayar')">Pembayaran</button>
-                </div>
-                <div id="faq-umum">
-                    <details><summary>Bagaimana cara daftar? <i class="fa-solid fa-chevron-down"></i></summary><p>Login, buat tim, isi roster, lalu pilih turnamen dan bayar.</p></details>
-                    <details><summary>Apakah bisa ganti pemain? <i class="fa-solid fa-chevron-down"></i></summary><p>Bisa sebelum 1 jam jadwal turnamen dimulai.</p></details>
-                </div>
-                <div id="faq-bayar" class="hidden">
-                    <details><summary>Metode pembayaran apa saja? <i class="fa-solid fa-chevron-down"></i></summary><p>Hanya QRIS untuk pendaftaran.</p></details>
-                    <details><summary>Bagaimana jika turnamen batal? <i class="fa-solid fa-chevron-down"></i></summary><p>Dana akan dikembalikan 100% ke Saldo akun kamu.</p></details>
-                </div>
-            </div>
-        </div>
-
-        <!-- VIEW DETAIL -->
-        <div id="view-tournament-detail" class="view hidden">
-            <button class="btn btn-secondary btn-sm" style="width:auto; margin-bottom:15px;" onclick="navTo('home')"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+        if (!profile) {
+            // Belum ada, coba bikin otomatis
+            const username = currentUser.user_metadata?.username || (currentUser.email ? currentUser.email.split('@')[0] : 'Captain');
+            const { data: created, error } = await sb.from('profiles').insert({
+                id: currentUser.id, username, email: currentUser.email
+            }).select().single();
             
-            <div class="glass-card">
-                <img src="" class="detail-banner" id="detail-banner-img">
-                <h1 class="detail-title brand-font" id="detail-title">Memuat...</h1>
-                <span class="status-badge status-live" style="margin-bottom:15px;" id="detail-status">...</span>
+            if (!error && created) {
+                profile = created;
+            } else {
+                // Kalau gagal bikin (RLS block), fallback ke data auth
+                console.warn('Auto-create profile failed:', error?.message);
+                profile = { username, email: currentUser.email, balance: 0, dana_number: null };
+            }
+        }
+        
+        userProfile = profile;
+        updateDashboardUI();
+    }
 
-                <div class="detail-meta">
-                    <div class="meta-box"><span>Total Hadiah</span><strong id="detail-prize">Rp 0</strong></div>
-                    <div class="meta-box"><span>Biaya Masuk</span><strong id="detail-fee">Rp 0</strong></div>
-                    <div class="meta-box"><span>Slot Tersedia</span><strong id="detail-slots">0 / 0</strong></div>
-                    <div class="meta-box"><span>Jadwal Mulai</span><strong id="detail-date">-</strong></div>
+    function updateDashboardUI() {
+        if (!userProfile) return;
+        $('dash-username').innerHTML = `${userProfile.username || 'Captain'} <span class="tier-badge">🥇 Gold</span>`;
+        $('dash-email').innerText = userProfile.email || currentUser?.email || '-';
+        $('dash-balance').innerText = formatRp(userProfile.balance || 0);
+        $('dash-dana').innerText = userProfile.dana_number || 'Belum diisi';
+    }
+
+    function switchAuthTab(tab) {
+        $('auth-login').classList.toggle('hidden', tab !== 'login');
+        $('auth-register').classList.toggle('hidden', tab !== 'register');
+        $('tab-login').classList.toggle('active', tab === 'login');
+        $('tab-register').classList.toggle('active', tab === 'register');
+    }
+
+    async function doLogin() {
+        const email = $('login-email').value.trim();
+        const password = $('login-password').value;
+        if (!email || !password) return showToast('Isi email & password', 'warning');
+        const btn = event.target; btn.disabled = true; btn.innerText = 'Memproses...';
+
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) {
+            showToast(error.message, 'danger');
+            btn.disabled = false; btn.innerText = 'Masuk';
+            return;
+        }
+        currentUser = data.user;
+        await ensureProfile();
+        showToast('Login Berhasil!', 'success');
+        navTo('home');
+    }
+
+    async function doRegister() {
+        const email = $('reg-email').value.trim();
+        const password = $('reg-password').value;
+        const username = $('reg-username').value.trim();
+        if (!email || !password || !username) return showToast('Lengkapi semua kolom', 'warning');
+        if (password.length < 6) return showToast('Password minimal 6 karakter', 'warning');
+        const btn = event.target; btn.disabled = true; btn.innerText = 'Memproses...';
+
+        const { data, error } = await sb.auth.signUp({
+            email, password, options: { data: { username } }
+        });
+        if (error) {
+            showToast(error.message, 'danger');
+            btn.disabled = false; btn.innerText = 'Daftar Akun';
+            return;
+        }
+        
+        if (data.session) {
+            // Auto-login karena email confirmation mati
+            currentUser = data.user;
+            await ensureProfile();
+            showToast('Registrasi Berhasil!', 'success');
+            navTo('home');
+        } else {
+            // Email confirmation aktif — user harus konfirmasi via email
+            showToast('Cek email untuk konfirmasi, lalu login.', 'info');
+            switchAuthTab('login');
+            btn.disabled = false; btn.innerText = 'Daftar Akun';
+        }
+    }
+
+    // =================== NAVIGATION ===================
+    function navTo(viewId) {
+        const views = ['home','tournament-detail','my-tournaments','dashboard','notifications','404','register-step','auth','loading'];
+        views.forEach(v => { const el = $('view-'+v); if(el) el.classList.add('hidden'); });
+        const t = $('view-'+viewId); if (t) t.classList.remove('hidden');
+
+        document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+        const btn = document.querySelector(`.bottom-nav button[data-view="${viewId}"]`);
+        if (btn) btn.classList.add('active');
+
+        // Kalau butuh login dan belum login
+        if (['dashboard','my-tournaments','notifications'].includes(viewId) && !currentUser) {
+            navTo('auth'); return;
+        }
+
+        // Load data saat pindah tab
+        if (viewId === 'home') loadHome();
+        if (viewId === 'dashboard') { loadTeams(); updateDashboardUI(); }
+        if (viewId === 'notifications') loadNotifications();
+        if (viewId === 'my-tournaments') loadMyTournaments();
+        
+        window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    // =================== HOME ===================
+    async function loadHome() {
+        const grid = $('tournament-grid');
+        grid.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat...</p></div>';
+
+        const { data, error } = await sb.from('tournaments').select('*').order('created_at',{ascending:false});
+
+        if (error) {
+            grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>Gagal memuat data</h3><p>${error.message}</p></div>`;
+            return;
+        }
+
+        // Kalau kosong
+        if (!data || data.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-ghost"></i>
+                    <h3>Belum Ada Turnamen</h3>
+                    <p>Turnamen baru akan muncul di sini.</p>
+                </div>`;
+            
+            // Reset hero banner biar gak "Memuat..."
+            $('hero-title').innerText = 'GH-T ARENA';
+            $('jackpot-prize').innerText = '-';
+            $('hero-date').innerText = '-';
+            $('hero-btn').style.display = 'none';
+            return;
+        }
+
+        // Ada data — render cards
+        grid.innerHTML = data.map(t => `
+            <div class="ticket-card" onclick="openDetail('${t.format}','${t.id}')">
+                <div class="ticket-banner">
+                    <img src="${t.banner_url || 'https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg'}" class="bg-img">
                 </div>
-
-                <div id="detail-content-br">
-                    <h3 class="page-title">Map Pool & Jadwal Match</h3>
-                    <div class="map-pool-container">
-                        <div class="map-card"><div class="map-status ms-done">DONE</div><img src="https://i.ibb.co.com/JSyg2V6/image-search-1768105911966.webp"><div class="map-info"><div class="map-name">Bermuda</div><div class="map-match">Match 1</div></div></div>
-                        <div class="map-card"><div class="map-status ms-live">LIVE</div><img src="https://i.ibb.co.com/TM1G5F2P/image-search-1768105946838.jpg"><div class="map-info"><div class="map-name">Kalahari</div><div class="map-match">Match 2</div></div></div>
-                        <div class="map-card"><div class="map-status ms-next">NEXT</div><img src="https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg"><div class="map-info"><div class="map-name">Purgatory</div><div class="map-match">Match 3</div></div></div>
-                    </div>
-                    <h3 class="page-title">Match History</h3>
-                    <div class="tabs">
-                        <button class="tab-btn active" onclick="switchHistory(0)">Match 1</button>
-                        <button class="tab-btn" onclick="switchHistory(1)">Match 2</button>
-                        <button class="tab-btn" onclick="switchHistory(2)">Match 3</button>
-                    </div>
-                    <div id="history-content" class="glass-card" style="padding:10px; font-size:0.8rem;">
-                        <table><tr><th>Tim</th><th>Placement</th><th>Kill</th><th>Poin</th></tr>
-                        <tr><td>Tim Garuda</td><td>#1</td><td>5</td><td>17</td></tr>
-                        <tr><td>Tim Elang</td><td>#2</td><td>3</td><td>12</td></tr></table>
-                    </div>
+                <div class="ticket-info">
+                    <span class="status-badge ${t.status==='pendaftaran_dibuka'?'status-open':'status-live'}">${(t.status||'-').toUpperCase().replace('_',' ')}</span>
+                    <h3 class="ticket-title">${t.name}</h3>
+                    <p class="ticket-prize">${formatRp(t.prize_pool)}</p>
                 </div>
-
-                <div id="detail-content-cs" class="hidden">
-                    <h3 class="page-title">Tournament Bracket</h3>
-                    <div class="bracket-container">
-                        <div class="bracket-col">
-                            <div class="bracket-match"><div class="bracket-team winner">Tim Alpha <span>3</span></div><div class="bracket-team">Tim Bravo <span>1</span></div></div>
-                            <div class="bracket-match"><div class="bracket-team">Tim Charlie <span>0</span></div><div class="bracket-team winner">Tim Delta <span>3</span></div></div>
-                        </div>
-                        <div class="bracket-col" style="justify-content:center;">
-                            <div class="bracket-match"><div class="bracket-team">Tim Alpha <span>-</span></div><div class="bracket-team">Tim Delta <span>-</span></div></div>
-                        </div>
-                    </div>
-                </div>
-
-                <h3 class="page-title" style="margin-top:20px;">Distribusi Hadiah</h3>
-                <div class="podium-container">
-                    <div class="podium-box podium-2"><div class="medal">🥈</div><div class="p-name">Juara 2</div><div class="p-prize" id="detail-prize-2">Rp 0</div></div>
-                    <div class="podium-box podium-1"><div class="medal">🥇</div><div class="p-name">Juara 1</div><div class="p-prize" id="detail-prize-1">Rp 0</div></div>
-                    <div class="podium-box podium-3"><div class="medal">🥉</div><div class="p-name">Juara 3</div><div class="p-prize" id="detail-prize-3">Rp 0</div></div>
-                </div>
-
-                <h3 class="page-title">Aturan Turnamen</h3>
-                <details><summary>Ketentuan Umum <i class="fa-solid fa-chevron-down"></i></summary><p>Wajib menggunakan nickname yang sama dengan UID. Dilarang menggunakan cheat, emulator, atau alat bantu ilegal lainnya. Keputusan admin mutlak.</p></details>
-                <details><summary>Sistem Poin <i class="fa-solid fa-chevron-down"></i></summary><p id="rules-points-text">Kill = 1 Poin. Placement: Juara 1 = 12 Poin, Juara 2 = 9 Poin, Juara 3 = 8 Poin, dst.</p></details>
-
-                <h3 class="page-title">Peserta Terdaftar</h3>
-                <div class="participant-list" id="participant-list">
-                    <p style="font-size:0.8rem; color:var(--muted);">Memuat peserta...</p>
-                </div>
-
-                <div class="live-stream-box" style="margin-top:20px;">
-                    <div class="radar-sweep"></div>
-                    <div class="live-icon"><i class="fa-brands fa-youtube"></i></div>
-                    <div class="live-text">🔴 LIVE STREAMING</div>
-                    <div class="live-sub">Coming Soon - Siaran langsung akan tersedia di sini.</div>
-                </div>
-
-                <div style="display:flex; gap:10px; margin-top:25px;">
-                    <button class="btn" style="flex:1;" onclick="openRegisterWizard()">Daftar Sekarang</button>
-                    <button class="btn btn-secondary" style="width:50px;" onclick="shareTournament()"><i class="fa-solid fa-share-nodes"></i></button>
+                <div class="ticket-divider"></div>
+                <div class="ticket-footer">
+                    <span><i class="fa-solid fa-users"></i> ${t.total_slots} Tim</span>
+                    <span>${t.format}</span>
                 </div>
             </div>
-        </div>
+        `).join('');
 
-        <!-- VIEW PENDAFTARAN (MULTI-STEP WIZARD) -->
-        <div id="view-register-step" class="view hidden">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h2 class="page-title" style="margin:0; border:none;">Pendaftaran Turnamen</h2>
-                <button class="btn btn-sm btn-danger" onclick="cancelRegister()">Batal</button>
-            </div>
-            <div class="stepper">
-                <div class="step active" id="step-1-ind">1</div>
-                <div class="step" id="step-2-ind">2</div>
-                <div class="step" id="step-3-ind">3</div>
-                <div class="step" id="step-4-ind">4</div>
-            </div>
-            <div class="glass-card">
-                <!-- Step 1: DANA -->
-                <div id="reg-step-1">
-                    <h3 style="color:var(--gold); margin-bottom:15px; font-size:1rem; font-family:'Rajdhani';">1. Data Pencairan (DANA)</h3>
-                    <p style="font-size:0.75rem; color:var(--muted); margin-bottom:15px;">Data ini digunakan jika tim Anda memenangkan hadiah.</p>
-                    <div class="form-group"><label>Nomor DANA *</label><input type="text" id="reg-dana-num" placeholder="08xxxxxxxxxx" oninput="validateInput(this, 10)"></div>
-                    <div class="form-group"><label>Nama Pemilik DANA *</label><input type="text" id="reg-dana-name" placeholder="Nama sesuai akun DANA" oninput="validateInput(this, 3)"></div>
-                    <button class="btn" onclick="nextStep(2)">Lanjut Pilih Tim <i class="fa-solid fa-arrow-right"></i></button>
-                </div>
-                <!-- Step 2: Tim -->
-                <div id="reg-step-2" class="hidden">
-                    <h3 style="color:var(--gold); margin-bottom:15px; font-size:1rem; font-family:'Rajdhani';">2. Pilih Tim Anda</h3>
-                    <div id="reg-team-list">
-                        <p style="font-size:0.8rem; color:var(--muted);">Memuat tim...</p>
-                    </div>
-                    <button class="btn btn-secondary" style="margin-bottom:15px;" onclick="showToast('Buat tim lewat menu Dash', 'info')"><i class="fa-solid fa-plus"></i> Buat Tim Baru</button>
-                    <button class="btn" onclick="nextStep(3)">Lanjut Isi Roster <i class="fa-solid fa-arrow-right"></i></button>
-                    <button class="btn btn-secondary" style="margin-top:10px;" onclick="prevStep(1)"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
-                </div>
-                <!-- Step 3: Roster -->
-                <div id="reg-step-3" class="hidden">
-                    <h3 style="color:var(--gold); margin-bottom:15px; font-size:1rem; font-family:'Rajdhani';">3. Isi Roster (Wajib)</h3>
-                    <p style="font-size:0.75rem; color:var(--danger); margin-bottom:15px;">*Nickname dan UID wajib diisi lengkap.</p>
-                    <div id="reg-roster-fields">
-                        <p style="font-size:0.8rem; color:var(--muted);">Memuat roster...</p>
-                    </div>
-                    <button class="btn" onclick="nextStep(4)">Lanjut Pembayaran <i class="fa-solid fa-arrow-right"></i></button>
-                    <button class="btn btn-secondary" style="margin-top:10px;" onclick="prevStep(2)"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
-                </div>
-                <!-- Step 4: Bayar -->
-                <div id="reg-step-4" class="hidden">
-                    <h3 style="color:var(--gold); margin-bottom:15px; font-size:1rem; font-family:'Rajdhani';">4. Konfirmasi & Bayar</h3>
-                    <div class="receipt" id="reg-receipt"></div>
-                    <div class="countdown-box">
-                        <div class="countdown-timer" id="qr-timer">05:00</div>
-                        <div class="countdown-text">Sisa waktu pembayaran</div>
-                    </div>
-                    <img src="https://i.ibb.co.com/Cs6B5Hwn/20261025-190253.png" style="width:180px; margin:0 auto 15px; display:block; border-radius:8px; border:2px solid #333;" onerror="this.src='https://dummyimage.com/200x200/000/fff&text=QR+CODE'">
-                    <div class="form-group"><label>Upload Bukti Transfer</label><input type="file" accept="image/*"></div>
-                    <button class="btn" onclick="finishRegister()">Konfirmasi Pembayaran</button>
-                    <button class="btn btn-secondary" style="margin-top:10px;" onclick="prevStep(3)"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
-                </div>
-            </div>
-        </div>
+        // Update hero dengan turnamen pertama
+        const first = data[0];
+        $('hero-title').innerText = first.name;
+        $('jackpot-prize').innerText = formatRp(first.prize_pool);
+        $('hero-date').innerText = first.schedule_at ? new Date(first.schedule_at).toLocaleDateString('id-ID') : '-';
+        $('hero-btn').style.display = 'inline-flex';
+        $('hero-btn').onclick = () => openDetail(first.format, first.id);
+    }
 
-        <!-- VIEW TURNAMEN SAYA -->
-        <div id="view-my-tournaments" class="view hidden">
-            <h2 class="page-title">Turnamen Saya</h2>
-            <div class="glass-card" style="border-left:3px solid var(--gold);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <div>
-                        <h3 style="color:#fff; font-size:1rem;">Free Fire Bermuda</h3>
-                        <span class="status-badge status-live" style="margin-top:5px;">LIVE</span>
-                    </div>
-                    <span style="font-size:0.7rem; color:var(--gold); font-weight:bold;">Tim Garuda</span>
-                </div>
-                <div class="tabs">
-                    <button class="tab-btn active" onclick="switchMyTab('br')">Klasemen BR</button>
-                    <button class="tab-btn" onclick="switchMyTab('cs')">Bracket CS</button>
-                </div>
-                <div id="my-tab-br">
-                    <table><thead><tr><th>Rank</th><th>Tim</th><th>Poin</th><th>Kill</th></tr></thead>
-                        <tbody><tr><td>#1</td><td>Tim Elang</td><td>25</td><td>13</td></tr><tr class="my-team-row"><td>#2</td><td>Tim Garuda (YOU)</td><td>20</td><td>10</td></tr><tr><td>#3</td><td>Tim Rajawali</td><td>10</td><td>5</td></tr></tbody>
-                    </table>
-                    <button class="btn btn-sm btn-secondary" style="margin-top:15px; width:100%;" onclick="updateLiveScore()">Simulasi Update Poin</button>
-                </div>
-                <div id="my-tab-cs" class="hidden">
-                    <div class="bracket-container">
-                        <div class="bracket-col">
-                            <div class="bracket-match"><div class="bracket-team winner">Tim Alpha <span>3</span></div><div class="bracket-team">Tim Bravo <span>1</span></div></div>
-                            <div class="bracket-match"><div class="bracket-team my-team">Tim Garuda (YOU) <span>3</span></div><div class="bracket-team">Tim Delta <span>0</span></div></div>
-                        </div>
-                        <div class="bracket-col" style="justify-content:center;">
-                            <div class="bracket-match"><div class="bracket-team">Tim Alpha <span>-</span></div><div class="bracket-team my-team">Tim Garuda (YOU) <span>-</span></div></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    function openDetailHero() {
+        // handler fallback
+    }
 
-        <!-- VIEW DASHBOARD -->
-        <div id="view-dashboard" class="view hidden">
-            <h2 class="page-title">Dashboard Captain</h2>
-            <div class="id-card-wrap">
-                <div class="id-card" id="tilt-card">
-                    <div class="id-header">
-                        <div class="id-avatar-wrap">
-                            <div class="id-avatar-ring"></div>
-                            <div class="id-avatar"><i class="fa-solid fa-user-ninja"></i></div>
-                        </div>
-                        <div class="id-info">
-                            <h3 id="dash-username">Memuat... <span class="tier-badge">🥇 Gold</span></h3>
-                            <p id="dash-email">...</p>
-                        </div>
-                    </div>
-                    <div class="id-body">
-                        <div class="id-stat"><span>Saldo GH-T</span><strong id="dash-balance">Rp 0</strong></div>
-                        <div class="id-stat"><span>Total Tim</span><strong id="dash-team-count">0 Tim</strong></div>
-                        <div class="id-stat"><span>Nomor DANA</span><strong id="dash-dana">Belum diisi</strong></div>
-                        <div class="id-stat"><span>Status</span><strong style="color:var(--success);">Aktif</strong></div>
-                    </div>
-                </div>
-            </div>
+    // =================== DETAIL ===================
+    async function openDetail(mode, id) {
+        if (!id) return;
+        currentTournamentMode = mode;
+        currentTournamentId = id;
 
-            <!-- Daily Check-in -->
-            <div class="glass-card" style="display:flex; justify-content:space-between; align-items:center; padding:15px;">
+        const { data, error } = await sb.from('tournaments').select('*').eq('id', id).single();
+        if (error || !data) return showToast('Turnamen tidak ditemukan', 'danger');
+
+        $('detail-title').innerText = data.name;
+        $('detail-banner-img').src = data.banner_url || 'https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg';
+        $('detail-status').innerText = (data.status||'').toUpperCase().replace('_',' ');
+        $('detail-prize').innerText = formatRp(data.prize_pool);
+        $('detail-fee').innerText = formatRp(data.entry_fee);
+        $('detail-slots').innerText = `${data.total_slots} Tim`;
+        $('detail-date').innerText = data.schedule_at ? new Date(data.schedule_at).toLocaleDateString('id-ID') : '-';
+
+        // Split hadiah (asumsi: 50% / 30% / 20%)
+        const total = Number(data.prize_pool) || 0;
+        $('prize-1').innerText = formatRp(Math.round(total * 0.5));
+        $('prize-2').innerText = formatRp(Math.round(total * 0.3));
+        $('prize-3').innerText = formatRp(Math.round(total * 0.2));
+
+        $('detail-content-br').classList.toggle('hidden', mode !== 'BR');
+        $('detail-content-cs').classList.toggle('hidden', mode !== 'CS');
+
+        navTo('tournament-detail');
+        loadParticipants(id);
+    }
+
+    async function loadParticipants(tid) {
+        const list = $('participant-list');
+        const { data } = await sb.from('registrations').select('team_name').eq('tournament_id', tid).eq('status','resmi_terdaftar');
+        if (!data || data.length === 0) {
+            list.innerHTML = '<p style="color:var(--muted);font-size:0.8rem;grid-column:1/-1;">Belum ada peserta.</p>';
+            return;
+        }
+        list.innerHTML = data.map(r => `<div class="participant-item"><i class="fa-solid fa-shield-halved" style="color:var(--gold);"></i><span>${r.team_name}</span></div>`).join('');
+    }
+
+    // =================== DASHBOARD ===================
+    async function loadTeams() {
+        if (!currentUser) return;
+        const list = $('team-list');
+        list.innerHTML = '<li style="padding:15px;text-align:center;color:var(--muted);font-size:0.8rem;">Memuat tim...</li>';
+
+        const { data, error } = await sb.from('teams').select('*').eq('owner_id', currentUser.id);
+        if (error) { list.innerHTML = `<li style="color:var(--danger);">${error.message}</li>`; return; }
+        
+        userTeams = data || [];
+        $('dash-team-count').innerText = `${userTeams.length} Tim`;
+
+        if (userTeams.length === 0) {
+            list.innerHTML = '<li style="padding:15px;text-align:center;color:var(--muted);font-size:0.8rem;">Belum ada tim. Buat tim baru di atas.</li>';
+            return;
+        }
+
+        list.innerHTML = userTeams.map(t => `
+            <li style="display:flex;justify-content:space-between;align-items:center;padding:15px;background:#111;border-radius:8px;margin-bottom:10px;border-left:3px solid var(--gold);">
                 <div>
-                    <h3 style="font-size:0.9rem; color:#fff;">Daily Check-in</h3>
-                    <p style="font-size:0.7rem; color:var(--muted);">Klaim 10 Poin GH-T hari ini!</p>
+                    <h4 style="color:var(--gold);font-size:0.95rem;">${t.name}</h4>
+                    <p style="font-size:0.7rem;color:var(--muted);">${t.description || 'Tanpa deskripsi'}</p>
                 </div>
-                <button class="btn btn-sm" id="btn-checkin" onclick="dailyCheckIn()">Klaim</button>
-            </div>
+                <button class="btn btn-sm btn-secondary" onclick="openRoster('${t.id}','${t.name.replace(/'/g,"\\'")}')"><i class="fa-solid fa-users"></i></button>
+            </li>
+        `).join('');
+    }
 
-            <!-- Form Buat Tim -->
-            <div class="glass-card">
-                <h3 class="page-title" style="font-size:0.95rem;"><i class="fa-solid fa-plus"></i> Buat Tim Baru</h3>
-                <div class="form-group"><input type="text" id="new-team-name" placeholder="Nama Tim (Wajib)"></div>
-                <div class="form-group"><input type="text" id="new-team-desc" placeholder="Deskripsi (Opsional)"></div>
-                <button class="btn btn-sm" onclick="createTeam()">Simpan Tim</button>
-            </div>
+    async function createTeam() {
+        const name = $('new-team-name').value.trim();
+        const desc = $('new-team-desc').value.trim();
+        if (!name) return showToast('Nama tim wajib diisi', 'warning');
 
-            <!-- Daftar Tim -->
-            <div class="glass-card">
-                <h3 class="page-title" style="font-size:0.95rem;"><i class="fa-solid fa-shield-halved"></i> Tim Saya</h3>
-                <ul id="team-list" style="list-style:none;">
-                    <p style="font-size:0.8rem; color:var(--muted);">Memuat tim...</p>
-                </ul>
-            </div>
+        // Ambil game_id dari games pertama
+        const { data: games } = await sb.from('games').select('id').limit(1);
+        if (!games || games.length === 0) return showToast('Game belum ada di database', 'danger');
 
-            <!-- Roster (Muncul kalau klik Kelola Roster) -->
-            <div class="glass-card hidden" id="sec-roster">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 class="page-title" style="margin:0; border:none; font-size:0.95rem;"><i class="fa-solid fa-users"></i> <span id="roster-team-name">Roster</span></h3>
-                    <button class="btn btn-sm btn-danger" onclick="closeRoster()">Tutup</button>
-                </div>
-                <div style="background:#111; padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #333;">
-                    <div class="form-group"><input type="text" id="new-player-nick" placeholder="Nickname FF"></div>
-                    <div class="form-group"><input type="text" id="new-player-uid" placeholder="UID FF"></div>
-                    <div class="form-group"><select id="new-player-role"><option value="main">Main</option><option value="sub">Cadangan</option></select></div>
-                    <button class="btn btn-sm" style="background:var(--success); color:#fff;" onclick="addPlayer()">Tambah Pemain</button>
-                </div>
-                <div class="roster-grid" id="player-list">
-                    <p style="font-size:0.8rem; color:var(--muted);">Memuat pemain...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- VIEW NOTIFIKASI -->
-        <div id="view-notifications" class="view hidden">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h2 class="page-title" style="margin:0; border:none;">Notifikasi</h2>
-                <button class="btn btn-sm btn-secondary" onclick="markAllRead()">Tandai Dibaca</button>
-            </div>
-            <div class="glass-card" style="padding:0; overflow:hidden;" id="notif-list">
-                <p style="padding:15px; font-size:0.8rem; color:var(--muted);">Memuat notifikasi...</p>
-            </div>
-        </div>
-
-        <!-- VIEW AUTH (LOGIN/REGISTER) -->
-        <div id="view-auth" class="view hidden">
-            <div style="text-align:center; margin-bottom:20px;">
-                <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="Logo" style="width:80px; margin-bottom:10px;">
-                <h2 class="page-title" style="justify-content:center; border:none;">CAPTAIN ACCESS</h2>
-            </div>
-            <div class="glass-card" style="max-width:400px; margin:0 auto;">
-                <div class="tabs" style="margin-bottom:15px;">
-                    <button class="tab-btn active" id="tab-login" onclick="switchAuthTab('login')">Login</button>
-                    <button class="tab-btn" id="tab-register" onclick="switchAuthTab('register')">Register</button>
-                </div>
-                
-                <div id="auth-login">
-                    <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="email@example.com"></div>
-                    <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="********"></div>
-                    <button class="btn" onclick="doLogin()">Masuk</button>
-                </div>
-
-                <div id="auth-register" class="hidden">
-                    <div class="form-group"><label>Username</label><input type="text" id="reg-username" placeholder="Username"></div>
-                    <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="email@example.com"></div>
-                    <div class="form-group"><label>Password (Min 6 Karakter)</label><input type="password" id="reg-password" placeholder="********"></div>
-                    <button class="btn" onclick="doRegister()">Daftar Akun</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- VIEW 404 -->
-        <div id="view-404" class="view hidden">
-            <h1 class="glitch-404">404</h1>
-            <h2 style="color:#fff; margin-bottom:10px; font-family:'Orbitron';">AREA RESTRICTED</h2>
-            <p style="color:var(--muted); margin-bottom:20px;">YOU HAVE BEEN ELIMINATED</p>
-            <button class="btn btn-danger btn-sm" onclick="navTo('home')">Kembali ke Lobby</button>
-        </div>
-    </div>
-
-    <!-- FOOTER -->
-    <footer>
-        &copy; 2026 GH-T ARENA. <a href="#" onclick="showToast('Syarat & Ketentuan Berlaku', 'info')">Syarat & Ketentuan Berlaku.</a>
-    </footer>
-
-    <!-- BOTTOM NAV -->
-    <div class="bottom-nav hidden" id="bottom-nav">
-        <button class="active" data-view="home" onclick="navTo('home')"><i class="fa-solid fa-house"></i>Home</button>
-        <button data-view="my-tournaments" onclick="navTo('my-tournaments')"><i class="fa-solid fa-list-check"></i>Turnamen</button>
-        <button data-view="dashboard" onclick="navTo('dashboard')"><i class="fa-solid fa-shield-halved"></i>Dash</button>
-        <button data-view="notifications" onclick="navTo('notifications')"><i class="fa-solid fa-bell"></i>Notif</button>
-    </div>
-
-    <!-- FLOATING -->
-    <a href="https://wa.me/6283848591646?text=Halo%20Admin%20GH-T%20Arena,%20saya%20butuh%20bantuan." target="_blank" class="wa-float">
-        <i class="fa-brands fa-whatsapp"></i>
-    </a>
-    <div class="test-float" onclick="openTestPanel()"><i class="fa-solid fa-flask"></i></div>
-    <div class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0, behavior:'smooth'})"><i class="fa-solid fa-arrow-up"></i></div>
-
-    <!-- TEST PANEL MODAL -->
-    <div id="modal-test" class="modal-overlay" onclick="if(event.target===this) closeTestPanel()">
-        <div class="modal-box">
-            <i class="fa-solid fa-xmark close-modal" onclick="closeTestPanel()"></i>
-            <h3><i class="fa-solid fa-flask"></i> Test Panel</h3>
-            <p style="font-size:0.7rem; color:var(--muted); text-align:center; margin-bottom:15px;">Klik tombol untuk simulasi.</p>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
-                <button class="mode-btn" onclick="openDetail('BR')">Mode BR</button>
-                <button class="mode-btn" onclick="openDetail('CS')">Mode CS</button>
-            </div>
-            <div class="test-grid">
-                <button onclick="triggerNotif('warning')">⚠️ Ditunda</button>
-                <button onclick="triggerNotif('info')">⚡ Dipercepat</button>
-                <button onclick="triggerNotif('danger')">❌ Dibatalkan</button>
-                <button onclick="triggerNotif('success')">💰 Refund</button>
-                <button onclick="triggerNotif('success')">✅ Diterima</button>
-                <button onclick="triggerNotif('info')">🎯 Room ID</button>
-                <button onclick="triggerNotif('gold')">🏆 Hasil Match</button>
-                <button onclick="triggerNotif('victory')">👑 Juara!</button>
-                <button onclick="triggerNotif('gold')">📢 Pengumuman</button>
-                <button onclick="triggerVictoryScreen()">🎉 Victory</button>
-                <button onclick="navTo('404')">🚫 404</button>
-                <button onclick="showKillFeed()">💀 Kill Feed</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= JAVASCRIPT LOGIC ================= -->
-    <script>
-        // Konfigurasi Supabase
-        const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // State
-        let currentUser = null;
-        let userProfile = null;
-        let userTeams = [];
-        let activeTeamId = null;
-        let currentTournamentId = null;
-        let selectedTeamId = null;
-        let freefireId = null;
-        let isIntroSkipped = false;
-        let checkInClaimed = false;
-        let currentTournamentMode = 'BR';
-
-        // ================= UTIL =================
-        const formatRp = (num) => 'Rp ' + Number(num || 0).toLocaleString('id-ID');
-        
-        function playSound(type) {
-            // (Sama seperti sebelumnya, fungsi suara)
-        }
-        function vibrate(ms = 50) { if (navigator.vibrate) navigator.vibrate(ms); }
-
-        function showToast(text, type) {
-            const container = document.getElementById('notif-container');
-            const toast = document.createElement('div');
-            toast.className = `toast-notif tn-${type}`;
-            let icon = type === 'success' ? 'fa-check-circle' : (type === 'danger' ? 'fa-ban' : (type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'));
-            toast.innerHTML = `<i class="fa-solid ${icon} toast-icon"></i><div class="toast-content"><div class="toast-title">${text}</div></div><button class="toast-close" onclick="this.parentElement.remove()">×</button>`;
-            container.appendChild(toast);
-            setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 300); }, 4000);
-        }
-
-        // ================= INIT & AUTH =================
-        async function init() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (session) {
-                currentUser = session.user;
-                await loadProfile();
-                document.getElementById('view-auth').classList.add('hidden');
-                document.getElementById('bottom-nav').classList.remove('hidden');
-                document.getElementById('main-nav').classList.remove('hidden');
-                document.getElementById('server-status').classList.remove('hidden');
-                navTo('home');
-                loadTournaments();
-            } else {
-                document.getElementById('view-auth').classList.remove('hidden');
-                document.getElementById('bottom-nav').classList.add('hidden');
-                document.getElementById('main-nav').classList.add('hidden');
-                document.getElementById('server-status').classList.add('hidden');
-            }
-        }
-
-        async function loadProfile() {
-            const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-            userProfile = data;
-            if (userProfile) {
-                document.getElementById('dash-username').innerHTML = `${userProfile.username} <span class="tier-badge">🥇 Gold</span>`;
-                document.getElementById('dash-email').innerText = userProfile.email;
-                document.getElementById('dash-balance').innerText = formatRp(userProfile.balance);
-                document.getElementById('dash-dana').innerText = userProfile.dana_number || 'Belum diisi';
-            }
-        }
-
-        function switchAuthTab(tab) {
-            document.getElementById('auth-login').classList.toggle('hidden', tab !== 'login');
-            document.getElementById('auth-register').classList.toggle('hidden', tab !== 'register');
-            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-            document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-        }
-
-        async function doLogin() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            if(!email || !password) return showToast('Isi email dan password!', 'warning');
-            
-            const btn = event.target;
-            btn.innerText = "Loading..."; btn.disabled = true;
-
-            const { error } = await sb.auth.signInWithPassword({ email, password });
-            if (error) {
-                showToast(error.message, 'danger');
-                btn.innerText = "Masuk"; btn.disabled = false;
-            } else {
-                showToast('Login Berhasil!', 'success');
-                init();
-            }
-        }
-
-        async function doRegister() {
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-password').value;
-            const username = document.getElementById('reg-username').value;
-            if(!email || !password || !username) return showToast('Isi semua kolom!', 'warning');
-
-            const btn = event.target;
-            btn.innerText = "Loading..."; btn.disabled = true;
-
-            const { data, error } = await sb.auth.signUp({ 
-                email, 
-                password,
-                options: { data: { username: username } }
-            });
-
-            if (error) {
-                showToast(error.message, 'danger');
-                btn.innerText = "Daftar Akun"; btn.disabled = false;
-            } else {
-                showToast('Registrasi Berhasil! Silakan Login.', 'success');
-                switchAuthTab('login');
-                btn.innerText = "Daftar Akun"; btn.disabled = false;
-            }
-        }
-
-        async function doLogout() {
-            await sb.auth.signOut();
-            location.reload();
-        }
-
-        // ================= NAVIGATION =================
-        function navTo(viewId) {
-            const views = ['home', 'tournament-detail', 'my-tournaments', 'dashboard', 'notifications', '404', 'register-step', 'auth'];
-            views.forEach(v => { const el = document.getElementById('view-' + v); if(el) el.classList.add('hidden'); });
-            
-            const target = document.getElementById('view-' + viewId);
-            if(target) target.classList.remove('hidden');
-
-            document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
-            const activeBtn = document.querySelector(`.bottom-nav button[data-view="${viewId}"]`);
-            if(activeBtn) activeBtn.classList.add('active');
-
-            // Refresh data saat pindah tab
-            if(viewId === 'dashboard') { loadTeams(); }
-            if(viewId === 'notifications') { loadNotifications(); }
-            if(viewId === 'home') { loadTournaments(); }
-        }
-
-        function skipIntro() {
-            if(isIntroSkipped) return;
-            isIntroSkipped = true;
-            document.getElementById('intro-screen').classList.add('hidden');
-            init();
-        }
-        setTimeout(skipIntro, 3500);
-
-        // ================= LOAD DATA =================
-        async function loadTournaments() {
-            const grid = document.getElementById('tournament-grid');
-            const { data, error } = await sb.from('tournaments').select('*').order('created_at', { ascending: false });
-            
-            if (error || !data) { grid.innerHTML = '<p>Gagal memuat.</p>'; return; }
-            if (data.length === 0) { grid.innerHTML = '<p>Belum ada turnamen.</p>'; return; }
-
-            // Hero Banner update
-            document.getElementById('hero-title').innerText = data[0].name;
-            document.getElementById('jackpot-prize').innerText = formatRp(data[0].prize_pool);
-            document.getElementById('hero-date').innerText = new Date(data[0].schedule_at).toLocaleDateString('id-ID');
-
-            grid.innerHTML = data.map(t => `
-                <div class="ticket-card scan-container" onclick="openDetail('${t.format}', '${t.id}')">
-                    <div class="ticket-banner">
-                        <img src="${t.banner_url || 'https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg'}" class="bg-img">
-                    </div>
-                    <div class="ticket-info">
-                        <span class="status-badge status-open">${t.status.toUpperCase()}</span>
-                        <h3 class="ticket-title">${t.name}</h3>
-                        <p class="ticket-prize">${formatRp(t.prize_pool)}</p>
-                    </div>
-                    <div class="ticket-divider"></div>
-                    <div class="ticket-footer">
-                        <span><i class="fa-solid fa-users"></i> ${t.total_slots} Tim</span>
-                        <span>${t.format}</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function openDetail(mode, id) {
-            if(!id) return;
-            currentTournamentMode = mode;
-            currentTournamentId = id;
-            
-            const { data } = await sb.from('tournaments').select('*').eq('id', id).single();
-            if (!data) return showToast('Turnamen tidak ditemukan', 'danger');
-
-            document.getElementById('detail-title').innerText = data.name;
-            document.getElementById('detail-banner-img').src = data.banner_url || '';
-            document.getElementById('detail-prize').innerText = formatRp(data.prize_pool);
-            document.getElementById('detail-fee').innerText = formatRp(data.entry_fee);
-            document.getElementById('detail-slots').innerText = `${data.total_slots} Tim`; // Nanti bisa dihitung dari registrations
-            document.getElementById('detail-date').innerText = new Date(data.schedule_at).toLocaleDateString('id-ID');
-
-            document.getElementById('detail-content-br').classList.toggle('hidden', mode !== 'BR');
-            document.getElementById('detail-content-cs').classList.toggle('hidden', mode !== 'CS');
-
-            navTo('tournament-detail');
-            loadParticipants(id);
-        }
-
-        async function loadParticipants(tId) {
-            const list = document.getElementById('participant-list');
-            const { data } = await sb.from('registrations').select('team_name').eq('tournament_id', tId);
-            if (!data || data.length === 0) { list.innerHTML = '<p>Belum ada peserta.</p>'; return; }
-            list.innerHTML = data.map(r => `<div class="participant-item"><span>${r.team_name}</span></div>`).join('');
-        }
-
-        async function loadTeams() {
-            if(!currentUser) return;
-            const list = document.getElementById('team-list');
-            const { data } = await sb.from('teams').select('*').eq('owner_id', currentUser.id);
-            userTeams = data || [];
-
-            if (userTeams.length === 0) { list.innerHTML = '<p>Belum ada tim.</p>'; return; }
-
-            list.innerHTML = userTeams.map(t => `
-                <li style="display:flex; justify-content:space-between; padding:15px; background:#111; border-radius:8px; margin-bottom:10px; border-left:3px solid var(--gold);">
-                    <div><h4 style="color:var(--gold); font-size:0.95rem;">${t.name}</h4></div>
-                    <button class="btn btn-sm btn-secondary" onclick="openRoster('${t.id}', '${t.name}')"><i class="fa-solid fa-users"></i></button>
-                </li>
-            `).join('');
-        }
-
-        async function loadNotifications() {
-            if(!currentUser) return;
-            const list = document.getElementById('notif-list');
-            const { data } = await sb.from('notifications').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-            if (!data || data.length === 0) { list.innerHTML = '<p style="padding:15px;">Tidak ada notifikasi.</p>'; return; }
-            list.innerHTML = data.map(n => `
-                <div style="display:flex; gap:15px; padding:15px; border-bottom:1px solid #222;">
-                    <div style="color:var(--gold);"><i class="fa-solid fa-bell"></i></div>
-                    <div><h4 style="font-size:0.85rem;">${n.title}</h4><p style="font-size:0.75rem; color:var(--silver);">${n.body}</p></div>
-                </div>
-            `).join('');
-        }
-
-        // ================= ACTIONS =================
-        async function createTeam() {
-            const name = document.getElementById('new-team-name').value;
-            if(!name) return showToast('Nama tim wajib!', 'warning');
-            
-            const { data: g } = await sb.from('games').select('id').limit(1).single();
-            const gameId = g ? g.id : null;
-
-            const { error } = await sb.from('teams').insert([{ owner_id: currentUser.id, name, game_id: gameId }]);
-            if(error) return showToast(error.message, 'danger');
-            
-            showToast('Tim berhasil dibuat!', 'success');
-            document.getElementById('new-team-name').value = '';
-            loadTeams();
-        }
-
-        function openRoster(id, name) {
-            activeTeamId = id;
-            document.getElementById('roster-team-name').innerText = name;
-            document.getElementById('sec-roster').classList.remove('hidden');
-            loadPlayers();
-        }
-
-        function closeRoster() { document.getElementById('sec-roster').classList.add('hidden'); }
-
-        async function addPlayer() {
-            const nick = document.getElementById('new-player-nick').value;
-            const uid = document.getElementById('new-player-uid').value;
-            const role = document.getElementById('new-player-role').value;
-            if(!nick || !uid) return showToast('Isi Nick & UID!', 'warning');
-
-            const { error } = await sb.from('team_players').insert([{ team_id: activeTeamId, nickname: nick, game_uid: uid, role }]);
-            if(error) return showToast(error.message, 'danger');
-
-            showToast('Pemain ditambahkan!', 'success');
-            loadPlayers();
-        }
-
-        async function loadPlayers() {
-            const list = document.getElementById('player-list');
-            const { data } = await sb.from('team_players').select('*').eq('team_id', activeTeamId);
-            if(!data || data.length === 0) { list.innerHTML = '<p>Belum ada pemain.</p>'; return; }
-            list.innerHTML = data.map(p => `
-                <div class="flip-card" onclick="this.classList.toggle('flipped')">
-                    <div class="flip-card-inner">
-                        <div class="flip-card-front">
-                            <div class="fc-nick">${p.nickname}</div>
-                            <div class="fc-uid">UID: ${p.game_uid}</div>
-                            <div class="fc-role ${p.role}">${p.role.toUpperCase()}</div>
-                        </div>
-                        <div class="flip-card-back"><div class="fc-nick">STATISTIK</div><div class="fc-stat">Coming Soon</div></div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // ================= MULTI-STEP REGISTRATION =================
-        let currentStep = 1;
-        
-        async function openRegisterWizard() {
-            if(!currentUser) return showToast('Harus login dulu!', 'danger');
-            navTo('register-step');
-            updateStepper(1);
-            // Load user teams ke Step 2
-            const list = document.getElementById('reg-team-list');
-            if(userTeams.length === 0) await loadTeams(); // refresh dulu
-            if(userTeams.length === 0) { list.innerHTML = '<p>Lu belum punya tim. Buat dulu di Dash.</p>'; return; }
-            list.innerHTML = userTeams.map(t => `
-                <div class="glass-card" style="border:1px solid #333; margin-bottom:10px; cursor:pointer;" onclick="selectTeam(this, '${t.id}')">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div><h4 style="color:var(--gold); font-size:0.9rem;">${t.name}</h4></div>
-                        <i class="fa-solid fa-circle-check" style="color:#555; font-size:1.2rem;"></i>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function selectTeam(el, id) {
-            document.querySelectorAll('#reg-team-list .glass-card').forEach(c => c.style.borderColor = '#333');
-            el.style.borderColor = 'var(--gold)';
-            selectedTeamId = id;
-        }
-
-        function updateStepper(step) {
-            currentStep = step;
-            for(let i=1; i<=4; i++) {
-                document.getElementById(`reg-step-${i}`).classList.add('hidden');
-                document.getElementById(`step-${i}-ind`).classList.remove('active', 'completed');
-            }
-            document.getElementById(`reg-step-${step}`).classList.remove('hidden');
-            for(let i=1; i<=4; i++) {
-                const ind = document.getElementById(`step-${i}-ind`);
-                if(i < step) { ind.classList.add('completed'); ind.innerHTML = '✓'; }
-                else if(i === step) { ind.classList.add('active'); ind.innerHTML = i; }
-                else { ind.innerHTML = i; }
-            }
-            if(step === 4) startQRTimer(300);
-            if(step === 3) loadRosterForRegister();
-        }
-
-        async function loadRosterForRegister() {
-            const box = document.getElementById('reg-roster-fields');
-            if(!selectedTeamId) { box.innerHTML = '<p>Pilih tim dulu!</p>'; return; }
-            const { data } = await sb.from('team_players').select('*').eq('team_id', selectedTeamId);
-            if(!data || data.length === 0) { box.innerHTML = '<p style="color:var(--danger);">Roster tim kosong! Tambah pemain di menu Dash.</p>'; return; }
-            
-            box.innerHTML = data.map(p => `
-                <div style="background:#111; padding:10px; border-radius:8px; margin-bottom:10px; border:1px solid #333;">
-                    <label style="font-size:0.7rem; color:var(--gold);">${p.nickname} (${p.role.toUpperCase()})</label>
-                    <input type="text" value="${p.nickname}" disabled style="margin-bottom:5px; font-size:0.8rem; padding:8px; opacity:0.6;">
-                    <input type="text" value="${p.game_uid}" disabled style="font-size:0.8rem; padding:8px; opacity:0.6;">
-                </div>
-            `).join('');
-            
-            // Update Struk Receipt di step 4
-            const teamObj = userTeams.find(t => t.id === selectedTeamId);
-            document.getElementById('reg-receipt').innerHTML = `
-                <div style="text-align:center; margin-bottom:10px; font-weight:bold; border-bottom:2px dashed #ccc; padding-bottom:5px;">STRUK PENDAFTARAN</div>
-                <div class="receipt-row"><span>Turnamen</span><span>${document.getElementById('detail-title').innerText}</span></div>
-                <div class="receipt-row"><span>Tim</span><span>${teamObj ? teamObj.name : '-'}</span></div>
-                <div class="receipt-row"><span>Biaya</span><span>${document.getElementById('detail-fee').innerText}</span></div>
-                <div class="receipt-row receipt-total"><span>TOTAL</span><span>${document.getElementById('detail-fee').innerText}</span></div>
-            `;
-        }
-
-        function nextStep(step) {
-            if(currentStep === 1) {
-                const num = document.getElementById('reg-dana-num').value;
-                if(!num) return showToast('Isi Nomor DANA!', 'warning');
-            }
-            if(currentStep === 2 && !selectedTeamId) return showToast('Pilih Tim dulu!', 'warning');
-            updateStepper(step);
-        }
-        function prevStep(step) { updateStepper(step); }
-        function cancelRegister() { navTo('home'); }
-
-        async function finishRegister() {
-            if(!selectedTeamId) return;
-            const teamObj = userTeams.find(t => t.id === selectedTeamId);
-            
-            const btn = event.target;
-            btn.innerText = "Memproses..."; btn.disabled = true;
-
-            const { error } = await sb.from('registrations').insert([{
-                tournament_id: currentTournamentId,
-                team_id: selectedTeamId,
-                owner_id: currentUser.id,
-                team_name: teamObj.name,
-                status: 'menunggu_verifikasi',
-                payment_method: 'qris',
-                fee_amount: 0
-            }]);
-
-            if (error) {
-                showToast(error.message, 'danger');
-                btn.innerText = "Konfirmasi Pembayaran"; btn.disabled = false;
-            } else {
-                showToast('Pendaftaran Berhasil!', 'success');
-                setTimeout(() => navTo('home'), 2000);
-            }
-        }
-
-        let qrTimerInterval;
-        function startQRTimer(duration) {
-            let timer = duration, minutes, seconds;
-            clearInterval(qrTimerInterval);
-            qrTimerInterval = setInterval(function () {
-                minutes = parseInt(timer / 60, 10); seconds = parseInt(timer % 60, 10);
-                const timerEl = document.getElementById('qr-timer');
-                if(timerEl) timerEl.textContent = `${minutes}:${seconds < 10 ? '0'+seconds : seconds}`;
-                if (--timer < 0) { clearInterval(qrTimerInterval); if(timerEl) timerEl.textContent = "EXPIRED"; }
-            }, 1000);
-        }
-
-        // ================= EXTRA UI =================
-        function openTestPanel() { document.getElementById('modal-test').classList.add('active'); }
-        function closeTestPanel() { document.getElementById('modal-test').classList.remove('active'); }
-        
-        function switchFaq(tab) {
-            document.getElementById('faq-umum').classList.toggle('hidden', tab !== 'umum');
-            document.getElementById('faq-bayar').classList.toggle('hidden', tab !== 'bayar');
-            document.querySelectorAll('.faq-cat').forEach((b, i) => b.classList.toggle('active', (tab === 'umum' && i === 0) || (tab === 'bayar' && i === 1)));
-        }
-
-        // Dummy actions
-        function showToast(...args) { /* override biar ga error */ }
-        function triggerNotif(t) { showToast('Simulasi Notif ' + t, 'info'); closeTestPanel(); }
-        function triggerVictoryScreen() { showToast('VICTORY!', 'success'); closeTestPanel(); }
-        function showKillFeed() { closeTestPanel(); }
-        function shareTournament() { showToast('Share diklik', 'info'); }
-        function dailyCheckIn() { showToast('Klaim +10 Poin', 'success'); }
-        function markAllRead() { showToast('Ditandai dibaca', 'success'); }
-        function updateLiveScore() { showToast('Score updated', 'success'); }
-
-        // Start
-        window.addEventListener('load', () => {
-            // Cek hash 404
-            if(window.location.hash === '#404') { skipIntro(); setTimeout(()=>navTo('404'), 500); }
+        const { error } = await sb.from('teams').insert({
+            owner_id: currentUser.id, game_id: games[0].id, name, description: desc || null
         });
 
-    </script>
+        if (error) return showToast(error.message, 'danger');
+        showToast('Tim berhasil dibuat', 'success');
+        $('new-team-name').value = ''; $('new-team-desc').value = '';
+        loadTeams();
+    }
+
+    function openRoster(id, name) {
+        activeTeamId = id;
+        $('roster-team-name').innerText = name;
+        $('sec-roster').classList.remove('hidden');
+        loadPlayers();
+    }
+    function closeRoster() { $('sec-roster').classList.add('hidden'); }
+
+    async function loadPlayers() {
+        const list = $('player-list');
+        const { data } = await sb.from('team_players').select('*').eq('team_id', activeTeamId);
+        if (!data || data.length === 0) {
+            list.innerHTML = '<p style="color:var(--muted);font-size:0.8rem;grid-column:1/-1;text-align:center;padding:20px;">Belum ada pemain.</p>';
+            return;
+        }
+        list.innerHTML = data.map(p => `
+            <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <div class="fc-nick">${p.nickname}</div>
+                        <div class="fc-uid">UID: ${p.game_uid}</div>
+                        <div class="fc-role ${p.role}">${p.role.toUpperCase()}</div>
+                    </div>
+                    <div class="flip-card-back">
+                        <div class="fc-nick">STATISTIK</div>
+                        <div class="fc-stat">Coming Soon</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function addPlayer() {
+        const nick = $('new-player-nick').value.trim();
+        const uid = $('new-player-uid').value.trim();
+        const role = $('new-player-role').value;
+        if (!nick || !uid) return showToast('Nick & UID wajib', 'warning');
+        if (!activeTeamId) return showToast('Tim belum dipilih', 'danger');
+
+        const { error } = await sb.from('team_players').insert({
+            team_id: activeTeamId, nickname: nick, game_uid: uid, role
+        });
+        if (error) return showToast(error.message, 'danger');
+
+        showToast('Pemain ditambahkan', 'success');
+        $('new-player-nick').value = ''; $('new-player-uid').value = '';
+        loadPlayers();
+    }
+
+    // =================== NOTIFICATIONS ===================
+    async function loadNotifications() {
+        if (!currentUser) return;
+        const list = $('notif-list');
+        const { data } = await sb.from('notifications').select('*').eq('user_id', currentUser.id).order('created_at',{ascending:false});
+        if (!data || data.length === 0) {
+            list.innerHTML = '<p style="padding:20px;text-align:center;color:var(--muted);font-size:0.85rem;">Belum ada notifikasi.</p>';
+            return;
+        }
+        list.innerHTML = data.map(n => `
+            <div style="display:flex;gap:15px;padding:15px;border-bottom:1px solid #222;">
+                <div style="color:var(--gold);font-size:1.2rem;"><i class="fa-solid fa-bell"></i></div>
+                <div>
+                    <h4 style="font-size:0.85rem;color:#fff;">${n.title||'-'}</h4>
+                    <p style="font-size:0.75rem;color:var(--silver);">${n.body||''}</p>
+                </div>
+            </div>
+        `).join('');
+        $('notif-badge').innerText = data.filter(n=>!n.is_read).length;
+    }
+
+    async function markAllRead() {
+        if (!currentUser) return;
+        await sb.from('notifications').update({ is_read: true }).eq('user_id', currentUser.id);
+        $('notif-badge').innerText = 0;
+        showToast('Semua ditandai dibaca', 'success');
+        loadNotifications();
+    }
+
+    // =================== MY TOURNAMENTS ===================
+    async function loadMyTournaments() {
+        if (!currentUser) return;
+        const box = $('my-tournaments-list');
+        const { data } = await sb.from('registrations').select('*, tournaments(name, format, schedule_at)').eq('owner_id', currentUser.id);
+        if (!data || data.length === 0) {
+            box.innerHTML = '<div class="glass-card" style="text-align:center;padding:30px;"><i class="fa-solid fa-trophy" style="font-size:3rem;color:#333;margin-bottom:15px;display:block;"></i><p style="color:var(--muted);font-size:0.85rem;">Kamu belum mengikuti turnamen apapun.</p></div>';
+            return;
+        }
+        box.innerHTML = data.map(r => `
+            <div class="glass-card" style="margin-bottom:15px;border-left:3px solid var(--gold);">
+                <h4 style="color:var(--gold);font-size:0.95rem;">${r.tournaments?.name || r.team_name}</h4>
+                <p style="font-size:0.75rem;color:var(--muted);margin:5px 0;">Tim: ${r.team_name} • Status: ${r.status}</p>
+            </div>
+        `).join('');
+    }
+
+    // =================== REGISTER WIZARD ===================
+    let currentStep = 1;
+    async function openRegisterWizard() {
+        if (!currentUser) return navTo('auth');
+        if (!currentTournamentId) return showToast('Turnamen belum dipilih', 'danger');
+        navTo('register-step');
+        updateStepper(1);
+        loadRegTeams();
+    }
+
+    function updateStepper(step) {
+        currentStep = step;
+        for (let i=1;i<=4;i++) {
+            $('reg-step-'+i).classList.toggle('hidden', i !== step);
+            const ind = $('step-'+i+'-ind');
+            ind.classList.remove('active','completed');
+            if (i < step) { ind.classList.add('completed'); ind.innerHTML = '✓'; }
+            else if (i === step) { ind.classList.add('active'); ind.innerHTML = i; }
+            else ind.innerHTML = i;
+        }
+        if (step === 3) loadRosterForReg();
+        if (step === 4) startQRTimer(300);
+    }
+
+    async function loadRegTeams() {
+        const box = $('reg-team-list');
+        if (!userTeams.length) await loadTeams();
+        if (!userTeams.length) {
+            box.innerHTML = '<p style="color:var(--danger);font-size:0.85rem;">Lu belum punya tim. Buat tim dulu di menu Dash.</p>';
+            return;
+        }
+        box.innerHTML = userTeams.map(t => `
+            <div class="glass-card" style="border:1px solid #333;margin-bottom:10px;cursor:pointer;" onclick="selectRegTeam(this,'${t.id}')">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <h4 style="color:var(--gold);font-size:0.9rem;">${t.name}</h4>
+                    <i class="fa-solid fa-circle-check" style="color:#555;"></i>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function selectRegTeam(el, id) {
+        document.querySelectorAll('#reg-team-list .glass-card').forEach(c => c.style.borderColor = '#333');
+        el.style.borderColor = 'var(--gold)';
+        el.querySelector('i').style.color = 'var(--gold)';
+        selectedTeamId = id;
+    }
+
+    async function loadRosterForReg() {
+        const box = $('reg-roster-fields');
+        if (!selectedTeamId) { box.innerHTML = '<p style="color:var(--danger);">Pilih tim dulu.</p>'; return; }
+        const { data } = await sb.from('team_players').select('*').eq('team_id', selectedTeamId);
+        if (!data || data.length === 0) {
+            box.innerHTML = '<p style="color:var(--danger);">Roster kosong. Tambah pemain dulu di menu Dash.</p>';
+            return;
+        }
+        box.innerHTML = data.map(p => `
+            <div style="background:#111;padding:10px;border-radius:8px;margin-bottom:10px;border:1px solid #333;">
+                <label style="font-size:0.7rem;color:var(--gold);">${p.nickname} (${p.role.toUpperCase()})</label>
+                <input type="text" value="${p.nickname}" disabled style="margin-bottom:5px;font-size:0.8rem;padding:8px;opacity:.6;">
+                <input type="text" value="${p.game_uid}" disabled style="font-size:0.8rem;padding:8px;opacity:.6;">
+            </div>
+        `).join('');
+
+        // Update receipt
+        const team = userTeams.find(t => t.id === selectedTeamId);
+        const tourData = await sb.from('tournaments').select('*').eq('id', currentTournamentId).single();
+        $('reg-receipt').innerHTML = `
+            <div style="text-align:center;margin-bottom:10px;font-weight:bold;border-bottom:2px dashed #ccc;padding-bottom:5px;">STRUK</div>
+            <div class="receipt-row"><span>Turnamen</span><span>${tourData.data?.name || '-'}</span></div>
+            <div class="receipt-row"><span>Tim</span><span>${team?.name || '-'}</span></div>
+            <div class="receipt-row"><span>Biaya</span><span>${formatRp(tourData.data?.entry_fee)}</span></div>
+            <div class="receipt-row receipt-total"><span>TOTAL</span><span>${formatRp(tourData.data?.entry_fee)}</span></div>
+        `;
+    }
+
+    async function finishRegister() {
+        if (!selectedTeamId || !currentTournamentId) return showToast('Data belum lengkap', 'warning');
+        const team = userTeams.find(t => t.id === selectedTeamId);
+        const btn = event.target; btn.disabled = true; btn.innerText = 'Memproses...';
+
+        const { data: tour } = await sb.from('tournaments').select('entry_fee').eq('id', currentTournamentId).single();
+
+        const { error } = await sb.from('registrations').insert({
+            tournament_id: currentTournamentId,
+            team_id: selectedTeamId,
+            owner_id: currentUser.id,
+            team_name: team.name,
+            status: 'menunggu_verifikasi',
+            payment_method: 'qris',
+            fee_amount: tour?.entry_fee || 0
+        });
+
+        if (error) {
+            showToast(error.message, 'danger');
+            btn.disabled = false; btn.innerText = 'Konfirmasi Bayar';
+            return;
+        }
+        showToast('Pendaftaran berhasil!', 'success');
+        setTimeout(() => navTo('home'), 1500);
+    }
+
+    let qrTimer;
+    function startQRTimer(dur) {
+        let t = dur;
+        clearInterval(qrTimer);
+        qrTimer = setInterval(() => {
+            const m = parseInt(t/60), s = parseInt(t%60);
+            $('qr-timer').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            if (--t < 0) { clearInterval(qrTimer); $('qr-timer').innerText = 'EXPIRED'; }
+        }, 1000);
+    }
+
+    // =================== UTIL ===================
+    function startClock() {
+        setInterval(() => {
+            const d = new Date();
+            $('clock').innerText = d.toLocaleTimeString('id-ID',{hour12:false}) + ' WIB';
+        }, 1000);
+        // Sponsor carousel
+        let idx = 0;
+        setInterval(() => {
+            const texts = document.querySelectorAll('.sponsor-text');
+            if (!texts.length) return;
+            texts[idx].classList.remove('active');
+            idx = (idx + 1) % texts.length;
+            texts[idx].classList.add('active');
+        }, 3000);
+    }
+
+    function showToast(msg, type) {
+        const c = $('notif-container');
+        const t = document.createElement('div');
+        t.className = `toast-notif tn-${type||'info'}`;
+        const icons = {info:'fa-info-circle',success:'fa-check-circle',danger:'fa-ban',warning:'fa-exclamation-triangle',gold:'fa-crown'};
+        t.innerHTML = `<i class="fa-solid ${icons[type]||'fa-info-circle'} toast-icon"></i><div class="toast-content"><div class="toast-title">${msg}</div></div><button class="toast-close" onclick="this.parentElement.remove()">×</button>`;
+        c.appendChild(t);
+        setTimeout(() => { t.style.opacity = '0'; setTimeout(()=>t.remove(), 300); }, 4000);
+    }
+
+    function switchFaq(tab) {
+        $('faq-umum').classList.toggle('hidden', tab !== 'umum');
+        $('faq-bayar').classList.toggle('hidden', tab !== 'bayar');
+        document.querySelectorAll('.faq-cat').forEach((b,i) => b.classList.toggle('active', (tab==='umum'&&i===0)||(tab==='bayar'&&i===1)));
+    }
+
+    function closeTestPanel() { $('modal-test').classList.remove('active'); }
+    function triggerNotif(type) { closeTestPanel(); showToast('Test Notifikasi ' + type, type); }
+
+    // Handler 404
+    if (window.location.hash === '#404') {
+        setTimeout(() => { skipIntro(); navTo('404'); }, 100);
+    }
+</script>
 </body>
     </html>
