@@ -51,25 +51,26 @@
         @keyframes floatUpDown { from { transform: translateY(0); } to { transform: translateY(-8px); } }
         @keyframes elasticClick { 0% { transform: scale(1); } 50% { transform: scale(0.92); } 100% { transform: scale(1); } }
         @keyframes holographic { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
         @keyframes ringSpin { to { transform: rotate(360deg); } }
+        @keyframes cinematicZoom { 0% { opacity: 0; transform: scale(0.5) translateY(50px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes screenFlash { 0% { left: -35%; opacity: 0; } 20% { opacity: 1; } 100% { left: 130%; opacity: 0; } }
         
         .view { animation: fadeInUp 0.4s ease-out; }
 
         /* ================= INTRO SCREEN ================= */
         #intro-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.8s ease, visibility 0.8s; font-family: 'Rajdhani', monospace; overflow: hidden; }
         #intro-screen.hidden { opacity: 0; visibility: hidden; }
-        #intro-screen::before { content: ''; position: absolute; width: min(75vw, 340px); aspect-ratio: 1; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; box-shadow: 0 0 60px rgba(212,175,55,.08), inset 0 0 40px rgba(255,255,255,.03); animation: ringSpin 8s linear infinite; }
-        #intro-screen::after { content: ''; position: absolute; width: min(90vw, 400px); aspect-ratio: 1; border: 1px dashed rgba(255,255,255,.15); border-radius: 50%; animation: ringSpin 15s linear infinite reverse; }
+        #intro-screen::before { content: ''; position: absolute; width: min(75vw, 340px); aspect-ratio: 1; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; box-shadow: 0 0 60px rgba(212,175,55,.08), inset 0 0 40px rgba(255,255,255,.03); animation: ringSpin 8s linear infinite; z-index: 1; }
+        #intro-screen::after { content: ''; position: absolute; width: min(90vw, 400px); aspect-ratio: 1; border: 1px dashed rgba(255,255,255,.15); border-radius: 50%; animation: ringSpin 15s linear infinite reverse; z-index: 1; }
         
         .intro-content { text-align: center; display: flex; flex-direction: column; align-items: center; padding: 20px; z-index: 2; }
-        .intro-logo { width: 120px; margin-bottom: 20px; filter: drop-shadow(0 0 25px var(--gold-glow)); animation: fadeInUp 1.5s cubic-bezier(.16,1,.3,1) both; }
+        .intro-logo { width: 120px; margin-bottom: 20px; filter: drop-shadow(0 0 25px var(--gold-glow)); animation: cinematicZoom 1.5s cubic-bezier(.16,1,.3,1) both; }
         .intro-title { font-size: 2.2rem; color: var(--gold); letter-spacing: 8px; margin-bottom: 10px; animation: glitchText 0.5s infinite; }
         .intro-subtitle { font-size: 0.8rem; color: var(--silver); letter-spacing: 5px; margin-bottom: 30px; }
+        .intro-flash { position: absolute; z-index: 1; left: -35%; top: 0; width: 25%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,0.15), transparent); transform: skewX(-18deg); animation: screenFlash 1.4s 1.1s ease-out both; pointer-events: none; }
         
         .terminal-text { font-family: 'Rajdhani', monospace; color: var(--success); font-size: 0.75rem; text-align: left; width: min(300px, 80vw); margin-bottom: 20px; height: 60px; }
         .terminal-text p { margin: 2px 0; opacity: 0; animation: fadeInUp 0.2s forwards; }
-        
         .loading-crosshair { font-size: 2rem; color: var(--gold); animation: crosshairSpin 1.5s infinite linear; margin-top: 20px; text-shadow: 0 0 10px var(--gold); }
         
         #skip-btn { position: absolute; bottom: 40px; background: rgba(255,255,255,.05); color: var(--silver); border: 1px solid rgba(255,255,255,.2); padding: 8px 24px; border-radius: 20px; cursor: pointer; font-family: 'Orbitron'; font-size: .75rem; opacity: 0; pointer-events: none; transition: .3s; z-index: 10; }
@@ -84,7 +85,7 @@
         .kill-feed-item { background: rgba(10,10,10,.85); border: 1px solid #333; border-left: 2px solid var(--danger); padding: 5px 10px; border-radius: 4px; font-size: .65rem; color: #fff; animation: slideInTop .3s ease-out, fadeOut .5s 2.5s forwards; font-family: 'Rajdhani'; font-weight: 600; }
         @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
 
-        /* ================= NAVBAR ================= */
+        /* ================= NAVBAR & BOTTOM NAV ================= */
         nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: rgba(5,5,5,.95); border-bottom: 1px solid #222; position: sticky; top: 0; z-index: 100; height: 60px; }
         .nav-brand { display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .nav-brand img { height: 30px; animation: breatheLogo 3s infinite; }
@@ -99,7 +100,6 @@
         .server-status span { display: flex; align-items: center; gap: 4px; }
         .dot-online { width: 6px; height: 6px; background: var(--success); border-radius: 50%; box-shadow: 0 0 5px var(--success); }
 
-        /* ================= BOTTOM NAV ================= */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10,10,10,.98); border-top: 1px solid #222; display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); z-index: 100; }
         .bottom-nav button { background: transparent; border: none; color: var(--muted); font-size: .65rem; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: .3s; font-weight: 600; position: relative; width: 60px; font-family: 'Rajdhani'; }
         .bottom-nav button i { font-size: 1.2rem; margin-bottom: 2px; transition: .3s; }
@@ -107,10 +107,8 @@
         .bottom-nav button.active i { transform: translateY(-3px); text-shadow: 0 0 10px var(--gold-glow); }
         .bottom-nav button.active::after { content: ''; position: absolute; top: -8px; width: 20px; height: 3px; background: var(--gold); border-radius: 0 0 5px 5px; box-shadow: 0 0 10px var(--gold); }
 
-        /* ================= FLOATING ================= */
         .wa-float { position: fixed; bottom: 85px; right: 20px; width: 50px; height: 50px; background: #25D366; color: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; box-shadow: 0 4px 15px rgba(37,211,102,.4); z-index: 99; border: 2px solid #fff; text-decoration: none; }
-        .test-float { position: fixed; bottom: 145px; right: 20px; width: 50px; height: 50px; background: var(--panel); color: var(--info); border: 2px solid var(--info); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; box-shadow: 0 4px 15px rgba(41,182,246,.3); z-index: 99; cursor: pointer; }
-        .back-to-top { position: fixed; bottom: 205px; right: 20px; width: 40px; height: 40px; background: var(--panel); color: var(--gold); border: 1px solid var(--gold); border-radius: 50%; display: none; justify-content: center; align-items: center; font-size: 1rem; z-index: 99; cursor: pointer; }
+        .back-to-top { position: fixed; bottom: 145px; right: 20px; width: 40px; height: 40px; background: var(--panel); color: var(--gold); border: 1px solid var(--gold); border-radius: 50%; display: none; justify-content: center; align-items: center; font-size: 1rem; z-index: 99; cursor: pointer; }
         .back-to-top.show { display: flex; }
 
         /* ================= KOMPONEN UI ================= */
@@ -172,7 +170,7 @@
         .detail-banner { width: 100%; height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
         .detail-title { font-size: 1.2rem; color: var(--gold); margin-bottom: 5px; }
         .map-pool-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
-        .map-card { min-width: 120px; background: #111; border: 1px solid #333; border-radius: 8px; overflow: hidden; }
+        .map-card { min-width: 120px; background: #111; border: 1px solid #333; border-radius: 8px; overflow: hidden; position: relative;}
         .map-card img { width: 100%; height: 60px; object-fit: cover; }
         .map-info { padding: 5px; text-align: center; }
         .map-name { font-size: .7rem; font-weight: bold; color: var(--gold); font-family: 'Rajdhani'; }
@@ -212,12 +210,17 @@
         .participant-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .participant-item { display: flex; align-items: center; gap: 10px; background: #111; padding: 8px 12px; border-radius: 8px; border: 1px solid #222; position: relative; }
         .participant-item span { font-size: .75rem; font-weight: 600; color: var(--silver); font-family: 'Rajdhani'; }
+        
+        .fake-chat { background: #111; border: 1px solid #333; border-radius: 8px; padding: 10px; margin-top: 15px; height: 100px; overflow-y: auto; position: relative; }
+        .chat-message { font-size: 0.7rem; color: var(--silver); margin-bottom: 5px; animation: fadeInUp 0.5s; }
+        .chat-name { color: var(--cyan); font-weight: bold; }
+        .chat-name.admin { color: var(--gold); }
 
         /* FORMS */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-size: .75rem; color: var(--muted); margin-bottom: 6px; font-family: 'Rajdhani'; }
-        input, select { width: 100%; padding: 12px 15px; background: rgba(0,0,0,.6); border: 1px solid #333; border-radius: 8px; color: #fff; font-family: 'Poppins'; }
-        input:focus, select:focus { outline: none; border-color: var(--gold); }
+        input, select, textarea { width: 100%; padding: 12px 15px; background: rgba(0,0,0,.6); border: 1px solid #333; border-radius: 8px; color: #fff; font-family: 'Poppins'; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); }
         button.btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #b8860b, var(--gold)); color: #000; border: none; border-radius: 8px; font-family: 'Orbitron'; font-weight: 800; font-size: .85rem; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; gap: 8px; }
         button.btn:active { animation: elasticClick .3s; }
         button.btn:disabled { background: #333; color: #777; cursor: not-allowed; }
@@ -262,13 +265,15 @@
         .my-team-row { background: rgba(212,175,55,.1); border-left: 3px solid var(--gold); }
         .my-team-row td { color: var(--gold); font-weight: bold; }
 
+        /* NOTIFIKASI (TOAST) */
         #notif-container { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-        .toast-notif { background: var(--panel); border: 1px solid #333; border-radius: 10px; padding: 15px; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 5px 20px rgba(0,0,0,.8); animation: slideInTop .4s; pointer-events: auto; position: relative; }
+        .toast-notif { background: var(--panel); border: 1px solid #333; border-radius: 10px; padding: 15px; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 5px 20px rgba(0,0,0,.8); animation: slideInTop .4s; pointer-events: auto; position: relative; overflow: hidden; }
         .toast-icon { font-size: 1.2rem; flex-shrink: 0; }
         .toast-content { flex-grow: 1; }
-        .toast-title { font-size: .8rem; font-weight: bold; color: #fff; font-family: 'Rajdhani'; }
+        .toast-title { font-size: .8rem; font-weight: bold; color: #fff; font-family: 'Rajdhani'; font-size: 0.95rem; }
         .toast-msg { font-size: .7rem; color: var(--silver); line-height: 1.4; }
         .toast-close { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; }
+        
         .tn-info { border-left: 4px solid var(--info); } .tn-info .toast-icon { color: var(--info); }
         .tn-warning { border-left: 4px solid var(--warning); } .tn-warning .toast-icon { color: var(--warning); }
         .tn-danger { border-left: 4px solid var(--danger); } .tn-danger .toast-icon { color: var(--danger); }
@@ -291,10 +296,6 @@
         .receipt-total { font-weight: bold; font-size: 1rem; margin-top: 10px; border-bottom: none; }
         .countdown-timer { font-family: 'Orbitron'; font-size: 1.5rem; color: var(--danger); font-weight: 800; text-align: center; margin-bottom: 15px; }
 
-        .test-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .test-grid button { font-size: .7rem; padding: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; cursor: pointer; font-family: 'Rajdhani'; font-weight: 700; }
-        .test-grid button:hover { background: #333; border-color: var(--info); }
-
         .glitch-404 { font-family: 'Orbitron'; font-size: 6rem; font-weight: 900; color: var(--danger); animation: glitchText .5s infinite; text-align: center; padding-top: 50px; }
         .faq-cat-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
         .faq-cat { padding: 6px 12px; background: #222; border: 1px solid #333; border-radius: 20px; font-size: .7rem; color: var(--muted); cursor: pointer; font-family: 'Rajdhani'; font-weight: 600; white-space: nowrap; }
@@ -314,6 +315,7 @@
 
 <!-- INTRO SCREEN -->
 <div id="intro-screen">
+    <div class="intro-flash"></div>
     <div class="intro-content">
         <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="Logo" class="intro-logo" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='block';">
         <i class="fa-solid fa-shield-halved" id="fallback-logo" style="display:none;font-size:5rem;color:var(--gold);margin-bottom:20px"></i>
@@ -452,6 +454,9 @@
             <h3 class="page-title">Peserta</h3>
             <div class="participant-list" id="participant-list"><p style="color:var(--muted);font-size:0.8rem;">Belum ada peserta.</p></div>
 
+            <h3 class="page-title" style="margin-top:20px;">Live Chat</h3>
+            <div class="fake-chat" id="fake-chat-box"><div class="chat-message"><span class="chat-name">ProGamer99:</span> GGWP tim garuda!</div></div>
+
             <div class="live-stream-box" style="margin-top:20px;">
                 <div class="radar-sweep"></div>
                 <div class="live-icon"><i class="fa-brands fa-youtube"></i></div>
@@ -497,7 +502,7 @@
             <h3 class="page-title" style="font-size:0.95rem;"><i class="fa-solid fa-plus"></i> Buat Tim Baru</h3>
             <div class="form-group"><input type="text" id="new-team-name" placeholder="Nama Tim (Wajib)"></div>
             <div class="form-group"><input type="text" id="new-team-desc" placeholder="Deskripsi (Opsional)"></div>
-            <div class="form-group"><input type="url" id="new-team-logo" placeholder="URL Logo Tim (Opsional)"></div>
+            <div class="form-group"><label>Upload Logo Tim (Opsional)</label><input type="file" id="new-team-logo" accept="image/*"></div>
             <button class="btn btn-sm" onclick="createTeam()">Simpan Tim</button>
         </div>
 
@@ -629,25 +634,7 @@
 </div>
 
 <a href="https://wa.me/6283848591646" target="_blank" class="wa-float"><i class="fa-brands fa-whatsapp"></i></a>
-<div class="test-float" onclick="openTestPanel()"><i class="fa-solid fa-flask"></i></div>
 <div class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0, behavior:'smooth'})"><i class="fa-solid fa-arrow-up"></i></div>
-
-<!-- TEST PANEL MODAL -->
-<div class="modal-overlay" id="modal-test" onclick="if(event.target===this)closeTestPanel()">
-    <div class="modal-box">
-        <i class="fa-solid fa-xmark close-modal" onclick="closeTestPanel()"></i>
-        <h3><i class="fa-solid fa-flask"></i> Test Panel</h3>
-        <p style="font-size:0.7rem; color:var(--muted); text-align:center; margin-bottom:15px;">Klik tombol untuk simulasi.</p>
-        <div class="test-grid">
-            <button onclick="triggerNotif('success')">Notif Sukses</button>
-            <button onclick="triggerNotif('danger')">Notif Error</button>
-            <button onclick="triggerNotif('warning')">Notif Warning</button>
-            <button onclick="triggerNotif('gold')">Notif Gold</button>
-            <button onclick="navTo('404')">Halaman 404</button>
-            <button onclick="showKillFeed()">Kill Feed</button>
-        </div>
-    </div>
-</div>
 
 <script>
     // ================= KONFIGURASI SUPABASE =================
@@ -709,6 +696,7 @@
         $('server-status').classList.remove('hidden');
         $('bottom-nav').classList.remove('hidden');
         startClock();
+        startFakeChat();
         initAuth();
     }
 
@@ -852,7 +840,7 @@
         if (error || !data || data.length === 0) { container.innerHTML = '<p style="color:var(--muted); font-size:0.8rem;">Belum ada map yang diatur.</p>'; return; }
         
         container.innerHTML = data.map(m => {
-            const mapName = m.game_maps?.name || 'Unknown';
+            const mapName = m.game_maps?.name || 'Belum diatur';
             const mapImg = m.game_maps?.image_url || 'https://i.ibb.co.com/JSyg2V6/image-search-1768105911966.webp';
             let badge = '<div class="map-status ms-next">NEXT</div>';
             if (m.status === 'selesai') badge = '<div class="map-status ms-done">DONE</div>';
@@ -889,12 +877,20 @@
     }
 
     async function createTeam() {
-        const name = $('new-team-name').value.trim(), desc = $('new-team-desc').value.trim(), logo = $('new-team-logo').value.trim();
+        const name = $('new-team-name').value.trim(), desc = $('new-team-desc').value.trim(), logoFile = $('new-team-logo').files[0];
         if (!name) return showToast('Nama tim wajib diisi', 'warning');
         const { data: games } = await sb.from('games').select('id').limit(1);
         if (!games || games.length === 0) return showToast('Game belum ada di database', 'danger');
         
-        const { error } = await sb.from('teams').insert({ owner_id: currentUser.id, game_id: games[0].id, name, description: desc || null, logo_url: logo || null });
+        let logoUrl = null;
+        if (logoFile) {
+            const ext = logoFile.name.split('.').pop();
+            const path = `team-${Date.now()}.${ext}`;
+            const { error: upErr } = await sb.storage.from('team-logos').upload(path, logoFile);
+            if (!upErr) logoUrl = sb.storage.from('team-logos').getPublicUrl(path).data.publicUrl;
+        }
+
+        const { error } = await sb.from('teams').insert({ owner_id: currentUser.id, game_id: games[0].id, name, description: desc || null, logo_url: logoUrl });
         if (error) return showToast(translateError(error.message), 'danger');
         
         showToast('Tim berhasil dibuat', 'success');
@@ -931,7 +927,6 @@
             </div>
         `).join('');
         
-        // Disable opsi "Main" kalau udah 4
         const optMain = $('new-player-role').querySelector('option[value="main"]');
         const optSub = $('new-player-role').querySelector('option[value="sub"]');
         if (mainCount >= 4) { optMain.disabled = true; $('new-player-role').value = 'sub'; } else { optMain.disabled = false; }
@@ -1008,7 +1003,6 @@
         const { data } = await sb.from('team_players').select('*').eq('team_id', selectedTeamId);
         if (!data || data.length === 0) { box.innerHTML = '<p style="color:var(--danger);">Roster kosong. Tambah pemain di menu Dash.</p>'; return; }
 
-        // Tampilkan semua pemain, user pilih role
         box.innerHTML = data.map(p => `
             <div style="background:#111;padding:10px;border-radius:8px;margin-bottom:10px;border:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
                 <div>
@@ -1022,7 +1016,6 @@
             </div>
         `).join('');
 
-        // Update receipt
         const team = userTeams.find(t => t.id === selectedTeamId);
         const { data: t } = await sb.from('tournaments').select('*').eq('id', currentTournamentId).single();
         const adminFee = Number(siteSettings.admin_fee_qris || 0);
@@ -1048,14 +1041,12 @@
         const btn = $('btn-confirm-pay'); btn.disabled = true; btn.innerText = 'Memproses...';
 
         try {
-            // 1. Upload Bukti ke Storage
             const ext = file.name.split('.').pop();
             const path = `proof-${Date.now()}.${ext}`;
             const { error: uploadErr } = await sb.storage.from('payment-proofs').upload(path, file);
             if (uploadErr) throw uploadErr;
             const { data: urlData } = sb.storage.from('payment-proofs').getPublicUrl(path);
             
-            // 2. Simpan ke Registrations
             const team = userTeams.find(t => t.id === selectedTeamId);
             const { data: t } = await sb.from('tournaments').select('entry_fee').eq('id', currentTournamentId).single();
             const adminFee = Number(siteSettings.admin_fee_qris || 0);
@@ -1096,16 +1087,23 @@
         const box = $('my-tournaments-list');
         box.innerHTML = '<p style="text-align:center; color:var(--muted);">Memuat...</p>';
 
-        const { data, error } = await sb.from('registrations').select(`*, tournaments(name, format, schedule_at)`).eq('owner_id', currentUser.id);
+        // Fix error "Could not embed" dengan memisah query
+        const { data, error } = await sb.from('registrations').select('*').eq('owner_id', currentUser.id);
         if (error) { box.innerHTML = `<p style="color:var(--danger);">${translateError(error.message)}</p>`; return; }
         if (!data || data.length === 0) {
             box.innerHTML = '<div class="glass-card" style="text-align:center;padding:30px;"><i class="fa-solid fa-trophy" style="font-size:3rem;color:#333;margin-bottom:15px;display:block;"></i><p style="color:var(--muted);font-size:0.85rem;">Kamu belum mengikuti turnamen apapun.</p></div>';
             return;
         }
 
-        box.innerHTML = data.map(r => `
+        const tourIds = [...new Set(data.map(r => r.tournament_id))];
+        const { data: tours } = await sb.from('tournaments').select('id, name, format').in('id', tourIds);
+        const tourMap = Object.fromEntries((tours || []).map(t => [t.id, t]));
+
+        box.innerHTML = data.map(r => {
+            const t = tourMap[r.tournament_id] || { name: 'Unknown', format: '-' };
+            return `
             <div class="glass-card" style="margin-bottom:15px;border-left:3px solid var(--gold);">
-                <h4 style="color:var(--gold);font-size:0.95rem;">${r.tournaments?.name || r.team_name}</h4>
+                <h4 style="color:var(--gold);font-size:0.95rem;">${t.name}</h4>
                 <p style="font-size:0.75rem;color:var(--muted);margin:5px 0;">Tim: ${r.team_name} • Status: ${r.status.toUpperCase()}</p>
                 <div style="margin-top:10px;">
                     <button class="btn btn-sm btn-secondary" onclick="loadRoomId('${r.tournament_id}')">🔑 Lihat Room ID</button>
@@ -1114,7 +1112,7 @@
                     <p style="font-size:0.75rem; color:var(--muted);">Memuat Room ID...</p>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     }
 
     async function loadRoomId(tid) {
@@ -1174,16 +1172,33 @@
         }, 3000);
     }
 
+    function startFakeChat() {
+        const chatMessages = [
+            { name: "ProGamer99", msg: "GGWP tim garuda!" },
+            { name: "NoobMaster", msg: "Semangat match 2!" },
+            { name: "RajaKill", msg: "Itu yang kill 5 kemarin gila" },
+            { name: "SultanFF", msg: "Kapan room match 2 dibuka bang?" },
+            { name: "Admin", msg: "Tunggu info selanjutnya ya teman-teman.", isAdmin: true }
+        ];
+        setInterval(() => {
+            const chatBox = $('fake-chat-box');
+            if(!chatBox) return;
+            const randomMsg = chatMessages[Math.floor(Math.random() * chatMessages.length)];
+            const newMsg = document.createElement('div');
+            newMsg.className = 'chat-message';
+            const nameClass = randomMsg.isAdmin ? 'chat-name admin' : 'chat-name';
+            newMsg.innerHTML = `<span class="${nameClass}">${randomMsg.name}:</span> ${randomMsg.msg}`;
+            chatBox.appendChild(newMsg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            if(chatBox.children.length > 5) chatBox.removeChild(chatBox.firstElementChild);
+        }, 4000);
+    }
+
     function switchFaq(tab) {
         $('faq-umum').classList.toggle('hidden', tab !== 'umum');
         $('faq-bayar').classList.toggle('hidden', tab !== 'bayar');
         document.querySelectorAll('.faq-cat').forEach((b,i) => b.classList.toggle('active', (tab==='umum'&&i===0)||(tab==='bayar'&&i===1)));
     }
-
-    function openTestPanel() { $('modal-test').classList.add('active'); }
-    function closeTestPanel() { $('modal-test').classList.remove('active'); }
-    function triggerNotif(type) { closeTestPanel(); showToast('Test Notifikasi ' + type, type); }
-    function showKillFeed() { closeTestPanel(); const c = $('kill-feed'); const i = document.createElement('div'); i.className = 'kill-feed-item'; i.innerHTML = '💀 <span style="color:var(--gold)">Garuda01</span> eliminated <span style="color:var(--danger)">Elang02</span>'; c.appendChild(i); setTimeout(()=>i.remove(), 3000); }
 
     if (window.location.hash === '#404') { setTimeout(() => { skipIntro(); navTo('404'); }, 100); }
 </script>
