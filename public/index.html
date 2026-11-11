@@ -371,10 +371,8 @@
             </div>
             <div id="detail-content-br">
                 <h3 class="page-title">Map Pool BR</h3>
-                <div class="map-pool-container">
-                    <div class="map-card"><img src="https://i.ibb.co.com/JSyg2V6/image-search-1768105911966.webp"><div class="map-info"><div class="map-name">Bermuda</div><div class="map-match">Match 1</div></div></div>
-                    <div class="map-card"><img src="https://i.ibb.co.com/TM1G5F2P/image-search-1768105946838.jpg"><div class="map-info"><div class="map-name">Kalahari</div><div class="map-match">Match 2</div></div></div>
-                    <div class="map-card"><img src="https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg"><div class="map-info"><div class="map-name">Purgatory</div><div class="map-match">Match 3</div></div></div>
+                <div class="map-pool-container" id="map-pool-container">
+                    <p style="color:var(--muted); font-size:0.8rem;">Memuat map...</p>
                 </div>
             </div>
             <div id="detail-content-cs" class="hidden">
@@ -631,11 +629,9 @@
     }
 
     async function ensureProfile() {
-        // Cek profil di DB
         let { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
         
         if (!profile) {
-            // Belum ada, coba bikin otomatis
             const username = currentUser.user_metadata?.username || (currentUser.email ? currentUser.email.split('@')[0] : 'Captain');
             const { data: created, error } = await sb.from('profiles').insert({
                 id: currentUser.id, username, email: currentUser.email
@@ -644,7 +640,6 @@
             if (!error && created) {
                 profile = created;
             } else {
-                // Kalau gagal bikin (RLS block), fallback ke data auth
                 console.warn('Auto-create profile failed:', error?.message);
                 profile = { username, email: currentUser.email, balance: 0, dana_number: null };
             }
@@ -705,13 +700,11 @@
         }
         
         if (data.session) {
-            // Auto-login karena email confirmation mati
             currentUser = data.user;
             await ensureProfile();
             showToast('Registrasi Berhasil!', 'success');
             navTo('home');
         } else {
-            // Email confirmation aktif — user harus konfirmasi via email
             showToast('Cek email untuk konfirmasi, lalu login.', 'info');
             switchAuthTab('login');
             btn.disabled = false; btn.innerText = 'Daftar Akun';
@@ -728,12 +721,10 @@
         const btn = document.querySelector(`.bottom-nav button[data-view="${viewId}"]`);
         if (btn) btn.classList.add('active');
 
-        // Kalau butuh login dan belum login
         if (['dashboard','my-tournaments','notifications'].includes(viewId) && !currentUser) {
             navTo('auth'); return;
         }
 
-        // Load data saat pindah tab
         if (viewId === 'home') loadHome();
         if (viewId === 'dashboard') { loadTeams(); updateDashboardUI(); }
         if (viewId === 'notifications') loadNotifications();
@@ -754,7 +745,6 @@
             return;
         }
 
-        // Kalau kosong
         if (!data || data.length === 0) {
             grid.innerHTML = `
                 <div class="empty-state">
@@ -763,7 +753,6 @@
                     <p>Turnamen baru akan muncul di sini.</p>
                 </div>`;
             
-            // Reset hero banner biar gak "Memuat..."
             $('hero-title').innerText = 'GH-T ARENA';
             $('jackpot-prize').innerText = '-';
             $('hero-date').innerText = '-';
@@ -771,7 +760,6 @@
             return;
         }
 
-        // Ada data — render cards
         grid.innerHTML = data.map(t => `
             <div class="ticket-card" onclick="openDetail('${t.format}','${t.id}')">
                 <div class="ticket-banner">
@@ -790,7 +778,6 @@
             </div>
         `).join('');
 
-        // Update hero dengan turnamen pertama
         const first = data[0];
         $('hero-title').innerText = first.name;
         $('jackpot-prize').innerText = formatRp(first.prize_pool);
@@ -799,9 +786,7 @@
         $('hero-btn').onclick = () => openDetail(first.format, first.id);
     }
 
-    function openDetailHero() {
-        // handler fallback
-    }
+    function openDetailHero() {}
 
     // =================== DETAIL ===================
     async function openDetail(mode, id) {
@@ -820,7 +805,6 @@
         $('detail-slots').innerText = `${data.total_slots} Tim`;
         $('detail-date').innerText = data.schedule_at ? new Date(data.schedule_at).toLocaleDateString('id-ID') : '-';
 
-        // Split hadiah (asumsi: 50% / 30% / 20%)
         const total = Number(data.prize_pool) || 0;
         $('prize-1').innerText = formatRp(Math.round(total * 0.5));
         $('prize-2').innerText = formatRp(Math.round(total * 0.3));
@@ -829,8 +813,56 @@
         $('detail-content-br').classList.toggle('hidden', mode !== 'BR');
         $('detail-content-cs').classList.toggle('hidden', mode !== 'CS');
 
-        navTo('tournament-detail');
+        // Tarik data Map Pool & Peserta
+        if (mode === 'BR') {
+            loadMapPool(id);
+        }
         loadParticipants(id);
+
+        navTo('tournament-detail');
+    }
+
+    async function loadMapPool(tournamentId) {
+        const container = document.getElementById('map-pool-container');
+        
+        const { data, error } = await sb.from('br_matches')
+            .select(`
+                match_no,
+                status,
+                game_maps ( name, image_url )
+            `)
+            .eq('tournament_id', tournamentId)
+            .order('match_no', { ascending: true });
+
+        if (error) {
+            container.innerHTML = `<p style="color:var(--danger); font-size:0.8rem;">Gagal memuat map: ${error.message}</p>`;
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p style="color:var(--muted); font-size:0.8rem;">Belum ada map yang diatur oleh admin.</p>';
+            return;
+        }
+
+        container.innerHTML = data.map(m => {
+            const mapName = m.game_maps?.name || 'Unknown';
+            const mapImg = m.game_maps?.image_url || 'https://i.ibb.co.com/JSyg2V6/image-search-1768105911966.webp';
+            
+            let badge = '<div class="map-status ms-next">NEXT</div>';
+            if (m.status === 'selesai') badge = '<div class="map-status ms-done">DONE</div>';
+            else if (m.status === 'berlangsung') badge = '<div class="map-status ms-live">LIVE</div>';
+
+            return `
+                <div class="map-card">
+                    ${badge}
+                    <img src="${mapImg}">
+                    <div class="map-info">
+                        <div class="map-name">${mapName}</div>
+                        <div class="map-match">Match ${m.match_no}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     async function loadParticipants(tid) {
@@ -876,7 +908,6 @@
         const desc = $('new-team-desc').value.trim();
         if (!name) return showToast('Nama tim wajib diisi', 'warning');
 
-        // Ambil game_id dari games pertama
         const { data: games } = await sb.from('games').select('id').limit(1);
         if (!games || games.length === 0) return showToast('Game belum ada di database', 'danger');
 
@@ -1049,7 +1080,6 @@
             </div>
         `).join('');
 
-        // Update receipt
         const team = userTeams.find(t => t.id === selectedTeamId);
         const tourData = await sb.from('tournaments').select('*').eq('id', currentTournamentId).single();
         $('reg-receipt').innerHTML = `
@@ -1104,7 +1134,6 @@
             const d = new Date();
             $('clock').innerText = d.toLocaleTimeString('id-ID',{hour12:false}) + ' WIB';
         }, 1000);
-        // Sponsor carousel
         let idx = 0;
         setInterval(() => {
             const texts = document.querySelectorAll('.sponsor-text');
@@ -1134,7 +1163,6 @@
     function closeTestPanel() { $('modal-test').classList.remove('active'); }
     function triggerNotif(type) { closeTestPanel(); showToast('Test Notifikasi ' + type, type); }
 
-    // Handler 404
     if (window.location.hash === '#404') {
         setTimeout(() => { skipIntro(); navTo('404'); }, 100);
     }
