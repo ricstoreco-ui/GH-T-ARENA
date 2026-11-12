@@ -21,7 +21,6 @@
   --chrome-dark: #94a3b8;
   --chrome-glow: rgba(226, 232, 240, 0.4); 
   --cyan: #00e5ff;
-  --cyan-glow: rgba(0, 229, 255, 0.5);
   --silver: #b0b0b0;
   --text: #ffffff; 
   --muted: #777777; 
@@ -40,12 +39,11 @@ body {
     linear-gradient(rgba(226, 232, 240, 0.03) 1px, transparent 1px), 
     linear-gradient(90deg, rgba(226, 232, 240, 0.03) 1px, transparent 1px);
   background-size: 40px 40px; background-position: center top; transition: 0.5s;
-  animation: gridMove 20s linear infinite;
 }
 h1, h2, h3 { font-family: 'Orbitron', sans-serif; }
 .hidden { display: none !important; }
 
-/* TEMA MUSIMAN (Bisa diganti via bot) */
+/* TEMA MUSIMAN */
 body.theme-lebaran { --chrome: #00e676; --chrome-glow: rgba(0,230,118,.5); }
 body.theme-natal { --chrome: #e53935; --chrome-glow: rgba(229,57,53,.5); }
 body.theme-halloween { --chrome: #ff9800; --chrome-glow: rgba(255,152,0,.5); }
@@ -53,24 +51,20 @@ body.theme-agustus { --chrome: #f44336; --chrome-glow: rgba(244,67,54,.5); }
 body.theme-ocean { --chrome: #00bcd4; --chrome-glow: rgba(0,188,212,.5); }
 
 /* ============================================
-   ANIMASI & EFEK MEWAH
+   ANIMASI RINGAN
    ============================================ */
-@keyframes gridMove { 0% { background-position: 0 0; } 100% { background-position: 40px 40px; } }
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(229, 57, 53, 0); } 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0); } }
-@keyframes breathe { 0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 5px var(--chrome-glow)); } 50% { opacity: 1; filter: drop-shadow(0 0 20px var(--chrome)); } }
+@keyframes breathe { 0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 5px var(--chrome-glow)); } 50% { opacity: 1; filter: drop-shadow(0 0 15px var(--chrome)); } }
 @keyframes slideInBottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes slideInTop { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-@keyframes float { from { transform: translateY(0); } to { transform: translateY(-10px); } }
 @keyframes click { 0% { transform: scale(1); } 50% { transform: scale(0.92); } 100% { transform: scale(1); } }
-@keyframes shine { 0% { left: -100%; } 100% { left: 100%; } }
-@keyframes borderGlow { 0% { border-color: var(--border); box-shadow: 0 0 5px transparent; } 50% { border-color: var(--chrome); box-shadow: 0 0 15px var(--chrome-glow); } 100% { border-color: var(--border); box-shadow: 0 0 5px transparent; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes zoom { 0% { opacity: 0; transform: scale(0.5) translateY(50px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
 @keyframes glitch { 0% { text-shadow: 2px 0 var(--cyan), -2px 0 red; transform: translate(0); } 20% { text-shadow: -2px 0 var(--cyan), 2px 0 red; transform: translate(-2px, 2px); } 40% { text-shadow: 2px 0 var(--cyan), -2px 0 red; transform: translate(2px, -2px); } 60% { text-shadow: -2px 0 var(--cyan), 2px 0 red; transform: translate(-2px, -2px); } 80% { text-shadow: 2px 0 var(--cyan), -2px 0 red; transform: translate(2px, 2px); } 100% { text-shadow: none; transform: translate(0); } }
 
-.view { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.view { animation: fadeInUp 0.4s ease-out; }
 
 /* ============================================
    INTRO SCREEN & PARTIKEL
@@ -126,33 +120,29 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .title { font-size: 1.1rem; color: #fff; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; gap: 8px; font-family: 'Rajdhani', sans-serif; text-transform: uppercase; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
 
 /* FLOATING BUTTONS */
-.wa-float { position: fixed; bottom: 85px; right: 20px; width: 50px; height: 50px; background: #25D366; color: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); z-index: 99; border: 2px solid #fff; text-decoration: none; animation: float 2s infinite alternate; }
-.chat-float { position: fixed; bottom: 85px; left: 20px; width: 50px; height: 50px; background: var(--panel); color: var(--chrome); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; box-shadow: 0 4px 15px var(--chrome-glow); z-index: 99; border: 2px solid var(--chrome); cursor: pointer; transition: 0.3s; animation: float 2s infinite alternate; }
+.wa-float { position: fixed; bottom: 85px; right: 20px; width: 50px; height: 50px; background: #25D366; color: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); z-index: 99; border: 2px solid #fff; text-decoration: none; }
+.chat-float { position: fixed; bottom: 85px; left: 20px; width: 50px; height: 50px; background: var(--panel); color: var(--chrome); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; box-shadow: 0 4px 15px var(--chrome-glow); z-index: 99; border: 2px solid var(--chrome); cursor: pointer; transition: 0.3s; }
 .chat-float:hover { transform: scale(1.1); background: var(--chrome); color: #000; }
 
 /* ============================================
    HERO BANNER & IKLAN GH TOPUP (CHROME)
    ============================================ */
-.hero { position: relative; width: 100%; height: 220px; border-radius: 16px; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--border); background: #111 center/cover; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; transition: 0.5s; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-.hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 100%); z-index: 1; }
-.hero-txt { position: relative; z-index: 2; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 10px; backdrop-filter: blur(3px); border: 1px solid rgba(255,255,255,0.1); }
-.hero-title { font-size: 2rem; color: var(--chrome); margin-bottom: 5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
-.hero-sub { font-size: 0.9rem; color: var(--silver); letter-spacing: 3px; }
+.hero { position: relative; width: 100%; height: 220px; border-radius: 16px; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--border); background: #111 center/cover; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
 
-.sponsor { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(270deg, #111, #1a1a1a, #111); background-size: 200% 200%; animation: shine 5s infinite; border: 2px solid var(--chrome); border-radius: 16px; padding: 20px; margin-bottom: 20px; cursor: pointer; position: relative; overflow: hidden; perspective: 1000px; transition: 0.3s; box-shadow: 0 0 15px var(--chrome-glow); }
+.sponsor { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(270deg, #111, #1a1a1a, #111); border: 2px solid var(--chrome); border-radius: 16px; padding: 20px; margin-bottom: 20px; cursor: pointer; position: relative; overflow: hidden; transition: 0.3s; box-shadow: 0 0 15px var(--chrome-glow); }
 .sponsor img { height: 60px; z-index: 2; position: relative; filter: drop-shadow(0 0 10px var(--chrome)); }
 .sponsor-txt { font-size: 0.85rem; color: #fff; position: relative; height: 60px; width: 70%; z-index: 2; display: flex; flex-direction: column; justify-content: center; }
 .sp-txt { position: absolute; top: 0; left: 0; width: 100%; opacity: 0; transition: 0.5s; font-weight: 700; font-family: 'Orbitron', sans-serif; text-shadow: 0 2px 4px #000; }
 .sp-txt.active { opacity: 1; transform: translateY(0); }
-.sp-btn { background: var(--chrome); color: #000; padding: 5px 12px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; margin-top: 8px; display: inline-block; width: fit-content; font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; border: none; cursor: pointer; animation: float 1s infinite alternate; box-shadow: 0 0 10px var(--chrome-glow); }
-.diamond { position: absolute; right: 90px; bottom: 20px; font-size: 2rem; animation: float 1s infinite alternate; z-index: 2; filter: drop-shadow(0 0 8px var(--chrome)); }
+.sp-btn { background: var(--chrome); color: #000; padding: 5px 12px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; margin-top: 8px; display: inline-block; width: fit-content; font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; border: none; cursor: pointer; box-shadow: 0 0 10px var(--chrome-glow); }
+.diamond { position: absolute; right: 90px; bottom: 20px; font-size: 2rem; z-index: 2; filter: drop-shadow(0 0 8px var(--chrome)); }
 .ripple { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.3); transform: scale(0); animation: click 0.6s linear; pointer-events: none; }
 
 /* ============================================
    KARTU TURNAMEN
    ============================================ */
 .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.card { background: #121212; border: 1px solid #222; border-radius: 12px; overflow: hidden; transition: 0.3s; position: relative; display: flex; flex-direction: column; cursor: pointer; border-left: 3px solid var(--chrome); animation: fadeInUp 0.5s ease-out; }
+.card { background: #121212; border: 1px solid #222; border-radius: 12px; overflow: hidden; transition: 0.3s; position: relative; display: flex; flex-direction: column; cursor: pointer; border-left: 3px solid var(--chrome); animation: fadeInUp 0.4s ease-out; }
 .card:hover { border-color: var(--chrome); transform: translateY(-5px); box-shadow: 0 10px 25px var(--chrome-glow); }
 .card-img { position: relative; width: 100%; height: 100px; overflow: hidden; }
 .card-img img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
@@ -231,18 +221,17 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .sticker-upload { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1; background: #1a1a1a; border: 2px dashed var(--chrome); border-radius: 6px; cursor: pointer; color: var(--chrome); font-size: 1.2rem; }
 
 /* ============================================
-   DASHBOARD & ID CARD (3D TILT)
+   DASHBOARD & ID CARD
    ============================================ */
-.id-card { background: linear-gradient(135deg, #1a1a1a, #0a0a0a); border: 1px solid var(--chrome); border-radius: 16px; padding: 20px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(226, 232, 240, 0.15); transition: transform 0.1s ease-out; transform-style: preserve-3d; }
-.id-card::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.08) 50%, transparent 60%); animation: shine 5s infinite linear; pointer-events: none; }
-.id-head { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(226, 232, 240, 0.2); padding-bottom: 15px; transform: translateZ(20px); }
+.id-card { background: linear-gradient(135deg, #1a1a1a, #0a0a0a); border: 1px solid var(--chrome); border-radius: 16px; padding: 20px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(226, 232, 240, 0.15); }
+.id-head { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(226, 232, 240, 0.2); padding-bottom: 15px; }
 .av-wrap { position: relative; width: 60px; height: 60px; }
 .av-ring { position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(var(--chrome) 75%, #333 0); }
 .av { position: relative; width: 100%; height: 100%; border-radius: 50%; background: #111; color: var(--chrome); display: flex; justify-content: center; align-items: center; font-size: 1.8rem; border: 2px solid #111; }
 .id-info h3 { font-size: 1.1rem; color: #fff; margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
 .tier { font-size: 0.55rem; background: #333; padding: 2px 6px; border-radius: 4px; color: var(--chrome); border: 1px solid var(--chrome); font-family: 'Rajdhani', sans-serif; }
 .id-info p { font-size: 0.7rem; color: var(--silver); font-family: 'Rajdhani', sans-serif; }
-.id-body { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; transform: translateZ(20px); }
+.id-body { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .id-stat span { display: block; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; font-family: 'Rajdhani', sans-serif; }
 .id-stat strong { font-size: 0.9rem; color: var(--chrome); font-family: 'Orbitron', sans-serif; display: flex; align-items: center; gap: 5px; }
 
@@ -297,20 +286,16 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .m-box h3 { color: var(--chrome); margin-bottom: 15px; text-align: center; font-family: 'Orbitron', sans-serif; }
 .m-close { position: absolute; top: 15px; right: 15px; font-size: 1.2rem; color: var(--muted); cursor: pointer; }
 
-/* FORM & BUTTONS (CHROME STYLE) */
+/* FORM & BUTTONS */
 .f-group { margin-bottom: 15px; }
 .f-group label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; font-family: 'Rajdhani', sans-serif; }
 input, select, textarea { width: 100%; padding: 12px 15px; background: rgba(0, 0, 0, 0.6); border: 1px solid #333; border-radius: 8px; color: #fff; font-family: 'Poppins', sans-serif; transition: 0.3s; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--chrome); box-shadow: 0 0 10px var(--chrome-glow); }
 .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #94a3b8, #e2e8f0, #ffffff); color: #000; border: none; border-radius: 8px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 0.85rem; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(226, 232, 240, 0.2); }
-.btn::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent); transform: skewX(-20deg); animation: shine 3s infinite; }
 .btn:active { animation: click 0.3s; }
 .btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
-.btn:disabled::after { display: none; }
 .btn-sec { background: transparent; border: 1px solid #555; color: var(--silver); box-shadow: none; }
-.btn-sec::after { display: none; }
 .btn-danger { background: rgba(229, 57, 53, 0.1); border: 1px solid var(--danger); color: var(--danger); box-shadow: none; }
-.btn-danger::after { display: none; }
 .btn-sm { width: auto; padding: 8px 15px; font-size: 0.7rem; }
 
 /* TABS & FAQ */
@@ -324,7 +309,6 @@ details p { margin-top: 10px; color: var(--silver); line-height: 1.6; }
 
 /* E-TICKET DESIGN */
 .ticket-wrap { background: linear-gradient(135deg, #121212, #030303); border-radius: 20px; border: 1px solid var(--chrome); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 20px var(--chrome-glow); display: flex; position: relative; overflow: hidden; margin-bottom: 20px; }
-.ticket-wrap::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent 40%, rgba(226,232,240,0.08) 50%, transparent 60%); animation: shine 5s infinite linear; pointer-events: none; }
 .t-left { flex: 1; padding: 20px; border-right: 2px dashed #333; position: relative; z-index: 2; }
 .t-right { width: 120px; padding: 20px 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; z-index: 2; background: rgba(226,232,240,.05); }
 .t-hole { position: absolute; width: 20px; height: 20px; background: #030303; border-radius: 50%; border: 1px solid var(--chrome); }
@@ -386,13 +370,12 @@ details p { margin-top: 10px; color: var(--silver); line-height: 1.6; }
 
 <!-- VIEW: HOME -->
 <div id="v-home" class="view hidden">
-  <!-- HERO BANNER MURNI DARI DATABASE BANNERS -->
-  <div class="hero" id="hero">
-    <div class="hero-txt">
-      <h2 class="hero-title">GH-T ARENA</h2>
-      <p class="hero-sub">GAMING HOUSE TOUR ARENA</p>
-    </div>
+  <div style="text-align: center; margin-bottom: 15px;">
+    <h2 style="font-family: 'Orbitron'; color: var(--chrome); text-shadow: 0 0 15px var(--chrome-glow); font-size: 2rem; letter-spacing:2px;">GH-T ARENA</h2>
+    <p style="color: var(--silver); letter-spacing: 3px; font-size: 0.85rem; text-transform: uppercase; margin-top:5px;">Gaming House Tour Arena</p>
   </div>
+
+  <div class="hero" id="hero" style="height: 200px;"></div>
 
   <div class="sponsor" id="sponsor" onclick="triggerRipple(event)">
     <div class="sponsor-txt">
@@ -567,9 +550,9 @@ details p { margin-top: 10px; color: var(--silver); line-height: 1.6; }
   <div class="glass">
     <div id="rs1">
       <h3 style="color:var(--chrome);margin-bottom:15px;font-family:'Rajdhani',sans-serif">1. Data DANA</h3>
-      <div class="f-group"><label>Nomor DANA</label><input type="text" id="reg-dana-num" readonly></div>
-      <div class="f-group"><label>Nama Pemilik</label><input type="text" id="reg-dana-name" readonly></div>
-      <p style="font-size:0.7rem;color:var(--muted);margin-bottom:15px">*Data diambil otomatis dari profil. Ubah di Dashboard jika salah.</p>
+      <div class="f-group"><label>Nomor DANA</label><input type="text" id="reg-dana-num" placeholder="08xxxxxxxxxx"></div>
+      <div class="f-group"><label>Nama Pemilik</label><input type="text" id="reg-dana-name" placeholder="Nama Sesuai Akun DANA"></div>
+      <p style="font-size:0.7rem;color:var(--muted);margin-bottom:15px">*Data diambil otomatis dari profil. Bisa diedit di sini jika belum ada.</p>
       <button class="btn" onclick="stepReg(2)">Lanjut <i class="fa-solid fa-arrow-right"></i></button>
     </div>
     <div id="rs2" class="hidden">
@@ -724,6 +707,7 @@ details p { margin-top: 10px; color: var(--silver); line-height: 1.6; }
 <div id="m-payout" class="modal" onclick="if(event.target===this)closeModal('m-payout')">
   <div class="m-box"><i class="fa-solid fa-xmark m-close" onclick="closeModal('m-payout')"></i><h3>Riwayat Hadiah</h3><div id="payout-list"></div></div>
 </div>
+
 <script>
 // ============================================
 // KONFIGURASI SUPABASE
@@ -791,7 +775,7 @@ function generateStars() {
   }
 }
 
-// IKLAN GH TOPUP EFFECT (CHROME)
+// IKLAN GH TOPUP EFFECT
 function triggerRipple(e) {
   const b = $('sponsor'), rect = b.getBoundingClientRect();
   const r = document.createElement('span'); r.className = 'ripple';
@@ -864,7 +848,7 @@ async function initProfile() {
 }
 
 // ============================================
-// REALTIME LISTENERS (BUG FIX 1 & 2)
+// REALTIME LISTENERS
 // ============================================
 function setupRealtime() {
   if (!user) return;
@@ -886,7 +870,7 @@ function setupRealtime() {
 }
 
 // ============================================
-// LOAD SETTINGS & THEME (CHROME)
+// LOAD SETTINGS & THEME
 // ============================================
 async function loadSettings() {
   const { data } = await sb.from('site_settings').select('key,value');
@@ -921,7 +905,7 @@ async function saveDana(btn) {
 }
 
 // ============================================
-// LOAD TOURNAMENTS (BUG FIX BANNER & OFFLINE)
+// LOAD TOURNAMENTS
 // ============================================
 async function loadHeroBanner() {
   const { data } = await sb.from('banners').select('image_url').eq('is_active', true).order('sort_order', { ascending: true }).limit(1).maybeSingle();
@@ -1079,7 +1063,7 @@ async function loadParticipants(tid) {
 }
 
 // ============================================
-// CHAT SYSTEM (GLOBAL & TOURNAMENT)
+// CHAT SYSTEM
 // ============================================
 const rateLimit = {}; const RATE_MS = 3000;
 function checkRate(scope) {
@@ -1180,7 +1164,7 @@ async function sendSticker(url, scope) {
 }
 
 // ============================================
-// TEAMS & ROSTER (BUG FIX 6)
+// TEAMS & ROSTER
 // ============================================
 async function loadTeams() {
   if (!user) return;
@@ -1290,15 +1274,16 @@ async function delPlayer(btn) {
 }
 
 // ============================================
-// REGISTER WIZARD (BUG FIX 3, 4 & AUTO-FILL DANA)
+// REGISTER WIZARD (DANA FIX)
 // ============================================
 async function openRegister() {
   if (!user) return nav('auth');
   if (!curTour) return toast('Turnamen belum dipilih', 'danger');
   
-  if (profile?.dana_number) {
-    $('reg-dana-num').value = profile.dana_number;
-    $('reg-dana-name').value = profile.dana_name || '';
+  const { data: p } = await sb.from('profiles').select('dana_number, dana_name').eq('id', user.id).single();
+  if (p && p.dana_number) {
+    $('reg-dana-num').value = p.dana_number;
+    $('reg-dana-name').value = p.dana_name || '';
   } else {
     $('reg-dana-num').value = '';
     $('reg-dana-name').value = '';
@@ -1343,11 +1328,22 @@ async function loadRegRoster() {
 
 async function finishReg(btn) {
   if (!selTeam || !curTour) return toast('Data belum lengkap', 'warning');
+  
+  const danaNum = $('reg-dana-num').value.trim();
+  const danaName = $('reg-dana-name').value.trim();
+  if (!danaNum || !danaName) return toast('Isi Nomor & Nama DANA dulu!', 'warning');
+  
   const file = $('reg-proof').files[0];
   if (!file) return toast('Upload bukti transfer dulu!', 'warning');
+  
   btn.disabled = true; btn.innerText = 'Memproses...';
   
   try {
+    if (!profile.dana_number) {
+      await sb.from('profiles').update({ dana_number: danaNum, dana_name: danaName }).eq('id', user.id);
+      profile.dana_number = danaNum; profile.dana_name = danaName;
+    }
+
     const { data: exist } = await sb.from('registrations').select('id,status').eq('tournament_id', curTour).eq('team_id', selTeam).maybeSingle();
     
     const ext = file.name.split('.').pop(), path = `proof-${Date.now()}.${ext}`;
@@ -1397,7 +1393,7 @@ function startQR(dur) {
 }
 
 // ============================================
-// MY TOURNAMENTS, ROOM ID & E-TICKET (FITUR OFFLINE)
+// MY TOURNAMENTS, ROOM ID & E-TICKET
 // ============================================
 async function loadMyTour() {
   if (!user) return;
@@ -1532,7 +1528,7 @@ async function delNotif(id) {
 }
 
 // ============================================
-// CLOCK, SPONSOR, FAQ, SCROLL, TILT
+// CLOCK, SPONSOR, FAQ
 // ============================================
 function startClock() {
   setInterval(() => { $('clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false }) + ' WIB'; }, 1000);
@@ -1578,6 +1574,6 @@ function nav(v) {
   if (v === 'my-tour') loadMyTour();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-   </script>
+</script>
 </body>
    </html>
