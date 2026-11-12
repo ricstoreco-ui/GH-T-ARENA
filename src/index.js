@@ -23,7 +23,6 @@ for (const m of MODULES) {
 
 const BACK_BTN = { inline_keyboard: [[b('⬅️ Menu Utama', 'm:main')]] };
 
-// ================= MENU UTAMA & KATEGORI =================
 const MAIN = {
   inline_keyboard: [
     [b('📊 Dashboard', 'm:dash')],
