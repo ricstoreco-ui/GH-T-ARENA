@@ -51,6 +51,10 @@ export async function healthText(env) {
     const r = await fetch(`${env.SUPABASE_URL}/rest/v1/realtime_events?select=id&order=id.desc&limit=1`, { headers: sbHeaders(env) });
     lines.push(r.ok ? '✅ Tabel sinyal Realtime bisa dibaca' : '❌ Realtime: ' + r.status);
   } catch (e) { lines.push('❌ Realtime: ' + esc(e.message)); }
+  try {
+    const n = await count(env, 'br_matches?status=eq.hasil_dipublikasikan&select=id');
+    lines.push(`ℹ️ Match BR terpublikasi: ${n}`);
+  } catch (e) { lines.push('❌ Hitung match BR: ' + esc(e.message)); }
   return '<b>🩺 Health Check</b>\n' + lines.join('\n');
 }
 H.health = (env, chat, mid) => healthText(env).then((t) => show(env, chat, mid, t, { inline_keyboard: [[b('🔄 Ulangi', 'm:health')], ...BACK] }));
@@ -194,7 +198,7 @@ export async function tDetail(env, id, notice) {
   
   kb.push([b(t.format === 'BR' ? '🎯 Kelola BR' : '⚔️ Kelola CS', (t.format === 'BR' ? 'm:br:t:' : 'm:cs:t:') + id), b('📝 Pendaftaran', 'm:rg:t:' + id)]);
   kb.push([b('🏅 Hasil & Peringkat', 'm:lb:t:' + id), b('🔑 Room ID', 'm:rm:t:' + id)]);
-  kb.push([b('🔴 Atur Live Stream', 'm:adm:stream_t:' + id), b('📺 Display Proyektor', 'm:t:disp:' + id)]); // <--- TOMBOL DISPLAY
+  kb.push([b('🔴 Atur Live Stream', 'm:adm:stream_t:' + id), b('📺 Display Proyektor', 'm:t:disp:' + id)]); 
   kb.push([b('🔄 Segarkan', 'm:t:v:' + id), b('⬅️ Daftar', 'm:t')]);
   return { text: (notice ? notice + '\n\n' : '') + L.join('\n'), markup: { inline_keyboard: kb } };
 }
@@ -342,8 +346,8 @@ function wizNext(d) {
   if (!d.game_id) return 'game'; 
   if (!d.name) return 'name'; 
   if (!d.format) return 'format';
-  if (d.is_offline === undefined) return 'is_offline'; // Tanya online/offline
-  if (d.is_offline && !d.location_name) return 'loc_name'; // Tanya lokasi
+  if (d.is_offline === undefined) return 'is_offline'; 
+  if (d.is_offline && !d.location_name) return 'loc_name'; 
   if (d.is_offline && !d.location_address) return 'loc_addr';
   if (d.is_offline && d.location_maps === undefined) return 'loc_maps';
   if (d.total_slots == null) return 'slots'; 
