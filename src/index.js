@@ -15,11 +15,13 @@ const H = {}, T = {}, U = {};
 const KEEP = ['m:w:', 'm:pt:save', 'm:an:ok', 'm:cc:ok', 'm:br:ayes', 'm:br:mok', 'm:wx:', 'm:sc:'];
 
 for (const m of MODULES) {
-  Object.assign(H, m.H || {}); Object.assign(T, m.T || {}); Object.assign(U, m.U || {});
+  Object.assign(H, m.H || {}); 
+  Object.assign(T, m.T || {}); 
+  Object.assign(U, m.U || {});
   if (m.KEEP) KEEP.push(...m.KEEP);
 }
 
-// ================= MENU KATEGORI (REDESIGN) =================
+// ================= MENU UTAMA & KATEGORI =================
 const MAIN = {
   inline_keyboard: [
     [b('📊 Dashboard', 'm:dash')],
@@ -34,7 +36,8 @@ const MAIN_TEXT = '<b>GH-T ARENA — Panel Super Admin</b>\nPilih Kategori Menu:
 const CAT_TOUR = { inline_keyboard: [
   [b('➕ Buat Turnamen', 'm:t:new'), b('📋 Daftar Turnamen', 'm:t')],
   [b('🎯 Kelola BR', 'm:br'), b('⚔️ Kelola CS', 'm:cs')],
-  [b('🔑 Room ID', 'm:rm')], [b('⬅️ Kembali', 'm:main')]
+  [b('🔑 Room ID', 'm:rm')], 
+  [b('⬅️ Kembali', 'm:main')]
 ]};
 const CAT_TRX = { inline_keyboard: [
   [b('✅ Verifikasi Pembayaran', 'm:vp'), b('💳 Verifikasi DANA', 'm:dc')],
@@ -45,7 +48,8 @@ const CAT_TRX = { inline_keyboard: [
 const CAT_COMM = { inline_keyboard: [
   [b('👤 Cari Captain', 'm:cp'), b('🛡️ Cari Tim', 'm:tm')],
   [b('📣 Pengumuman', 'm:an'), b('📝 Template Pesan', 'm:adm:tmpl')],
-  [b('🚫 Blacklist Player', 'm:adm:ban')], [b('⬅️ Kembali', 'm:main')]
+  [b('🚫 Blacklist Player', 'm:adm:ban')], 
+  [b('⬅️ Kembali', 'm:main')]
 ]};
 const CAT_SYS = { inline_keyboard: [
   [b('⚙️ Pengaturan Web', 'm:set'), b('🩺 Health Check', 'm:health')],
@@ -55,12 +59,16 @@ const CAT_SYS = { inline_keyboard: [
   [b('⬅️ Kembali', 'm:main')]
 ]};
 
-H.main = (env, chat, mid, p) => {
-  const v = p[2];
-  if (v === 'cat:tour') return show(env, chat, mid, '<b>🏆 Manajemen Turnamen</b>', CAT_TOUR);
-  if (v === 'cat:trx') return show(env, chat, mid, '<b>💳 Transaksi & Peserta</b>', CAT_TRX);
-  if (v === 'cat:comm') return show(env, chat, mid, '<b>👥 Komunitas & Data</b>', CAT_COMM);
-  if (v === 'cat:sys') return show(env, chat, mid, '<b>⚙️ Sistem & Tools</b>', CAT_SYS);
+// Handler untuk Menu Utama
+H.main = (env, chat, mid) => show(env, chat, mid, MAIN_TEXT, MAIN);
+
+// Handler untuk Kategori (m:cat:tour, m:cat:trx, dll)
+H.cat = (env, chat, mid, p) => {
+  const v = p[2]; // p[2] isinya 'tour', 'trx', 'comm', atau 'sys'
+  if (v === 'tour') return show(env, chat, mid, '<b>🏆 Manajemen Turnamen</b>', CAT_TOUR);
+  if (v === 'trx') return show(env, chat, mid, '<b>💳 Transaksi & Peserta</b>', CAT_TRX);
+  if (v === 'comm') return show(env, chat, mid, '<b>👥 Komunitas & Data</b>', CAT_COMM);
+  if (v === 'sys') return show(env, chat, mid, '<b>⚙️ Sistem & Tools</b>', CAT_SYS);
   return show(env, chat, mid, MAIN_TEXT, MAIN);
 };
 
@@ -70,20 +78,25 @@ async function onCallback(env, cq) {
   await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id });
   const chat = cq.message.chat.id, mid = cq.message.message_id, d = cq.data || '';
   const p = d.split(':');
+  
   if (p[0] !== 'm') return;
   
   if (!KEEP.some((k) => d.startsWith(k))) await clearState(env, chat);
   
+  // Khusus tombol Back ke Menu Utama
   if (d === 'm:main') return show(env, chat, mid, MAIN_TEXT, MAIN);
+  
+  // Router dinamis
   const fn = H[p[1]];
-  if (!fn) return show(env, chat, mid, '🚧 Menu ini belum dipasang.', { inline_keyboard: BACK });
+  if (!fn) return show(env, chat, mid, '🚧 Menu ini belum dipasang di bot.', { inline_keyboard: { inline_keyboard: [[b('⬅️ Menu Utama', 'm:main')]] } });
+  
   return fn(env, chat, mid, p);
 }
 
 async function onMessage(env, m) {
   const chat = m.chat.id, text = (m.text || '').trim();
   if (text === '/start' || text === '/menu') { await clearState(env, chat); return show(env, chat, null, MAIN_TEXT, MAIN); }
-  if (text === '/batal') { await clearState(env, chat); return show(env, chat, null, 'Dibatalkan.', { inline_keyboard: BACK }); }
+  if (text === '/batal') { await clearState(env, chat); return show(env, chat, null, 'Dibatalkan.', { inline_keyboard: { inline_keyboard: [[b('⬅️ Menu Utama', 'm:main')]] } }); }
   if (text === '/panduan') { return H.info(env, chat, null); } 
   
   const st = await getState(env, chat);
@@ -93,34 +106,37 @@ async function onMessage(env, m) {
     const up = U[stateKey(st.state)];
     if (up) return up(env, chat, st, img);
   }
-  if (!st) return (text || img) ? show(env, chat, null, 'Pilih lewat menu ya.', MAIN) : undefined;
-  if (!text) return show(env, chat, null, 'Kirim teks sesuai instruksi, atau /batal.', { inline_keyboard: BACK });
+  if (!st) return (text || img) ? show(env, chat, null, 'Pilih lewat menu ya.', { inline_keyboard: { inline_keyboard: [[b('⬅️ Menu Utama', 'm:main')]] } }) : undefined;
+  if (!text) return show(env, chat, null, 'Kirim teks sesuai instruksi, atau /batal.', { inline_keyboard: { inline_keyboard: [[b('⬅️ Menu Utama', 'm:main')]] } });
   
   const fn = T[stateKey(st.state)];
-  if (!fn) return show(env, chat, null, 'Langkah ini dijawab lewat tombol. Ketik /menu untuk kembali.', { inline_keyboard: BACK });
+  if (!fn) return show(env, chat, null, 'Langkah ini dijawab lewat tombol. Ketik /menu untuk kembali.', { inline_keyboard: { inline_keyboard: [[b('⬅️ Menu Utama', 'm:main')]] } });
   return fn(env, chat, st, text);
 }
 
 async function handle(env, u) {
   const cq = u.callback_query, msg = u.message;
   const from = cq?.from?.id ?? msg?.from?.id, chat = cq?.message?.chat?.id ?? msg?.chat?.id;
+  
   if (!from || !chat) return;
+  
   if (String(from) !== String(env.ADMIN_ID)) {
     if (cq) await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id });
     else await tg(env, 'sendMessage', { chat_id: chat, text: 'Bot ini khusus Super Admin.' });
     return;
   }
+  
   if (!(await firstTime(env, u.update_id))) return;
   
   try {
     if (cq) await onCallback(env, cq);
     else if (msg) await onMessage(env, msg);
   } catch (e) {
-    await tg(env, 'sendMessage', { chat_id: chat, text: '❌ ' + String(e?.message || e).slice(0, 300), reply_markup: { inline_keyboard: BACK } });
+    await tg(env, 'sendMessage', { chat_id: chat, text: '❌ ' + String(e?.message || e).slice(0, 300), reply_markup: { inline_keyboard: [[b('⬅️ Menu Utama', 'm:main')]] } });
   }
 }
 
-// CRON JOB: Antrean, File, Hapus Chat Otomatis, Heartbeat
+// ---------- Cron: heartbeat, job antrean, hapus file otomatis, housekeeping, hapus chat ----------
 async function runJobs(env) {
   const now = new Date().toISOString();
   const jobs = (await sb(env, 'GET', `jobs?status=eq.pending&kind=in.(telegram_admin,web_push)&run_after=lte.${encodeURIComponent(now)}&select=id,kind,payload&order=created_at.asc&limit=10`)) || [];
@@ -159,6 +175,7 @@ async function cron(env, event) {
   // Jalanin pembersih chat tiap 1 jam (menit ke 0)
   const minute = new Date(event?.scheduledTime || Date.now()).getUTCMinutes();
   if (minute === 0) await step('clean_chats', () => rpc(env, 'sys_clean_old_chats'));
+  
   if (Math.floor(minute / 5) % 2 === 0) await step('housekeeping', () => rpc(env, 'sys_run_housekeeping'));
 }
 
