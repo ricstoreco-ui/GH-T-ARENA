@@ -1,4 +1,4 @@
-// GH-T ARENA Bot — index.js: pintu masuk Worker (webhook Telegram + cron) dan router menu.
+// GH-T ARENA Bot — index.js: Router Utama & Cron
 import { tg, rpc, sb, firstTime, getState, clearState, show, b, BACK, pickImage, storageDelete } from './core.js';
 import * as fMain from './f_main.js';
 import * as fMisc from './f_misc.js';
@@ -12,29 +12,58 @@ import * as fInfo from './f_info.js';
 
 const MODULES = [fMain, fMisc, fBr, fCs, fPo, fRm, fAdmin, fDana, fInfo];
 const H = {}, T = {}, U = {};
-const KEEP = ['m:w:', 'm:pt:save', 'm:an:ok', 'm:cc:ok', 'm:br:ayes', 'm:br:mok', 'm:wx:'];
+const KEEP = ['m:w:', 'm:pt:save', 'm:an:ok', 'm:cc:ok', 'm:br:ayes', 'm:br:mok', 'm:wx:', 'm:sc:'];
 
 for (const m of MODULES) {
-  Object.assign(H, m.H || {});
-  Object.assign(T, m.T || {});
-  Object.assign(U, m.U || {});
+  Object.assign(H, m.H || {}); Object.assign(T, m.T || {}); Object.assign(U, m.U || {});
   if (m.KEEP) KEEP.push(...m.KEEP);
 }
 
+// ================= MENU KATEGORI (REDESIGN) =================
 const MAIN = {
   inline_keyboard: [
-    [b('📊 Dashboard', 'm:dash'), b('🏆 Turnamen', 'm:t')],
-    [b('📝 Pendaftaran', 'm:rg'), b('💳 Pembayaran', 'm:vp')],
-    [b('🎯 Battle Royale', 'm:br'), b('⚔️ Clash Squad', 'm:cs')],
-    [b('🧮 Tabel Poin', 'm:pt'), b('📣 Pengumuman', 'm:an')],
-    [b('⏳ Waiting List', 'm:wl'), b('↩️ Pengajuan Mundur', 'm:wd')],
-    [b('👤 Captain', 'm:cp'), b('💸 Pencairan', 'm:po')],
-    [b('💳 Verifikasi DANA', 'm:dc'), b('⚙️ Pengaturan', 'm:set')],
-    [b('🛠 Admin Tools', 'm:adm'), b('🩺 Monitoring', 'm:mon')], // <--- TOMBOL BARU DITAMBAHKAN DI SINI
-    [b('📖 Panduan', 'm:info')],
+    [b('📊 Dashboard', 'm:dash')],
+    [b('🏆 Manajemen Turnamen', 'm:cat:tour')],
+    [b('💳 Transaksi & Peserta', 'm:cat:trx')],
+    [b('👥 Komunitas & Data', 'm:cat:comm')],
+    [b('⚙️ Sistem & Tools', 'm:cat:sys')],
   ],
 };
-const MAIN_TEXT = '<b>GH-T ARENA — Panel Super Admin</b>\nPilih menu:';
+const MAIN_TEXT = '<b>GH-T ARENA — Panel Super Admin</b>\nPilih Kategori Menu:';
+
+const CAT_TOUR = { inline_keyboard: [
+  [b('➕ Buat Turnamen', 'm:t:new'), b('📋 Daftar Turnamen', 'm:t')],
+  [b('🎯 Kelola BR', 'm:br'), b('⚔️ Kelola CS', 'm:cs')],
+  [b('🔑 Room ID', 'm:rm')], [b('⬅️ Kembali', 'm:main')]
+]};
+const CAT_TRX = { inline_keyboard: [
+  [b('✅ Verifikasi Pembayaran', 'm:vp'), b('💳 Verifikasi DANA', 'm:dc')],
+  [b('💸 Pencairan Hadiah', 'm:po'), b('↩️ Pengajuan Mundur', 'm:wd')],
+  [b('⏳ Waiting List', 'm:wl'), b('🎟️ Cek-in Tiket Offline', 'm:ticket')],
+  [b('⬅️ Kembali', 'm:main')]
+]};
+const CAT_COMM = { inline_keyboard: [
+  [b('👤 Cari Captain', 'm:cp'), b('🛡️ Cari Tim', 'm:tm')],
+  [b('📣 Pengumuman', 'm:an'), b('📝 Template Pesan', 'm:adm:tmpl')],
+  [b('🚫 Blacklist Player', 'm:adm:ban')], [b('⬅️ Kembali', 'm:main')]
+]};
+const CAT_SYS = { inline_keyboard: [
+  [b('⚙️ Pengaturan Web', 'm:set'), b('🩺 Health Check', 'm:health')],
+  [b('🛠 Admin Tools', 'm:adm'), b('🤝 Kelola Sponsor', 'm:sponsor')],
+  [b('🎯 Scrim Manager', 'm:scrim'), b('👑 Kelola VIP', 'm:vip')],
+  [b('📦 Backup Project', 'm:backup'), b('📖 Panduan', 'm:info')],
+  [b('⬅️ Kembali', 'm:main')]
+]};
+
+H.main = (env, chat, mid, p) => {
+  const v = p[2];
+  if (v === 'cat:tour') return show(env, chat, mid, '<b>🏆 Manajemen Turnamen</b>', CAT_TOUR);
+  if (v === 'cat:trx') return show(env, chat, mid, '<b>💳 Transaksi & Peserta</b>', CAT_TRX);
+  if (v === 'cat:comm') return show(env, chat, mid, '<b>👥 Komunitas & Data</b>', CAT_COMM);
+  if (v === 'cat:sys') return show(env, chat, mid, '<b>⚙️ Sistem & Tools</b>', CAT_SYS);
+  return show(env, chat, mid, MAIN_TEXT, MAIN);
+};
+
 const stateKey = (s) => String(s).split(':')[0];
 
 async function onCallback(env, cq) {
@@ -47,13 +76,12 @@ async function onCallback(env, cq) {
   
   if (d === 'm:main') return show(env, chat, mid, MAIN_TEXT, MAIN);
   const fn = H[p[1]];
-  if (!fn) return show(env, chat, mid, '🚧 Menu ini belum dipasang di bot.', { inline_keyboard: BACK });
+  if (!fn) return show(env, chat, mid, '🚧 Menu ini belum dipasang.', { inline_keyboard: BACK });
   return fn(env, chat, mid, p);
 }
 
 async function onMessage(env, m) {
-  const chat = m.chat.id;
-  const text = (m.text || '').trim();
+  const chat = m.chat.id, text = (m.text || '').trim();
   if (text === '/start' || text === '/menu') { await clearState(env, chat); return show(env, chat, null, MAIN_TEXT, MAIN); }
   if (text === '/batal') { await clearState(env, chat); return show(env, chat, null, 'Dibatalkan.', { inline_keyboard: BACK }); }
   if (text === '/panduan') { return H.info(env, chat, null); } 
@@ -69,23 +97,19 @@ async function onMessage(env, m) {
   if (!text) return show(env, chat, null, 'Kirim teks sesuai instruksi, atau /batal.', { inline_keyboard: BACK });
   
   const fn = T[stateKey(st.state)];
-  if (!fn) return show(env, chat, null, 'Langkah ini dijawab lewat tombol, bukan teks. Ketik /menu untuk kembali.', { inline_keyboard: BACK });
+  if (!fn) return show(env, chat, null, 'Langkah ini dijawab lewat tombol. Ketik /menu untuk kembali.', { inline_keyboard: BACK });
   return fn(env, chat, st, text);
 }
 
 async function handle(env, u) {
   const cq = u.callback_query, msg = u.message;
-  const from = cq?.from?.id ?? msg?.from?.id;
-  const chat = cq?.message?.chat?.id ?? msg?.chat?.id;
-  
+  const from = cq?.from?.id ?? msg?.from?.id, chat = cq?.message?.chat?.id ?? msg?.chat?.id;
   if (!from || !chat) return;
-  
   if (String(from) !== String(env.ADMIN_ID)) {
     if (cq) await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id });
-    else await tg(env, 'sendMessage', { chat_id: chat, text: 'Bot ini khusus Super Admin GH-T Arena.' });
+    else await tg(env, 'sendMessage', { chat_id: chat, text: 'Bot ini khusus Super Admin.' });
     return;
   }
-  
   if (!(await firstTime(env, u.update_id))) return;
   
   try {
@@ -96,7 +120,7 @@ async function handle(env, u) {
   }
 }
 
-// ---------- Cron: heartbeat, job antrean, hapus file otomatis, housekeeping ----------
+// CRON JOB: Antrean, File, Hapus Chat Otomatis, Heartbeat
 async function runJobs(env) {
   const now = new Date().toISOString();
   const jobs = (await sb(env, 'GET', `jobs?status=eq.pending&kind=in.(telegram_admin,web_push)&run_after=lte.${encodeURIComponent(now)}&select=id,kind,payload&order=created_at.asc&limit=10`)) || [];
@@ -106,10 +130,7 @@ async function runJobs(env) {
     try {
       if (j.kind === 'telegram_admin') {
         const text = j.payload?.text;
-        if (text) {
-          const r = await tg(env, 'sendMessage', { chat_id: env.ADMIN_ID, text: String(text).slice(0, 3900) });
-          if (!r.ok) throw new Error(r.description || 'sendMessage gagal');
-        }
+        if (text) await tg(env, 'sendMessage', { chat_id: env.ADMIN_ID, text: String(text).slice(0, 3900) });
       }
       await rpc(env, 'sys_job_done', { p_id: j.id });
     } catch (e) {
@@ -124,10 +145,8 @@ async function runFiles(env) {
     try {
       const ok = await storageDelete(env, f.bucket, f.path);
       if (ok) await rpc(env, 'sys_file_mark_deleted', { p_id: f.id });
-      else await rpc(env, 'sys_file_mark_failed', { p_id: f.id, p_error: 'hapus storage ditolak' });
-    } catch (e) {
-      await rpc(env, 'sys_file_mark_failed', { p_id: f.id, p_error: String(e?.message || e).slice(0, 300) }).catch(() => null);
-    }
+      else await rpc(env, 'sys_file_mark_failed', { p_id: f.id, p_error: 'gagal' });
+    } catch (e) {}
   }
 }
 
@@ -136,7 +155,10 @@ async function cron(env, event) {
   await step('heartbeat', () => rpc(env, 'sys_bot_heartbeat'));
   await step('jobs', () => runJobs(env));
   await step('files', () => runFiles(env));
+  
+  // Jalanin pembersih chat tiap 1 jam (menit ke 0)
   const minute = new Date(event?.scheduledTime || Date.now()).getUTCMinutes();
+  if (minute === 0) await step('clean_chats', () => rpc(env, 'sys_clean_old_chats'));
   if (Math.floor(minute / 5) % 2 === 0) await step('housekeeping', () => rpc(env, 'sys_run_housekeeping'));
 }
 
@@ -149,7 +171,5 @@ export default {
     ctx.waitUntil(handle(env, u).catch((e) => console.log('handle', String(e?.message || e))));
     return new Response('ok');
   },
-  async scheduled(event, env, ctx) {
-    ctx.waitUntil(cron(env, event));
-  },
+  async scheduled(event, env, ctx) { ctx.waitUntil(cron(env, event)); },
 };
