@@ -1,10 +1,12 @@
 // GH-T ARENA Bot — f_admin.js: Admin Tools, Scrim, E-Ticket, Sponsor, VIP, Backup, dll.
 import {
-  esc, wib, rp, UUID, rpc, sb, count, getState, setState, clearState, b, BACK, kbRows, show, getT, audit, notify, sbHeaders
+  esc, wib, rp, UUID, rpc, sb, count, getState, setState, clearState, b, BACK, kbRows, show, getT, audit, notify, sbHeaders,
+  MAXIMG, EXT, downloadTg, storageUpload, publicUrl
 } from './core.js';
 
 export const H = {};
 export const T = {};
+export const U = {}; // <--- INI WAJIB ADA BIAR GAK ERROR
 
 const sh = (env, chat, mid, v) => show(env, chat, mid, v.text, v.markup);
 
@@ -131,45 +133,32 @@ H.vip = async (env, chat, mid, p) => {
 
 // ================= BACKUP PROJECT =================
 H.backup = async (env, chat, mid, p) => {
-  return show(env, chat, mid, '<b>📦 Backup Project</b>\nProses ini akan menarik semua file dari GitHub & Skema Database, lalu mengirimkannya sebagai file teks.\n\nLanjut?', { inline_keyboard: [[b('✅ Mulai Backup', 'm:backup:go')], [b('✖️ Batal', 'm:main')]] });
-};
-H.backup = async (env, chat, mid, p) => {
+  if (!p[2]) {
+    return show(env, chat, mid, '<b>📦 Backup Project</b>\nProses ini akan menarik semua file dari GitHub & Skema Database, lalu mengirimkannya sebagai file teks.\n\nLanjut?', { inline_keyboard: [[b('✅ Mulai Backup', 'm:backup:go')], [b('✖️ Batal', 'm:main')]] });
+  }
   if (p[2] === 'go') {
     await show(env, chat, mid, '⏳ <b>Sedang memproses backup...</b>\nMengambil data dari GitHub dan Supabase. Mohon tunggu ±10 detik.');
     try {
-      // 1. Ambil Skema DB
       const schema = await rpc(env, 'sys_dump_schema');
-      
-      // 2. Ambil File dari GitHub
       let githubFiles = '--- GITHUB FILES ---\n';
       const ghRes = await fetch(`https://api.github.com/repos/${env.GH_REPO}/git/trees/main?recursive=1`, { headers: { Authorization: `Bearer ${env.GH_TOKEN}`, 'User-Agent': 'gh-t-arena' } });
       const tree = await ghRes.json();
       if (tree.tree) {
         const files = tree.tree.filter(t => t.type === 'blob' && (t.path.endsWith('.js') || t.path.endsWith('.html') || t.path.endsWith('.toml')));
         for (const file of files) {
-          if (file.size > 500000) continue; // Skip file raksasa
+          if (file.size > 500000) continue;
           const rawRes = await fetch(`https://raw.githubusercontent.com/${env.GH_REPO}/main/${file.path}`);
           const content = await rawRes.text();
           githubFiles += `\n\n// ==========================================\n// FILE: ${file.path}\n// ==========================================\n\n${content}`;
         }
       }
-      
-      // 3. Gabungkan jadi satu file teks
       const fullBackup = `=== MASTER CHECKPOINT & BACKUP GH-T ARENA ===\nTanggal: ${new Date().toISOString()}\n\n\n${schema}\n\n\n${githubFiles}`;
-      
-      // 4. Kirim ke Telegram sebagai Dokumen
-      const blob = new Blob([fullBackup], { type: 'text/plain' });
-      const formData = new FormData();
-      formData.append('chat_id', chat);
-      formData.append('caption', '📦 Backup Project (Kode + DB Schema). Simpan file ini baik-baik!');
+      const blob = new Blob([fullBackup], { type: 'text/plain' }), formData = new FormData();
+      formData.append('chat_id', chat); formData.append('caption', '📦 Backup Project (Kode + DB Schema). Simpan file ini baik-baik!');
       formData.append('document', blob, `BACKUP_GHT_${Date.now()}.txt`);
-      
       await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendDocument`, { method: 'POST', body: formData });
-      
       return show(env, chat, mid, '✅ Backup berhasil dikirim!', { inline_keyboard: [[b('⬅️ Kembali', 'm:main')]] });
-    } catch (e) {
-      return show(env, chat, mid, '❌ Gagal Backup: ' + e.message, { inline_keyboard: [[b('⬅️ Kembali', 'm:main')]] });
-    }
+    } catch (e) { return show(env, chat, mid, '❌ Gagal Backup: ' + e.message, { inline_keyboard: [[b('⬅️ Kembali', 'm:main')]] }); }
   }
 };
 
@@ -187,7 +176,6 @@ T.ticket_scan = async (env, chat, st, text) => {
   const t = data?.[0];
   if (!t) return show(env, chat, null, '❌ Tiket tidak ditemukan.', { inline_keyboard: [[b('🔄 Scan Lagi', 'm:ticket:scan')]] });
   if (t.is_checked_in) return show(env, chat, null, `⚠️ Tiket ini sudah di-scan pada ${wib(t.checked_in_at)}!`, { inline_keyboard: [[b('🔄 Scan Lagi', 'm:ticket:scan')]] });
-  
   await sb(env, 'PATCH', `etickets?id=eq.${t.id}`, { is_checked_in: true, checked_in_at: new Date().toISOString(), checked_in_by: 'Admin Bot' }, 'return=minimal');
   await clearState(env, chat);
   return show(env, chat, null, `✅ <b>CHECK-IN BERHASIL</b>\n\nTim: <b>${esc(t.registrations?.team_name)}</b>\nKode: ${t.ticket_code}\n\nSelamat bertanding!`, { inline_keyboard: [[b('🔄 Scan Lagi', 'm:ticket:scan'), b('🏠 Menu', 'm:main')]] });
@@ -247,15 +235,20 @@ T.sp_add_name = async (env, chat, st, text) => {
   return show(env, chat, null, 'Kirim <b>foto/logo</b> sponsor:', { inline_keyboard: [[b('✖️ Batal', 'm:sponsor')]] });
 };
 U.sp_add_img = async (env, chat, st, img) => {
-  await setState(env, chat, 'sp_add_link', { ...st.data, file_id: img.file_id });
+  if (img.bad) return show(env, chat, null, '❌ Kirim sebagai foto/gambar.');
+  if (img.size > MAXIMG) return show(env, chat, null, '❌ Maksimal 10 MB.');
+  const bytes = await downloadTg(env, img.file_id);
+  const ext = EXT[img.mime], path = `sp-${Date.now()}.${ext}`;
+  await storageUpload(env, 'site-assets', path, bytes, img.mime);
+  const url = publicUrl(env, 'site-assets', path);
+  await setState(env, chat, 'sp_add_link', { ...st.data, logo_url: url });
   return show(env, chat, null, 'Ketik <b>Link Website</b> sponsor (atau ketik - jika tidak ada):', { inline_keyboard: [[b('✖️ Batal', 'm:sponsor')]] });
 };
 T.sp_add_link = async (env, chat, st, text) => {
   const link = text === '-' ? null : text;
-  // Upload logic image omitted for brevity, assuming direct url from telegram
-  await sb(env, 'POST', 'sponsors', { name: st.data.name, logo_url: 'https://via.placeholder.com/150', link_url: link, is_active: true }, 'return=minimal');
+  await sb(env, 'POST', 'sponsors', { name: st.data.name, logo_url: st.data.logo_url, link_url: link, is_active: true }, 'return=minimal');
   await clearState(env, chat);
-  return show(env, chat, null, '✅ Sponsor ditambahkan (Gambar butuh setup manual di storage).', { inline_keyboard: [[b('⬅️ Kembali', 'm:sponsor')]] });
+  return show(env, chat, null, '✅ Sponsor ditambahkan.', { inline_keyboard: [[b('⬅️ Kembali', 'm:sponsor')]] });
 };
 
 // VIP State
@@ -266,4 +259,70 @@ T.vip_find = async (env, chat, st, text) => {
   const newStat = !prof.is_vip;
   await sb(env, 'PATCH', `profiles?id=eq.${prof.id}`, { is_vip: newStat, vip_expired_at: newStat ? new Date(Date.now() + 30*864e5).toISOString() : null }, 'return=minimal');
   return show(env, chat, null, `✅ Status VIP <b>${esc(prof.username)}</b>: ${newStat ? 'AKTIF (30 Hari)' : 'DICABUT'}.`, { inline_keyboard: [[b('⬅️ Kembali', 'm:main')]] });
+};
+
+// ================= SCRIM MANAGER =================
+H.scrim = async (env, chat, mid, p) => {
+  if (!p[2]) {
+    const scrims = (await sb(env, 'GET', 'scrim_matches?status=eq.mencari_lawan&select=id,game_format,bet_amount,challenger_id&order=created_at.desc&limit=10')) || [];
+    if (!scrims.length) {
+      return show(env, chat, mid, '<b>🎯 Scrim Manager</b>\nBelum ada tantangan scrim yang masuk.', { inline_keyboard: [[b('⬅️ Kembali', 'm:main')]] });
+    }
+    const cIds = [...new Set(scrims.map(s => s.challenger_id))];
+    const profs = (await sb(env, 'GET', `profiles?id=in.(${cIds.join(',')})&select=id,username`)) || [];
+    const pMap = Object.fromEntries(profs.map(p => [p.id, p.username]));
+
+    const kb = scrims.map(s => [b(`${pMap[s.challenger_id] || '?'} - ${rp(s.bet_amount)}`, 'm:scrim:v:' + s.id)]);
+    kb.push([b('⬅️ Kembali', 'm:main')]);
+    
+    return show(env, chat, mid, '<b>🎯 Scrim Manager</b>\nPilih tantangan scrim untuk diurus (buat Room / Sahkan Pemenang):', { inline_keyboard: kb });
+  }
+
+  if (p[2] === 'v') {
+    const s = (await sb(env, 'GET', `scrim_matches?id=eq.${p[3]}&select=*, challenger:profiles!challenger_id(username), opponent:profiles!opponent_id(username)`))?.[0];
+    if (!s) throw new Error('Scrim tidak ditemukan');
+    
+    let text = `<b>⚔️ Detail Scrim Taruhan</b>\n`;
+    text += `Format: ${s.game_format}\n`;
+    text += `Penantang: ${s.challenger?.username || '?'}\n`;
+    text += `Lawan: ${s.opponent?.username || 'Belum ada'}\n`;
+    text += `Taruhan: ${rp(s.bet_amount)} / tim\n`;
+    text += `Fee Admin: ${rp(s.admin_fee)}\n`;
+    text += `Total Hadiah: <b>${rp((s.bet_amount * 2) - s.admin_fee)}</b>\n`;
+    text += `Status: ${s.status.toUpperCase()}\n`;
+    if (s.room_id) text += `Room: ${s.room_id} / ${s.room_password}\n`;
+
+    const kb = [];
+    if (s.status === 'siap_main' && !s.room_id) {
+      kb.push([b('🔑 Buat Room ID', 'm:scrim:room:' + s.id)]);
+    }
+    if (s.status === 'berlangsung' && s.proof_path) {
+      kb.push([b('✅ Sahkan Pemenang', 'm:scrim:win:' + s.id)]);
+    }
+    kb.push([b('⬅️ Kembali', 'm:scrim')]);
+
+    return show(env, chat, mid, text, { inline_keyboard: kb });
+  }
+
+  if (p[2] === 'room') {
+    await setState(env, chat, 'scrim_room', { sid: p[3] });
+    return show(env, chat, mid, '<b>🔑 Buat Room ID</b>\nKetik: <code>RoomID Password</code>\nContoh: <code>12345678 scrim123</code>', { inline_keyboard: [[b('✖️ Batal', 'm:scrim:v:' + p[3])]] });
+  }
+
+  if (p[2] === 'win') {
+    const s = (await sb(env, 'GET', `scrim_matches?id=eq.${p[3]}&select=*`))?.[0];
+    const winnerId = s.challenger_id; // Anggap penantang yang menang (bisa disesuaikan tombolnya nanti)
+    await rpc(env, 'admin_set_scrim_winner', { p_scrim: s.id, p_winner: winnerId }).catch(async () => {
+        await sb(env, 'PATCH', `scrim_matches?id=eq.${s.id}`, { status: 'selesai', winner_id: winnerId }, 'return=minimal');
+    });
+    return show(env, chat, mid, '✅ Pemenang disahkan, saldo telah ditransfer.', { inline_keyboard: [[b('⬅️ Kembali', 'm:scrim')]] });
+  }
+};
+
+T.scrim_room = async (env, chat, st, text) => {
+  const parts = text.split(' ');
+  if (parts.length < 2) return show(env, chat, null, '❌ Format salah. Ketik: RoomID Password', { inline_keyboard: [[b('✖️ Batal', 'm:scrim:v:' + st.data.sid)]] });
+  await sb(env, 'PATCH', `scrim_matches?id=eq.${st.data.sid}`, { room_id: parts[0], room_password: parts.slice(1).join(' '), status: 'berlangsung' }, 'return=minimal');
+  await clearState(env, chat);
+  return show(env, chat, null, '✅ Room ID disimpan, status jadi Berlangsung.', { inline_keyboard: [[b('⬅️ Kembali', 'm:scrim')]] });
 };
