@@ -53,7 +53,7 @@ export async function healthText(env) {
   } catch (e) { lines.push('❌ Realtime: ' + esc(e.message)); }
   try {
     const n = await count(env, 'br_matches?status=eq.hasil_dipublikasikan&select=id');
-    lines.push(`ℹ️ Match BR terpublikasi: ${n} (ini hitungan saja, bukan pemeriksaan konsistensi penuh)`);
+    lines.push(`ℹ️ Match BR terpublikasi: ${n}`);
   } catch (e) { lines.push('❌ Hitung match BR: ' + esc(e.message)); }
   return '<b>🩺 Health Check</b>\n' + lines.join('\n');
 }
@@ -69,25 +69,14 @@ export async function quotaInfo(env) {
 H.storage = async (env, chat, mid) => {
   const { s, dbPct, files, stPct } = await quotaInfo(env);
   const rows = Object.entries(s.buckets || {}).map(([k, v]) => `• ${esc(k)}: ${v.files} file, ${v.mb} MB`);
-  const warn = dbPct >= 80 || stPct >= 80 ? '\n\n⚠️ Kuota hampir habis. Bersihkan data atau pertimbangkan opsi gratis lain.' : '';
-  return show(env, chat, mid,
-    '<b>🗄 Monitoring Kuota</b>\n' + (rows.join('\n') || 'Belum ada file.') +
-    `\n\nDatabase: ${s.db_mb} MB / 500 MB (${dbPct}%)\nStorage file: ${files.toFixed(1)} MB / 1024 MB (${stPct}%)` + warn +
-    '\n<i>Batas 500/1024 MB adalah asumsi paket Free: cek dashboard Supabase. Realtime, bandwidth, Cloudflare: lihat dashboard masing-masing.</i>',
-    { inline_keyboard: [[b('🔄 Segarkan', 'm:storage')], ...BACK] });
+  const warn = dbPct >= 80 || stPct >= 80 ? '\n\n⚠️ Kuota hampir habis.' : '';
+  return show(env, chat, mid, '<b>🗄 Monitoring Kuota</b>\n' + (rows.join('\n') || 'Belum ada file.') + `\n\nDatabase: ${s.db_mb} MB / 500 MB (${dbPct}%)\nStorage: ${files.toFixed(1)} MB / 1024 MB (${stPct}%)` + warn, { inline_keyboard: [[b('🔄 Segarkan', 'm:storage')], ...BACK] });
 };
 
 H.mon = (env, chat, mid, p) => {
-  if (p[2] === 'clean') {
-    return show(env, chat, mid, '<b>🧹 Pembersihan data</b>\nMenjalankan sekarang: sesi tidak aktif, retensi (OCR/BR), hapus akun jatuh tempo, Waiting List. Data aktif tidak dihapus.\nLanjut?',
-      { inline_keyboard: [[b('✅ Jalankan', 'm:mon:cy'), b('✖️ Batal', 'm:mon')]] });
-  }
-  if (p[2] === 'cy') {
-    return rpc(env, 'sys_run_housekeeping').then((r) => show(env, chat, mid, '✅ Selesai.\n<pre>' + esc(JSON.stringify(r, null, 1)).slice(0, 1500) + '</pre>', { inline_keyboard: [[b('⬅️ Monitoring', 'm:mon')]] }));
-  }
-  return show(env, chat, mid, '<b>🩺 Monitoring</b>', {
-    inline_keyboard: [[b('🩺 Health Check', 'm:health'), b('🗄 Kuota & Storage', 'm:storage')], [b('🧹 Pembersihan Data', 'm:mon:clean')], ...BACK],
-  });
+  if (p[2] === 'clean') return show(env, chat, mid, '<b>🧹 Pembersihan data</b>\nLanjut?', { inline_keyboard: [[b('✅ Jalankan', 'm:mon:cy'), b('✖️ Batal', 'm:mon')]] });
+  if (p[2] === 'cy') return rpc(env, 'sys_run_housekeeping').then((r) => show(env, chat, mid, '✅ Selesai.\n<pre>' + esc(JSON.stringify(r, null, 1)).slice(0, 1500) + '</pre>', { inline_keyboard: [[b('⬅️ Monitoring', 'm:mon')]] }));
+  return show(env, chat, mid, '<b>🩺 Monitoring</b>', { inline_keyboard: [[b('🩺 Health Check', 'm:health'), b('🗄 Kuota & Storage', 'm:storage')], [b('🧹 Pembersihan Data', 'm:mon:clean')], ...BACK] });
 };
 
 // ================= PENGATURAN =================
@@ -102,6 +91,7 @@ export async function settingsMenu(env) {
       [b(open ? '🛠 Aktifkan Maintenance' : '✅ Matikan Maintenance', 'm:mt:' + (open ? '1' : '0'))],
       [b('🖼 Banner', 'm:bn'), b('🧾 QRIS & Aset', 'm:as')],
       [b('🔧 Konfigurasi', 'm:cfg'), b('📜 Aturan', 'm:ru')],
+      [b('🎨 Ganti Tema', 'm:thm')], // <--- TOMBOL BARU
       ...BACK] },
   };
 }
@@ -127,16 +117,13 @@ async function ptView(env) {
   const body = rows.map((r) => `${String(r.placement).padStart(2, ' ')}  →  ${r.points}`).join('\n');
   const empty = rows.every((r) => !r.points);
   return {
-    text: '<b>🧮 Tabel Poin BR</b>\n<pre>Peringkat → Poin\n' + esc(body || '(kosong)') + '</pre>Kill: 1 poin per kill (tetap).' +
-      (empty ? '\n\n⚠️ Semua poin masih 0. Konfirmasi match akan ditolak sampai tabel diisi.' : ''),
+    text: '<b>🧮 Tabel Poin BR</b>\n<pre>Peringkat → Poin\n' + esc(body || '(kosong)') + '</pre>Kill: 1 poin per kill (tetap).' + (empty ? '\n\n⚠️ Semua poin masih 0. Konfirmasi match akan ditolak sampai tabel diisi.' : ''),
     markup: { inline_keyboard: [[b('✏️ Ubah Poin', 'm:pt:edit')], ...BACK] },
   };
 }
 async function ptPrompt(env, chat, mid) {
   await setState(env, chat, 'pt_edit', {});
-  return show(env, chat, mid,
-    '<b>✏️ Ubah Tabel Poin</b>\nKetik poin baru:\n\n1) Sebagian:\n<code>1=15, 2=12, 3=10</code>\n\n2) Semua 12 peringkat berurutan:\n<code>12 11 10 9 8 7 6 5 4 3 2 1</code>\n\nPeringkat 1 sampai 12, poin bilangan bulat 0 atau lebih.',
-    { inline_keyboard: [[b('✖️ Batal', 'm:pt')]] });
+  return show(env, chat, mid, '<b>✏️ Ubah Tabel Poin</b>\nKetik poin baru:\n\n1) Sebagian:\n<code>1=15, 2=12, 3=10</code>\n\n2) Semua 12 peringkat berurutan:\n<code>12 11 10 9 8 7 6 5 4 3 2 1</code>\n\nPeringkat 1 sampai 12, poin bilangan bulat 0 atau lebih.', { inline_keyboard: [[b('✖️ Batal', 'm:pt')]] });
 }
 function parsePoints(text) {
   const t = text.trim().replace(/\s*=\s*/g, '=');
@@ -163,23 +150,20 @@ H.pt = async (env, chat, mid, p) => {
   if (!a) { const v = await ptView(env); return show(env, chat, mid, v.text, v.markup); }
   if (a === 'edit') {
     const n = Number(await count(env, 'br_matches?status=eq.hasil_dipublikasikan&select=id'));
-    if (n > 0) {
-      return show(env, chat, mid, `<b>⚠️ Peringatan</b>\nAda <b>${n}</b> match BR yang sudah dikonfirmasi. Poin dihitung saat konfirmasi, jadi mengubah tabel ini <b>TIDAK</b> mengubah hasil match lama (batalkan konfirmasi lalu konfirmasi ulang jika perlu).\n\nTetap ubah?`,
-        { inline_keyboard: [[b('✏️ Tetap Ubah', 'm:pt:go'), b('✖️ Batal', 'm:pt')]] });
-    }
+    if (n > 0) return show(env, chat, mid, `<b>⚠️ Peringatan</b>\nAda <b>${n}</b> match BR yang sudah dikonfirmasi. Mengubah tabel ini <b>TIDAK</b> mengubah hasil match lama.\n\nTetap ubah?`, { inline_keyboard: [[b('✏️ Tetap Ubah', 'm:pt:go'), b('✖️ Batal', 'm:pt')]] });
     return ptPrompt(env, chat, mid);
   }
   if (a === 'go') return ptPrompt(env, chat, mid);
   if (a === 'save') {
     const st = await getState(env, chat);
-    if (!st || st.state !== 'pt_save') return show(env, chat, mid, 'Sesi kedaluwarsa. Buka lagi Tabel Poin.', { inline_keyboard: [[b('🧮 Tabel Poin', 'm:pt')], ...BACK] });
+    if (!st || st.state !== 'pt_save') return show(env, chat, mid, 'Sesi kedaluwarsa.', { inline_keyboard: [[b('🧮 Tabel Poin', 'm:pt')], ...BACK] });
     const { changes, old } = st.data;
     await sb(env, 'POST', 'point_table?on_conflict=placement', Object.entries(changes).map(([pl, pts]) => ({ placement: +pl, points: +pts })), 'resolution=merge-duplicates,return=minimal');
     await clearState(env, chat);
     const oldPart = {}; for (const k of Object.keys(changes)) oldPart[k] = old[k] ?? null;
     await audit(env, 'ubah_tabel_poin', 'point_table', 'via bot', null, oldPart, changes);
     const v = await ptView(env);
-    return show(env, chat, mid, '✅ Tabel poin disimpan. Website ikut diperbarui.\n\n' + v.text, v.markup);
+    return show(env, chat, mid, '✅ Tabel poin disimpan.\n\n' + v.text, v.markup);
   }
 };
 T.pt_edit = async (env, chat, st, text) => {
@@ -190,13 +174,10 @@ T.pt_edit = async (env, chat, st, text) => {
   const oldMap = Object.fromEntries(cur.map((r) => [r.placement, r.points]));
   const changes = {};
   for (const [pl, pts] of Object.entries(p.out)) if (oldMap[pl] !== pts) changes[pl] = pts;
-  if (!Object.keys(changes).length) return show(env, chat, null, 'Tidak ada yang berubah. Ketik lagi atau /batal.', cancel);
+  if (!Object.keys(changes).length) return show(env, chat, null, 'Tidak ada yang berubah.', cancel);
   const total = Object.values({ ...oldMap, ...changes }).reduce((a, c) => a + Number(c), 0);
   await setState(env, chat, 'pt_save', { changes, old: oldMap });
-  return show(env, chat, null,
-    '<b>Konfirmasi perubahan Tabel Poin</b>\n' + Object.entries(changes).map(([pl, pts]) => `Peringkat ${pl}: ${oldMap[pl] ?? '-'} → <b>${pts}</b>`).join('\n') +
-    (total === 0 ? '\n\n⚠️ Semua poin jadi 0. Konfirmasi match akan ditolak.' : '') + '\n\nSimpan?',
-    { inline_keyboard: [[b('✅ Simpan', 'm:pt:save'), b('✏️ Ulangi', 'm:pt:go')], [b('✖️ Batal', 'm:pt')]] });
+  return show(env, chat, null, '<b>Konfirmasi perubahan Tabel Poin</b>\n' + Object.entries(changes).map(([pl, pts]) => `Peringkat ${pl}: ${oldMap[pl] ?? '-'} → <b>${pts}</b>`).join('\n') + (total === 0 ? '\n\n⚠️ Semua poin jadi 0.' : '') + '\n\nSimpan?', { inline_keyboard: [[b('✅ Simpan', 'm:pt:save'), b('✏️ Ulangi', 'm:pt:go')], [b('✖️ Batal', 'm:pt')]] });
 };
 
 // ================= TURNAMEN =================
@@ -221,6 +202,7 @@ export async function tDetail(env, id, notice) {
   ];
   if (t.format === 'BR') L.push(`Jumlah match: ${t.match_count}`);
   else L.push(`Bracket: ${t.cs_elimination === 'double' ? 'Double' : 'Single'} Elimination · Undian: ${t.cs_draw_method === 'spin' ? 'Spin' : 'Shuffle'}${t.drawn_at ? ' · sudah diundi' : ''}`);
+  if (t.stream_url) L.push(`🔴 Live Stream: ${esc(t.stream_url)}`); // <--- INFO STREAM BARU
   if (t.postponed_reason) L.push(`Alasan tunda: ${esc(t.postponed_reason)}`);
   if (t.resume_note) L.push(`Catatan lanjutan: ${esc(t.resume_note)}`);
   if (t.cancel_reason) L.push(`Alasan batal: ${esc(t.cancel_reason)}`);
@@ -231,14 +213,11 @@ export async function tDetail(env, id, notice) {
     else kb.push([b('⏸ Tunda Turnamen', 'm:t:p:' + id)]);
     kb.push([b('✏️ Edit', 'm:te:m:' + id), b('🚫 Batalkan Turnamen', 'm:cc:s:' + id)]);
   }
-  
-  // TOMBOL HAPUS PERMANEN (Hanya muncul jika status segera_hadir / dibatalkan)
-  if (['segera_hadir', 'dibatalkan'].includes(t.status)) {
-    kb.push([b('🗑️ Hapus Permanen', 'm:t:del:' + id)]);
-  }
+  if (['segera_hadir', 'dibatalkan'].includes(t.status)) kb.push([b('🗑️ Hapus Permanen', 'm:t:del:' + id)]);
   
   kb.push([b(t.format === 'BR' ? '🎯 Kelola BR' : '⚔️ Kelola CS', (t.format === 'BR' ? 'm:br:t:' : 'm:cs:t:') + id), b('📝 Pendaftaran', 'm:rg:t:' + id)]);
   kb.push([b('🏅 Hasil & Peringkat', 'm:lb:t:' + id), b('🔑 Room ID', 'm:rm:t:' + id)]);
+  kb.push([b('🔴 Atur Live Stream', 'm:adm:stream_t:' + id)]); // <--- TOMBOL STREAM BARU
   kb.push([b('🔄 Segarkan', 'm:t:v:' + id), b('⬅️ Daftar', 'm:t')]);
   return { text: (notice ? notice + '\n\n' : '') + L.join('\n'), markup: { inline_keyboard: kb } };
 }
@@ -247,7 +226,7 @@ const sh = (env, chat, mid, v) => show(env, chat, mid, v.text, v.markup);
 async function tStatusMenu(env, id) {
   const t = await getT(env, id);
   if (!CHANGEABLE.includes(t.status)) {
-    const why = t.status === 'ditunda' ? 'Turnamen ditunda: pakai tombol Lanjutkan.' : t.status === 'berlangsung' ? 'Sedang berlangsung: jeda lewat Tunda; status akhir lewat finalisasi BR/CS.' : 'Status akhir tidak bisa diubah.';
+    const why = t.status === 'ditunda' ? 'Turnamen ditunda: pakai tombol Lanjutkan.' : t.status === 'berlangsung' ? 'Sedang berlangsung: jeda lewat Tunda.' : 'Status akhir tidak bisa diubah.';
     return { text: `<b>Ubah Status</b>\nSaat ini: ${stLabel(t.status)}\n${why}`, markup: { inline_keyboard: [[b('⬅️ Kembali', 'm:t:v:' + id)]] } };
   }
   const kb = SET_ORDER.map((s, n) => (s === t.status ? null : [b(stLabel(s), `m:t:ss:${id}:${n}`)])).filter(Boolean);
@@ -259,9 +238,7 @@ async function tSetStatus(env, id, n, confirmed) {
   const ns = SET_ORDER[n];
   if (!ns) throw new Error('Status tidak dikenal');
   if (!CHANGEABLE.includes(t.status)) throw new Error('Status saat ini tidak bisa diubah dari menu ini');
-  if (ns === 'berlangsung' && !confirmed) {
-    return { text: `<b>Mulai turnamen?</b>\n${esc(t.name)}\nStatus jadi 🔥 Berlangsung. Turnamen tidak dimulai otomatis: ini keputusan lo.\nLanjut?`, markup: { inline_keyboard: [[b('✅ Ya, mulai', `m:t:sy:${id}:${n}`), b('✖️ Batal', 'm:t:v:' + id)]] } };
-  }
+  if (ns === 'berlangsung' && !confirmed) return { text: `<b>Mulai turnamen?</b>\n${esc(t.name)}\nStatus jadi 🔥 Berlangsung.\nLanjut?`, markup: { inline_keyboard: [[b('✅ Ya, mulai', `m:t:sy:${id}:${n}`), b('✖️ Batal', 'm:t:v:' + id)]] } };
   await patchT(env, id, { status: ns });
   await audit(env, 'ubah_status_turnamen', 'tournaments', 'via bot', id, { status: t.status }, { status: ns });
   return tDetail(env, id, `✅ Status: ${stLabel(t.status)} → ${stLabel(ns)}`);
@@ -282,10 +259,10 @@ async function tResumeMenu(env, id) {
   if (t.format === 'BR') {
     const ms = (await sb(env, 'GET', `br_matches?tournament_id=eq.${id}&select=match_no,status&order=match_no.asc`)) || [];
     const open = ms.filter((m) => m.status !== 'hasil_dipublikasikan');
-    if (open.length) { info += '\nPilih match yang dilanjutkan (match lain tidak diubah):'; kb.push(...kbRows(open.map((m) => b(`Match ${m.match_no}`, `m:t:cm:${id}:${m.match_no}`)), 3)); }
+    if (open.length) { info += '\nPilih match yang dilanjutkan:'; kb.push(...kbRows(open.map((m) => b(`Match ${m.match_no}`, `m:t:cm:${id}:${m.match_no}`)), 3)); }
   } else {
     const ms = (await sb(env, 'GET', `cs_matches?tournament_id=eq.${id}&status=eq.ditunda&select=id,bracket,round_no,match_no,round_label&order=round_no.asc,match_no.asc&limit=12`)) || [];
-    if (ms.length) { info += '\nMatch CS yang ditunda (lanjutan dipilih di menu Clash Squad):'; }
+    if (ms.length) info += '\nMatch CS yang ditunda (lanjutan dipilih di menu Clash Squad):';
   }
   kb.push([b('▶️ Lanjutkan tanpa pilih match', 'm:t:c0:' + id)], [b('⬅️ Kembali', 'm:t:v:' + id)]);
   return { text: `<b>▶️ Lanjutkan Turnamen</b>\n${esc(t.name)}\n${info}`, markup: { inline_keyboard: kb } };
@@ -312,14 +289,14 @@ H.t = async (env, chat, mid, p) => {
   if (a === 'del') {
     const t = await getT(env, id);
     if (!['segera_hadir', 'dibatalkan'].includes(t.status)) throw new Error('Hanya turnamen Segera Hadir atau Dibatalkan yang bisa dihapus permanen.');
-    return show(env, chat, mid, `<b>🗑️ Hapus Permanen?</b>\nTurnamen <b>${esc(t.name)}</b> akan dihapus beserta data pendaftarannya. Tindakan ini tidak bisa dibatalkan!`, { inline_keyboard: [[b('🗑️ Ya, Hapus', 'm:t:dely:' + id), b('✖️ Batal', 'm:t:v:' + id)]] });
+    return show(env, chat, mid, `<b>🗑️ Hapus Permanen?</b>\nTurnamen <b>${esc(t.name)}</b> akan dihapus!`, { inline_keyboard: [[b('🗑️ Ya, Hapus', 'm:t:dely:' + id), b('✖️ Batal', 'm:t:v:' + id)]] });
   }
   if (a === 'dely') {
     const t = await getT(env, id);
     if (!['segera_hadir', 'dibatalkan'].includes(t.status)) throw new Error('Gagal. Status sudah berubah.');
     await sb(env, 'DELETE', `tournaments?id=eq.${id}`);
     await audit(env, 'hapus_permanen_turnamen', 'tournaments', 'via bot', id, { name: t.name }, null);
-    return show(env, chat, mid, `🗑️ Turnamen <b>${esc(t.name)}</b> berhasil dihapus permanen.`, { inline_keyboard: [[b('⬅️ Daftar Turnamen', 'm:t')], ...BACK] });
+    return show(env, chat, mid, `🗑️ Turnamen <b>${esc(t.name)}</b> berhasil dihapus.`, { inline_keyboard: [[b('⬅️ Daftar Turnamen', 'm:t')], ...BACK] });
   }
   
   if (a === 'p') {
@@ -332,7 +309,7 @@ H.t = async (env, chat, mid, p) => {
     const t = await getT(env, id);
     if (t.status !== 'ditunda') throw new Error('Jadwal lanjutan hanya untuk turnamen Ditunda');
     await setState(env, chat, 'tj', { tid: id });
-    return show(env, chat, mid, `<b>📅 Jadwal Lanjutan</b>\n${esc(t.name)}\nKetik tanggal & jam (WIB), catatan opsional:\n<code>2026-11-25 19:00 catatan</code>`, { inline_keyboard: [[b('✖️ Batal', 'm:t:v:' + id)]] });
+    return show(env, chat, mid, `<b>📅 Jadwal Lanjutan</b>\n${esc(t.name)}\nKetik tanggal & jam (WIB):\n<code>2026-11-25 19:00 catatan</code>`, { inline_keyboard: [[b('✖️ Batal', 'm:t:v:' + id)]] });
   }
   if (a === 'c') return sh(env, chat, mid, await tResumeMenu(env, id));
   if (a === 'c0') return sh(env, chat, mid, await tResume(env, id, null));
@@ -341,12 +318,12 @@ H.t = async (env, chat, mid, p) => {
 T.tp = async (env, chat, st, text) => {
   const id = st.data?.tid;
   const t = await getT(env, id);
-  if (FINAL.includes(t.status) || t.status === 'ditunda') throw new Error('Turnamen tidak bisa ditunda (status: ' + t.status + ')');
-  if (text.length < 3) return show(env, chat, null, '❌ Alasan terlalu pendek. Ketik lagi atau /batal.', { inline_keyboard: [[b('✖️ Batal', 'm:t:v:' + id)]] });
+  if (FINAL.includes(t.status) || t.status === 'ditunda') throw new Error('Turnamen tidak bisa ditunda');
+  if (text.length < 3) return show(env, chat, null, '❌ Alasan terlalu pendek.', { inline_keyboard: [[b('✖️ Batal', 'm:t:v:' + id)]] });
   await patchT(env, id, { status: 'ditunda', postponed_reason: text.slice(0, 500) });
   await clearState(env, chat);
   await audit(env, 'tunda_turnamen', 'tournaments', text.slice(0, 500), id, { status: t.status }, { status: 'ditunda' });
-  return sh(env, chat, null, await tDetail(env, id, '✅ Turnamen ditunda. Belum ada notifikasi jadwal karena belum ada tanggal pasti.'));
+  return sh(env, chat, null, await tDetail(env, id, '✅ Turnamen ditunda.'));
 };
 T.tj = async (env, chat, st, text) => {
   const id = st.data?.tid;
@@ -437,7 +414,7 @@ H.w = async (env, chat, mid, p) => {
   const a = p[2], v = p[3];
   if (a === 'x') { await clearState(env, chat); return show(env, chat, mid, 'Pembuatan turnamen dibatalkan.', { inline_keyboard: [[b('🏆 Turnamen', 'm:t')], ...BACK] }); }
   const st = await getState(env, chat);
-  if (!st || !st.state.startsWith('w:')) return show(env, chat, mid, 'Sesi kedaluwarsa. Mulai lagi.', { inline_keyboard: [[b('➕ Buat Turnamen', 'm:t:new')], ...BACK] });
+  if (!st || !st.state.startsWith('w:')) return show(env, chat, mid, 'Sesi kedaluwarsa.', { inline_keyboard: [[b('➕ Buat Turnamen', 'm:t:new')], ...BACK] });
   const d = st.data || {};
   if (a === 'g') { const g = (d.gl || [])[Number(v)]; if (!g) return wizShow(env, chat, mid, d, 'Game tidak valid.'); d.game_id = g.id; d.game_name = g.name; }
   else if (a === 'f') d.format = v === 'CS' ? 'CS' : 'BR';
@@ -575,8 +552,7 @@ H.cc = async (env, chat, mid, p) => {
   if (a === 's') {
     const t = await getT(env, p[3]);
     if (FINAL.includes(t.status)) throw new Error('Turnamen sudah selesai/dibatalkan');
-    return show(env, chat, mid, `<b>🚫 Batalkan turnamen</b>\n${esc(t.name)}\nDefault refund 100%. Pilih <b>tujuan refund</b>:`,
-      { inline_keyboard: [[b('💰 Saldo GH-T Arena', `m:cc:d:${t.id}:0`), b('🏦 Refund eksternal', `m:cc:d:${t.id}:1`)], [b('✖️ Batal', 'm:t:v:' + t.id)]] });
+    return show(env, chat, mid, `<b>🚫 Batalkan turnamen</b>\n${esc(t.name)}\nDefault refund 100%. Pilih <b>tujuan refund</b>:`, { inline_keyboard: [[b('💰 Saldo GH-T Arena', `m:cc:d:${t.id}:0`), b('🏦 Refund eksternal', `m:cc:d:${t.id}:1`)], [b('✖️ Batal', 'm:t:v:' + t.id)]] });
   }
   if (a === 'd') {
     const dst = ['saldo', 'eksternal'][Number(p[4])];
@@ -587,7 +563,7 @@ H.cc = async (env, chat, mid, p) => {
   }
   if (a === 'ok') {
     const st = await getState(env, chat);
-    if (!st || st.state !== 'cc_conf') return show(env, chat, mid, 'Sesi kedaluwarsa. Ulangi dari detail turnamen.', { inline_keyboard: [[b('🏆 Turnamen', 'm:t')], ...BACK] });
+    if (!st || st.state !== 'cc_conf') return show(env, chat, mid, 'Sesi kedaluwarsa.', { inline_keyboard: [[b('🏆 Turnamen', 'm:t')], ...BACK] });
     const d = st.data;
     const t = await getT(env, d.tid);
     if (FINAL.includes(t.status)) { await clearState(env, chat); throw new Error('Turnamen sudah selesai/dibatalkan'); }
@@ -603,8 +579,7 @@ T.cc = async (env, chat, st, text) => {
   if (text.length < 3 || text.length > 300) return show(env, chat, null, '❌ Alasan 3 sampai 300 karakter. Ketik lagi atau /batal.', { inline_keyboard: [[b('✖️ Batal', 'm:t:v:' + d.tid)]] });
   const n = await count(env, `registrations?tournament_id=eq.${d.tid}&${ACTIVE_REG}&select=id`);
   await setState(env, chat, 'cc_conf', { ...d, reason: text });
-  return show(env, chat, null, `<b>⚠️ Konfirmasi pembatalan</b>\nTurnamen: ${esc(d.tname)}\nTujuan refund: ${esc(d.dst)}\nAlasan: ${esc(text)}\nPendaftaran aktif terdampak: ${n}\n\nTidak bisa dibatalkan. Lanjut?`,
-    { inline_keyboard: [[b('🚫 Ya, batalkan turnamen', 'm:cc:ok')], [b('✖️ Tidak', 'm:t:v:' + d.tid)]] });
+  return show(env, chat, null, `<b>⚠️ Konfirmasi pembatalan</b>\nTurnamen: ${esc(d.tname)}\nTujuan refund: ${esc(d.dst)}\nAlasan: ${esc(text)}\nPendaftaran aktif terdampak: ${n}\n\nTidak bisa dibatalkan. Lanjut?`, { inline_keyboard: [[b('🚫 Ya, batalkan turnamen', 'm:cc:ok')], [b('✖️ Tidak', 'm:t:v:' + d.tid)]] });
 };
 
 // ================= PENDAFTARAN & PEMBAYARAN =================
@@ -636,7 +611,7 @@ async function rgList(env, tid, i) {
   const rows = (await sb(env, 'GET', `registrations?tournament_id=eq.${tid}&status=eq.${st[0]}&select=id,team_name&order=created_at.asc&limit=12`)) || [];
   const kb = rows.map((r) => [b(String(r.team_name || '(tanpa nama)').slice(0, 40), 'm:rg:v:' + r.id)]);
   kb.push([b('⬅️ Kembali', 'm:rg:t:' + tid)]);
-  return { text: `<b>${st[1]}</b>\n${rows.length ? 'Pilih tim (maks 12 pertama):' : 'Kosong.'}`, markup: { inline_keyboard: kb } };
+  return { text: `<b>${st[1]}</b>\n${rows.length ? 'Pilih tim:' : 'Kosong.'}`, markup: { inline_keyboard: kb } };
 }
 async function rgPending(env) {
   const rows = (await sb(env, 'GET', 'registrations?status=eq.menunggu_verifikasi&select=id,team_name,tournament_id&order=created_at.asc&limit=10')) || [];
@@ -657,7 +632,7 @@ export async function rgDetail(env, rid, notice) {
   const pay = pays?.[0], pf = prof?.[0];
   const hasProof = !!(pay?.proof_path && !pay?.proof_deleted_at);
   const L = [`<b>📝 ${esc(r.team_name)}</b>`, `Turnamen: ${esc(t.name)}`, `Status: ${rgLabel(r.status)}`, `Captain: ${esc(pf?.username || '-')} · WA: ${esc(pf?.whatsapp || '-')}`, `Biaya: ${rp(r.fee_amount)} · Metode: ${esc(r.payment_method || '-')}`];
-  if (payFail) L.push('⚠️ Data pembayaran gagal dimuat. Tekan Segarkan sebelum memverifikasi.');
+  if (payFail) L.push('⚠️ Data pembayaran gagal dimuat.');
   else if (pay) L.push(`Pembayaran: ${esc(pay.status)}${hasProof ? ' · bukti ada' : pay.proof_deleted_at ? ' · bukti sudah dihapus' : ' · belum ada bukti'}`);
   if (pay?.reject_reason) L.push(`Alasan tolak bayar: ${esc(pay.reject_reason)}`);
   if (r.incomplete_reason) L.push(`Alasan data belum lengkap: ${esc(r.incomplete_reason)}`);
@@ -699,8 +674,7 @@ H.rg = async (env, chat, mid, p) => {
   if (a === 'ok') {
     const r = await getReg(env, id);
     if (r.status !== 'menunggu_verifikasi') throw new Error('Status bukan Menunggu Verifikasi (sekarang: ' + r.status + ')');
-    return show(env, chat, mid, `<b>Verifikasi pembayaran?</b>\nTim: ${esc(r.team_name)}\nBiaya: ${rp(r.fee_amount)}\nTim jadi ✅ Resmi Terdaftar dan slot bertambah. Pastikan bukti sudah dicek.`,
-      { inline_keyboard: [[b('✅ Ya, verifikasi', 'm:rg:oy:' + id), b('✖️ Batal', 'm:rg:v:' + id)]] });
+    return show(env, chat, mid, `<b>Verifikasi pembayaran?</b>\nTim: ${esc(r.team_name)}\nBiaya: ${rp(r.fee_amount)}\nTim jadi ✅ Resmi Terdaftar dan slot bertambah. Pastikan bukti sudah dicek.`, { inline_keyboard: [[b('✅ Ya, verifikasi', 'm:rg:oy:' + id), b('✖️ Batal', 'm:rg:v:' + id)]] });
   }
   if (a === 'oy') {
     const r = await getReg(env, id);
@@ -763,7 +737,7 @@ H.an = async (env, chat, mid, p) => {
   if (a === 't') { const t = await getT(env, id); await setState(env, chat, 'an_title', { tid: id, tname: t.name }); return show(env, chat, mid, `<b>➕ Pengumuman: ${esc(t.name)}</b>\nKetik <b>judul</b> (maks 100 karakter):`, { inline_keyboard: [CAN] }); }
   if (a === 'ok') {
     const st = await getState(env, chat);
-    if (!st || st.state !== 'an_conf') return show(env, chat, mid, 'Sesi kedaluwarsa. Buat pengumuman lagi.', { inline_keyboard: [[b('➕ Buat Pengumuman', 'm:an:new')], ...BACK] });
+    if (!st || st.state !== 'an_conf') return show(env, chat, mid, 'Sesi kedaluwarsa.', { inline_keyboard: [[b('➕ Buat Pengumuman', 'm:an:new')], ...BACK] });
     const d = st.data;
     const rows = await sb(env, 'POST', 'announcements', { tournament_id: d.tid || null, title: d.title, body: d.body }, 'return=representation');
     await clearState(env, chat);
