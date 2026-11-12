@@ -9,28 +9,33 @@
         body { font-family: monospace; padding: 20px; background: #111; color: #fff; }
         input, select, button { display: block; width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; background: #222; color: #fff; border: 1px solid #444; }
         button { background: #d4af37; color: #000; font-weight: bold; cursor: pointer; }
-        #log { background: #000; color: #0f0; padding: 10px; height: 300px; overflow-y: auto; border: 1px solid #333; font-size: 12px; white-space: pre-wrap; }
+        .btn-sec { background: #444; color: #fff; }
+        #log { background: #000; color: #0f0; padding: 10px; height: 250px; overflow-y: auto; border: 1px solid #333; font-size: 12px; white-space: pre-wrap; }
     </style>
 </head>
 <body>
 
     <h3>TEST PENDAFTARAN</h3>
     
-    <!-- LOGIN SECTION -->
+    <!-- LOGIN / REGISTER SECTION -->
     <div style="border: 1px solid #555; padding: 10px; margin-bottom: 20px;">
-        <p>1. Login Dulu</p>
-        <input type="email" id="email" placeholder="Email" value="">
-        <input type="password" id="pass" placeholder="Password" value="">
-        <button onclick="doLogin()">LOGIN</button>
+        <p>1. Auth (Sudah otomatis terisi)</p>
+        <input type="text" id="regUser" placeholder="Username" value="AdminArena">
+        <!-- EMAIL & PASSWORD UDAH DIISI OTOMATIS -->
+        <input type="email" id="email" value="akunadmin@gmail.com" readonly style="color: #888;">
+        <input type="password" id="pass" value="159357" readonly style="color: #888;">
+        
+        <button onclick="doLogin()">LOGIN ADMIN</button>
+        <button onclick="doRegister()" class="btn-sec" style="margin-top: 5px;">BUAT AKUN ADMIN (JIKA BELUM ADA)</button>
     </div>
 
     <!-- DAFTAR SECTION -->
     <div style="border: 1px solid #555; padding: 10px;">
         <p>2. Pilih Turnamen & Tim</p>
-        <select id="tourSelect"><option>-- Belum Login --</option></select>
-        <select id="teamSelect"><option>-- Belum Login --</option></select>
+        <select id="tourSelect"><option>-- Login Dulu --</option></select>
+        <select id="teamSelect"><option>-- Login Dulu --</option></select>
         <input type="file" id="fileProof" accept="image/*">
-        <button onclick="doRegister()">DAFTAR SEKARANG</button>
+        <button onclick="doRegisterTurnamen()">DAFTAR TURNAMEN</button>
     </div>
 
     <!-- LOG OUTPUT -->
@@ -48,6 +53,27 @@
         el.scrollTop = el.scrollHeight;
     }
 
+    // FUNGSI BUAT AKUN ADMIN
+    async function doRegister() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('pass').value;
+        const username = document.getElementById('regUser').value;
+
+        log("Mencoba buat akun admin baru...");
+        const { data, error } = await sb.auth.signUp({
+            email,
+            password,
+            options: { data: { username } }
+        });
+
+        if (error) {
+            log("❌ REGISTER GAGAL: " + error.message);
+            return;
+        }
+        log("✅ REGISTER SUKSES. Silakan coba klik LOGIN ADMIN.");
+    }
+
+    // FUNGSI LOGIN
     async function doLogin() {
         log("Mencoba Login...");
         const email = document.getElementById('email').value;
@@ -56,12 +82,14 @@
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
         if (error) {
             log("❌ LOGIN GAGAL: " + error.message);
+            log("💡 TIPS: Kalau error 'Invalid Credentials', klik tombol abu-abu 'BUAT AKUN ADMIN' dulu.");
             return;
         }
         log("✅ LOGIN SUKSES. User ID: " + data.user.id);
         loadData();
     }
 
+    // LOAD DATA TURNAMEN & TIM
     async function loadData() {
         const { data: { session } } = await sb.auth.getSession();
         if (!session) return;
@@ -69,7 +97,11 @@
         // Load Turnamen
         const { data: tours } = await sb.from('tournaments').select('id, name, entry_fee').eq('registration_enabled', true);
         const tSelect = document.getElementById('tourSelect');
-        tSelect.innerHTML = tours.map(t => `<option value="${t.id}">${t.name} (Rp ${t.entry_fee})</option>`).join('');
+        if (tours && tours.length > 0) {
+            tSelect.innerHTML = tours.map(t => `<option value="${t.id}">${t.name} (Rp ${t.entry_fee})</option>`).join('');
+        } else {
+            tSelect.innerHTML = '<option value="">-- Tidak ada turnamen buka --</option>';
+        }
 
         // Load Tim
         const { data: teams } = await sb.from('teams').select('id, name').eq('owner_id', session.user.id);
@@ -82,7 +114,8 @@
         log("Data turnamen & tim berhasil dimuat.");
     }
 
-    async function doRegister() {
+    // FUNGSI DAFTAR TURNAMEN (PROSES UTAMA)
+    async function doRegisterTurnamen() {
         log("--- MULAI PROSES DAFTAR ---");
         const tourId = document.getElementById('tourSelect').value;
         const teamId = document.getElementById('teamSelect').value;
