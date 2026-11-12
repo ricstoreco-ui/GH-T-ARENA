@@ -1,4 +1,4 @@
-// GH-T ARENA Bot — f_main.js: Dashboard, Pengaturan, Monitoring, Tabel Poin, Turnamen, Pendaftaran, Pengumuman, Display
+// GH-T ARENA Bot — f_main.js: Dashboard, Pengaturan, Monitoring, Tabel Poin, Turnamen, Pendaftaran, Pengumuman, Display, Persentase Hadiah
 import {
   esc, wib, rp, UUID, tg, rpc, sb, count, setSetting, getSetting, audit, notify, notifyRegistrants, notifNote,
   getState, setState, clearState, b, BACK, show, ST, stLabel, FINAL, getT, patchT, withRegLock, parseWib, parsePairs,
@@ -51,10 +51,6 @@ export async function healthText(env) {
     const r = await fetch(`${env.SUPABASE_URL}/rest/v1/realtime_events?select=id&order=id.desc&limit=1`, { headers: sbHeaders(env) });
     lines.push(r.ok ? '✅ Tabel sinyal Realtime bisa dibaca' : '❌ Realtime: ' + r.status);
   } catch (e) { lines.push('❌ Realtime: ' + esc(e.message)); }
-  try {
-    const n = await count(env, 'br_matches?status=eq.hasil_dipublikasikan&select=id');
-    lines.push(`ℹ️ Match BR terpublikasi: ${n}`);
-  } catch (e) { lines.push('❌ Hitung match BR: ' + esc(e.message)); }
   return '<b>🩺 Health Check</b>\n' + lines.join('\n');
 }
 H.health = (env, chat, mid) => healthText(env).then((t) => show(env, chat, mid, t, { inline_keyboard: [[b('🔄 Ulangi', 'm:health')], ...BACK] }));
@@ -468,9 +464,9 @@ H.w = async (env, chat, mid, p) => {
   return wizShow(env, chat, mid, d);
 };
 
-// ----- Edit Turnamen -----
+// ----- Edit Turnamen (UPDATED: PRIZES %) -----
 const TE = [['name', 'Nama'], ['description', 'Deskripsi'], ['entry_fee', 'Biaya'], ['prize_pool', 'Total Hadiah'], ['total_slots', 'Jumlah Slot'],
-  ['starters_per_team', 'Pemain Utama/Tim'], ['winner_positions', 'Posisi Pemenang'], ['schedule_at', 'Jadwal'], ['registration_deadline', 'Batas Daftar'], ['prizes', 'Hadiah per Posisi']];
+  ['starters_per_team', 'Pemain Utama/Tim'], ['winner_positions', 'Posisi Pemenang'], ['prizes_pct', 'Hadiah (%)'], ['schedule_at', 'Jadwal'], ['registration_deadline', 'Batas Daftar'], ['prizes', 'Hadiah per Posisi (Rp)']];
 const ACTIVE_REG = 'status=in.(menunggu_pembayaran,menunggu_verifikasi,data_belum_lengkap,resmi_terdaftar)';
 async function teMenu(env, tid) {
   const t = await getT(env, tid);
@@ -500,6 +496,7 @@ H.te = async (env, chat, mid, p) => {
     else if (k === 'total_slots') ask = `Sekarang: ${t.total_slots}\nKetik slot baru:`;
     else if (k === 'starters_per_team') ask = `Sekarang: ${t.starters_per_team}\nKetik jumlah pemain utama/tim (1-20).`;
     else if (k === 'winner_positions') ask = `Sekarang: ${t.winner_positions}\nKetik jumlah posisi pemenang:`;
+    else if (k === 'prizes_pct') ask = `Ketik persentase hadiah (Total harus 100).\nContoh untuk 3 juara: <code>50, 30, 20</code>\nContoh untuk 2 juara: <code>60, 40</code>\n\nIngat! Jumlah persen harus sesuai dengan jumlah Posisi Pemenang (${t.winner_positions}).`;
     else if (k === 'schedule_at') ask = `Sekarang: ${wib(t.schedule_at)}\nKetik jadwal baru (WIB).`;
     else if (k === 'registration_deadline') ask = `Sekarang: ${wib(t.registration_deadline)}\nKetik batas daftar baru (WIB).`;
     else {
@@ -515,6 +512,7 @@ T.te = async (env, chat, st, text) => {
   const num = (s) => { const x = String(s).replace(/[.,\s]/g, ''); return /^\d{1,12}$/.test(x) ? Number(x) : null; };
   const filled = Number(await count(env, `registrations?tournament_id=eq.${tid}&status=eq.resmi_terdaftar&select=id`)) || 0;
   let patch = null, err = null, prizeRows = null, notice = '', sched = false;
+  
   if (k === 'name') { if (text.length < 3 || text.length > 80) err = 'Nama 3 sampai 80 karakter.'; else patch = { name: text }; }
   else if (k === 'description') { if (text !== '-' && text.length > 1000) err = 'Maksimal 1000 karakter.'; else patch = { description: text === '-' ? null : text }; }
   else if (k === 'entry_fee' || k === 'prize_pool') { const n = num(text); if (n === null) err = 'Ketik angka saja.'; else patch = { [k]: n }; }
@@ -527,6 +525,13 @@ T.te = async (env, chat, st, text) => {
     const n = num(text); const active = Number(await count(env, `registrations?tournament_id=eq.${tid}&${ACTIVE_REG}&select=id`)) || 0;
     if (n === null || n < 1 || n > 20) err = 'Angka 1 sampai 20.'; else if (active > 0) err = `Sudah ada ${active} pendaftaran aktif.`; else patch = { starters_per_team: n };
   } else if (k === 'winner_positions') { const n = num(text); const mx = Math.min(12, t.total_slots); if (n === null || n < 1 || n > mx) err = `Angka 1 sampai ${mx}.`; else patch = { winner_positions: n }; }
+  else if (k === 'prizes_pct') {
+    const pcts = text.split(/[,;\s]+/).filter(Boolean).map(Number);
+    if (pcts.length !== t.winner_positions) err = `Jumlah persen (${pcts.length}) tidak sesuai dengan Posisi Pemenang (${t.winner_positions}).`;
+    else if (pcts.some(isNaN)) err = 'Ketik angka saja.';
+    else if (pcts.reduce((a,b)=>a+b, 0) !== 100) err = 'Total persentase harus 100.';
+    else patch = { prizes_config: pcts };
+  }
   else if (k === 'schedule_at') {
     if (text === '-') patch = { schedule_at: null };
     else { const p = parseWib(text); if (!p) err = 'Format salah. Contoh: 2026-11-25 19:00'; else { patch = { schedule_at: p.iso }; sched = true; } }
@@ -537,6 +542,7 @@ T.te = async (env, chat, st, text) => {
     const p = parsePairs(text, t.winner_positions);
     if (p.err) err = p.err; else prizeRows = Object.entries(p.out).map(([pl, amt]) => ({ tournament_id: tid, place: Number(pl), amount: amt }));
   } else err = 'Sesi tidak valid.';
+  
   if (err) return show(env, chat, null, '❌ ' + err + '\nKetik lagi atau /batal.', { inline_keyboard: [[b('✖️ Batal', 'm:te:m:' + tid)]] });
   if (prizeRows) {
     await withRegLock(env, t, async () => {
