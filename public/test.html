@@ -21,9 +21,8 @@
     <div style="border: 1px solid #555; padding: 10px; margin-bottom: 20px;">
         <p>1. Auth (Sudah otomatis terisi)</p>
         <input type="text" id="regUser" placeholder="Username" value="AdminArena">
-        <!-- EMAIL & PASSWORD UDAH DIISI OTOMATIS -->
-        <input type="email" id="email" value="akunadmin@gmail.com" readonly style="color: #888;">
-        <input type="password" id="pass" value="159357" readonly style="color: #888;">
+        <input type="email" id="email" value="akunadmin@gmail.com">
+        <input type="password" id="pass" value="159357">
         
         <button onclick="doLogin()">LOGIN ADMIN</button>
         <button onclick="doRegister()" class="btn-sec" style="margin-top: 5px;">BUAT AKUN ADMIN (JIKA BELUM ADA)</button>
@@ -82,14 +81,13 @@
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
         if (error) {
             log("❌ LOGIN GAGAL: " + error.message);
-            log("💡 TIPS: Kalau error 'Invalid Credentials', klik tombol abu-abu 'BUAT AKUN ADMIN' dulu.");
             return;
         }
         log("✅ LOGIN SUKSES. User ID: " + data.user.id);
         loadData();
     }
 
-    // LOAD DATA TURNAMEN & TIM
+    // LOAD DATA TURNAMEN & TIM (AUTO CREATE DUMMY TEAM)
     async function loadData() {
         const { data: { session } } = await sb.auth.getSession();
         if (!session) return;
@@ -104,14 +102,42 @@
         }
 
         // Load Tim
-        const { data: teams } = await sb.from('teams').select('id, name').eq('owner_id', session.user.id);
+        let { data: teams } = await sb.from('teams').select('id, name').eq('owner_id', session.user.id);
+        
+        // --- AUTO CREATE DUMMY TEAM KALAU KOSONG ---
+        if (!teams || teams.length === 0) {
+            log("⚠️ Kamu belum punya tim. Membuat 'Tim Dummy Admin'...");
+            // Ambil game_id (wajib buat tabel teams)
+            const { data: games } = await sb.from('games').select('id').limit(1);
+            const gameId = games && games.length > 0 ? games[0].id : null;
+            
+            if (gameId) {
+                const { data: newTeam, error: teamErr } = await sb.from('teams').insert({
+                    owner_id: session.user.id,
+                    game_id: gameId,
+                    name: 'Tim Dummy Admin',
+                    description: 'Dibuat otomatis untuk tes'
+                }).select().single();
+                
+                if (teamErr) {
+                    log("❌ Gagal buat tim dummy: " + teamErr.message);
+                } else {
+                    log("✅ Tim Dummy berhasil dibuat!");
+                    teams = [newTeam];
+                }
+            } else {
+                log("❌ Gagal buat tim dummy: Tabel games kosong.");
+            }
+        }
+
+        // Render Dropdown Tim
         const tmSelect = document.getElementById('teamSelect');
         if (!teams || teams.length === 0) {
             tmSelect.innerHTML = '<option value="">-- Kamu belum punya tim --</option>';
         } else {
             tmSelect.innerHTML = teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
         }
-        log("Data turnamen & tim berhasil dimuat.");
+        log("Data turnamen & tim siap digunakan.");
     }
 
     // FUNGSI DAFTAR TURNAMEN (PROSES UTAMA)
@@ -146,7 +172,7 @@
                 tournament_id: tourId,
                 team_id: teamId,
                 owner_id: session.user.id,
-                team_name: 'Tim Test HTML',
+                team_name: 'Tim Dummy Admin',
                 status: 'menunggu_verifikasi',
                 payment_method: 'qris',
                 fee_amount: amount
