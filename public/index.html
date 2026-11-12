@@ -134,9 +134,9 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
    HERO BANNER & IKLAN GH TOPUP (CHROME)
    ============================================ */
 .hero { position: relative; width: 100%; height: 220px; border-radius: 16px; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--border); background: #111 center/cover; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; transition: 0.5s; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-.hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.4) 100%); z-index: 1; }
-.hero-txt { position: relative; z-index: 2; }
-.hero-title { font-size: 2rem; color: var(--chrome); margin-bottom: 5px; text-shadow: 0 0 20px var(--chrome-glow); }
+.hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 100%); z-index: 1; }
+.hero-txt { position: relative; z-index: 2; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 10px; backdrop-filter: blur(3px); border: 1px solid rgba(255,255,255,0.1); }
+.hero-title { font-size: 2rem; color: var(--chrome); margin-bottom: 5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
 .hero-sub { font-size: 0.9rem; color: var(--silver); letter-spacing: 3px; }
 
 .sponsor { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(270deg, #111, #1a1a1a, #111); background-size: 200% 200%; animation: shine 5s infinite; border: 2px solid var(--chrome); border-radius: 16px; padding: 20px; margin-bottom: 20px; cursor: pointer; position: relative; overflow: hidden; perspective: 1000px; transition: 0.3s; box-shadow: 0 0 15px var(--chrome-glow); }
@@ -772,19 +772,6 @@ function copyText(text) {
 function openModal(id) { $(id).classList.add('active'); }
 function closeModal(id) { $(id).classList.remove('active'); }
 
-async function ensureSession() {
-  const { data: { session }, error } = await sb.auth.getSession();
-  if (error || !session) {
-    const { data: { session: refreshed } } = await sb.auth.refreshSession();
-    if (!refreshed) {
-      toast('Sesi benar-benar habis, silakan login ulang', 'danger');
-      setTimeout(() => window.location.reload(), 1500);
-      return false;
-    }
-  }
-  return true;
-}
-
 // ANTI TOXIC & STAR GENERATOR
 const BAD_WORDS = ['anjing', 'bangsat', 'kontol', 'memek', 'babi', 'goblok', 'tolol', 'idiot'];
 function censorText(text) {
@@ -923,7 +910,6 @@ function loadDanaForm() {
   $('dash-dana-name').value = profile.dana_name || '';
 }
 async function saveDana(btn) {
-  if (!await ensureSession()) return;
   const num = $('dash-dana-num').value.trim(), name = $('dash-dana-name').value.trim();
   if (!num || !name) return toast('Isi Nomor & Nama DANA', 'warning');
   btn.disabled = true;
@@ -943,7 +929,6 @@ async function loadHeroBanner() {
     $('hero').style.backgroundImage = `url('${data.image_url}')`;
     $('hero').style.backgroundSize = 'cover'; $('hero').style.backgroundPosition = 'center';
   } else {
-    // Fallback image if no banner
     $('hero').style.backgroundImage = `url('https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg')`;
   }
 }
@@ -972,6 +957,7 @@ async function loadTournaments() {
     </div>
   `).join('');
 }
+
 function openDetailHero() { if (curTourData) openDetail(curTourData.format, curTourData.id); }
 
 async function openDetail(mode, id) {
@@ -1041,7 +1027,7 @@ function renderPodium(totalPrize, winnerPos, prizesConfig) {
     container.innerHTML += `
       <div class="p-box ${cls}" style="${i >= 3 ? 'height: 60px;' : ''}">
         <div class="medal">${medal}</div>
-        <div class="p-name">Juara ${i+1} <span style="font-size:.5rem;color:#777;">(${pct}%)</span></div>
+        <div class="p-name">Juara ${i+1}</div>
         <div class="p-prize">${rp(amount)}</div>
       </div>
     `;
@@ -1066,7 +1052,6 @@ async function checkWaitlist(tid) {
   }
 }
 async function joinWaitlist() {
-  if (!await ensureSession()) return;
   const { error } = await sb.from('waiting_list').insert({ tournament_id: curTour, owner_id: user.id });
   if (error) return toast(translateError(error.message), 'danger');
   toast('Kamu masuk daftar tunggu', 'success');
@@ -1119,7 +1104,7 @@ async function loadTourChat(tid) {
   }).subscribe();
 }
 async function sendTourChat() {
-  if (!await ensureSession()) return;
+  if (!user) return toast('Login dulu!', 'danger');
   const inp = $('chat-tour-in'); let msg = inp.value.trim();
   if (!msg) return;
   if (!checkRate('tour_' + curTour)) return;
@@ -1152,7 +1137,7 @@ async function loadGlobalChat() {
   }).subscribe();
 }
 async function sendGlobalChat() {
-  if (!await ensureSession()) return;
+  if (!user) return toast('Login dulu!', 'danger');
   const inp = $('global-in'); let msg = inp.value.trim(); if (!msg) return;
   if (!checkRate('global')) return; msg = censorText(msg);
   const { error } = await sb.from('global_chats').insert({ user_id: user.id, username: profile?.username || 'Captain', message: msg });
@@ -1171,7 +1156,7 @@ function toggleSticker(scope) {
   } else p.classList.add('hidden');
 }
 async function uploadSticker(inp, scope) {
-  if (!await ensureSession()) return;
+  if (!user) return;
   const file = inp.files[0]; if (!file) return;
   if (file.size > 5 * 1024 * 1024) { toast('❌ Maksimal 5 MB', 'danger'); inp.value = ''; return; }
   toast('⏳ Upload...', 'info');
@@ -1185,7 +1170,7 @@ async function uploadSticker(inp, scope) {
   } catch (err) { toast('Gagal: ' + (err.message || err), 'danger'); inp.value = ''; }
 }
 async function sendSticker(url, scope) {
-  if (!await ensureSession()) return;
+  if (!user) return;
   $(scope === 'global' ? 'stk-global' : 'stk-tour').classList.add('hidden');
   if (scope === 'global') {
     await sb.from('global_chats').insert({ user_id: user.id, username: profile?.username || 'Captain', sticker_url: url });
@@ -1230,7 +1215,6 @@ async function loadTeams() {
 }
 
 async function createTeam(btn) {
-  if (!await ensureSession()) return;
   const name = $('new-team-name').value.trim(), desc = $('new-team-desc').value.trim(), file = $('new-team-logo').files[0];
   if (!name) return toast('Nama tim wajib diisi', 'warning');
   btn.disabled = true;
@@ -1249,7 +1233,6 @@ async function createTeam(btn) {
 }
 
 async function delTeam(id) {
-  if (!await ensureSession()) return;
   if (!confirm('Yakin ingin menghapus tim ini? Semua data pemain akan ikut terhapus.')) return;
   const { error } = await sb.from('teams').delete().eq('id', id);
   if (error) return toast(translateError(error.message), 'danger');
@@ -1279,7 +1262,6 @@ async function loadPlayers() {
 }
 
 async function addPlayer(btn) {
-  if (!await ensureSession()) return;
   const nick = $('new-pl-nick').value.trim(), uid = $('new-pl-uid').value.trim(), role = $('new-pl-role').value;
   if (!nick || !uid) return toast('Nick & UID wajib', 'warning');
   btn.disabled = true;
@@ -1290,7 +1272,6 @@ async function addPlayer(btn) {
 }
 function openEditPl(id, nick, uid, role) { editPlId = id; $('ed-nick').value = nick; $('ed-uid').value = uid; $('ed-role').value = role; openModal('m-edit'); }
 async function saveEditPlayer(btn) {
-  if (!await ensureSession()) return;
   const nick = $('ed-nick').value.trim(), uid = $('ed-uid').value.trim(), role = $('ed-role').value;
   if (!nick || !uid) return toast('Nick & UID wajib', 'warning');
   btn.disabled = true;
@@ -1300,7 +1281,6 @@ async function saveEditPlayer(btn) {
   toast('Data pemain diperbarui', 'success'); closeModal('m-edit'); loadPlayers();
 }
 async function delPlayer(btn) {
-  if (!await ensureSession()) return;
   if (!confirm('Hapus pemain ini?')) return;
   btn.disabled = true;
   const { error } = await sb.from('team_players').delete().eq('id', editPlId);
@@ -1362,7 +1342,6 @@ async function loadRegRoster() {
 }
 
 async function finishReg(btn) {
-  if (!await ensureSession()) return;
   if (!selTeam || !curTour) return toast('Data belum lengkap', 'warning');
   const file = $('reg-proof').files[0];
   if (!file) return toast('Upload bukti transfer dulu!', 'warning');
@@ -1483,7 +1462,6 @@ async function showTicket(regId) {
 
 function openWdTour(regId) { wdRegId = regId; $('wd-reason').value = ''; openModal('m-wd-tour'); }
 async function submitWdTour(btn) {
-  if (!await ensureSession()) return;
   if (!wdRegId) return;
   const reason = $('wd-reason').value.trim();
   if (!reason) return toast('Isi alasan mundur', 'warning');
@@ -1502,7 +1480,6 @@ function openWdSaldo() {
   $('wd-amt').value = ''; $('wd-dana-num').value = profile.dana_number; openModal('m-wd');
 }
 async function submitWdSaldo() {
-  if (!await ensureSession()) return;
   const amount = parseInt($('wd-amt').value);
   if (!amount || amount < 10000) return toast('Minimal penarikan Rp 10.000', 'warning');
   if (amount > (profile.balance || 0)) return toast('Saldo tidak mencukupi', 'danger');
@@ -1544,12 +1521,13 @@ async function loadNotifs() {
   if (data.filter(n => !n.is_read).length > 0) $('notif-badge').classList.remove('hidden'); else $('notif-badge').classList.add('hidden');
 }
 async function markAllRead() {
-  if (!await ensureSession()) return;
   await sb.from('notifications').update({ is_read: true }).eq('user_id', user.id);
   loadNotifs();
 }
 async function delNotif(id) {
-  await sb.from('notifications').delete().eq('id', id);
+  const { error } = await sb.from('notifications').delete().eq('id', id);
+  if (error) return toast(translateError(error.message), 'danger');
+  toast('Notif dihapus', 'success');
   loadNotifs();
 }
 
@@ -1602,4 +1580,4 @@ function nav(v) {
 }
    </script>
 </body>
-</html>
+   </html>
