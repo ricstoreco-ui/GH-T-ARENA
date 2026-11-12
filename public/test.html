@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEST DAFTAR - GH-T ARENA</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #111; color: #fff; }
+        input, select, button { display: block; width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; background: #222; color: #fff; border: 1px solid #444; }
+        button { background: #d4af37; color: #000; font-weight: bold; cursor: pointer; }
+        #log { background: #000; color: #0f0; padding: 10px; height: 300px; overflow-y: auto; border: 1px solid #333; font-size: 12px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+    <h3>TEST PENDAFTARAN</h3>
+    
+    <!-- LOGIN SECTION -->
+    <div style="border: 1px solid #555; padding: 10px; margin-bottom: 20px;">
+        <p>1. Login Dulu</p>
+        <input type="email" id="email" placeholder="Email" value="">
+        <input type="password" id="pass" placeholder="Password" value="">
+        <button onclick="doLogin()">LOGIN</button>
+    </div>
+
+    <!-- DAFTAR SECTION -->
+    <div style="border: 1px solid #555; padding: 10px;">
+        <p>2. Pilih Turnamen & Tim</p>
+        <select id="tourSelect"><option>-- Belum Login --</option></select>
+        <select id="teamSelect"><option>-- Belum Login --</option></select>
+        <input type="file" id="fileProof" accept="image/*">
+        <button onclick="doRegister()">DAFTAR SEKARANG</button>
+    </div>
+
+    <!-- LOG OUTPUT -->
+    <p>LOG ERROR:</p>
+    <div id="log">Menunggu aksi...</div>
+
+<script>
+    const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function log(msg) {
+        const el = document.getElementById('log');
+        el.innerText += `\n> ${msg}`;
+        el.scrollTop = el.scrollHeight;
+    }
+
+    async function doLogin() {
+        log("Mencoba Login...");
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('pass').value;
+        
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) {
+            log("❌ LOGIN GAGAL: " + error.message);
+            return;
+        }
+        log("✅ LOGIN SUKSES. User ID: " + data.user.id);
+        loadData();
+    }
+
+    async function loadData() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) return;
+
+        // Load Turnamen
+        const { data: tours } = await sb.from('tournaments').select('id, name, entry_fee').eq('registration_enabled', true);
+        const tSelect = document.getElementById('tourSelect');
+        tSelect.innerHTML = tours.map(t => `<option value="${t.id}">${t.name} (Rp ${t.entry_fee})</option>`).join('');
+
+        // Load Tim
+        const { data: teams } = await sb.from('teams').select('id, name').eq('owner_id', session.user.id);
+        const tmSelect = document.getElementById('teamSelect');
+        if (!teams || teams.length === 0) {
+            tmSelect.innerHTML = '<option value="">-- Kamu belum punya tim --</option>';
+        } else {
+            tmSelect.innerHTML = teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+        }
+        log("Data turnamen & tim berhasil dimuat.");
+    }
+
+    async function doRegister() {
+        log("--- MULAI PROSES DAFTAR ---");
+        const tourId = document.getElementById('tourSelect').value;
+        const teamId = document.getElementById('teamSelect').value;
+        const file = document.getElementById('fileProof').files[0];
+
+        if (!tourId || !teamId) return log("❌ Gagal: Turnamen atau Tim belum dipilih.");
+        if (!file) return log("❌ Gagal: File bukti belum dipilih.");
+
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) return log("❌ Gagal: Sesi login hilang.");
+
+        try {
+            // 1. UPLOAD FILE
+            log("1. Upload gambar ke Storage...");
+            const ext = file.name.split('.').pop();
+            const path = `test-${Date.now()}.${ext}`;
+            const { error: upErr } = await sb.storage.from('payment-proofs').upload(path, file);
+            if (upErr) throw new Error("UPLOAD GAGAL: " + upErr.message);
+            log("   ✅ Upload sukses. Path: " + path);
+
+            // 2. AMBIL HARGA
+            const { data: tData } = await sb.from('tournaments').select('entry_fee').eq('id', tourId).single();
+            const amount = Number(tData.entry_fee) + 200; // + admin fee
+
+            // 3. INSERT REGISTRASI
+            log("2. Insert ke tabel registrations...");
+            const { data: reg, error: regErr } = await sb.from('registrations').insert({
+                tournament_id: tourId,
+                team_id: teamId,
+                owner_id: session.user.id,
+                team_name: 'Tim Test HTML',
+                status: 'menunggu_verifikasi',
+                payment_method: 'qris',
+                fee_amount: amount
+            }).select().single();
+            
+            if (regErr) throw new Error("INSERT REGISTRASI GAGAL: " + regErr.message + " (Kode: " + regErr.code + ")");
+            log("   ✅ Registrasi sukses. ID: " + reg.id);
+
+            // 4. INSERT PAYMENTS
+            log("3. Insert ke tabel payments...");
+            const { error: payErr } = await sb.from('payments').upsert({
+                registration_id: reg.id,
+                user_id: session.user.id,
+                method: 'qris',
+                amount: amount,
+                status: 'menunggu_verifikasi',
+                proof_path: path,
+                proof_uploaded_at: new Date().toISOString()
+            }, { onConflict: 'registration_id' });
+
+            if (payErr) throw new Error("INSERT PAYMENTS GAGAL: " + payErr.message + " (Kode: " + payErr.code + ")");
+            log("   ✅ Payments sukses.");
+            
+            log("🎉 SEMUA PROSES DAFTAR BERHASIL TANPA ERROR!");
+
+        } catch (err) {
+            log(err.message);
+        }
+    }
+</script>
+</body>
+</html>
