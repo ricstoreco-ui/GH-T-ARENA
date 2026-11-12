@@ -8,9 +8,9 @@ import * as fPo from './f_po.js';
 import * as fRm from './f_rm.js';
 import * as fAdmin from './f_admin.js';
 import * as fDana from './f_dana.js';
-import * as fInfo from './f_info.js'; // <--- TAMBAHAN FILE BARU
+import * as fInfo from './f_info.js'; 
 
-const MODULES = [fMain, fMisc, fBr, fCs, fPo, fRm, fAdmin, fDana, fInfo]; // <--- DAFTARIN DI SINI
+const MODULES = [fMain, fMisc, fBr, fCs, fPo, fRm, fAdmin, fDana, fInfo];
 const H = {}, T = {}, U = {};
 const KEEP = ['m:w:', 'm:pt:save', 'm:an:ok', 'm:cc:ok', 'm:br:ayes', 'm:br:mok', 'm:wx:'];
 
@@ -30,7 +30,8 @@ const MAIN = {
     [b('⏳ Waiting List', 'm:wl'), b('↩️ Pengajuan Mundur', 'm:wd')],
     [b('👤 Captain', 'm:cp'), b('💸 Pencairan', 'm:po')],
     [b('💳 Verifikasi DANA', 'm:dc'), b('⚙️ Pengaturan', 'm:set')],
-    [b('🩺 Monitoring', 'm:mon'), b('📖 Panduan', 'm:info')], // <--- TOMBOL PANDUAN
+    [b('🛠 Admin Tools', 'm:adm'), b('🩺 Monitoring', 'm:mon')], // <--- TOMBOL BARU DITAMBAHKAN DI SINI
+    [b('📖 Panduan', 'm:info')],
   ],
 };
 const MAIN_TEXT = '<b>GH-T ARENA — Panel Super Admin</b>\nPilih menu:';
@@ -55,7 +56,7 @@ async function onMessage(env, m) {
   const text = (m.text || '').trim();
   if (text === '/start' || text === '/menu') { await clearState(env, chat); return show(env, chat, null, MAIN_TEXT, MAIN); }
   if (text === '/batal') { await clearState(env, chat); return show(env, chat, null, 'Dibatalkan.', { inline_keyboard: BACK }); }
-  if (text === '/panduan') { return H.info(env, chat, null); } // <--- Shortcut Panduan
+  if (text === '/panduan') { return H.info(env, chat, null); } 
   
   const st = await getState(env, chat);
   const img = pickImage(m);
