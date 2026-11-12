@@ -1,4 +1,4 @@
-// GH-T ARENA Bot — f_misc.js: Banner, QRIS & Aset, Konfigurasi, Waiting List, Pengajuan Mundur, Captain & Saldo, upload gambar.
+// GH-T ARENA Bot — f_misc.js: Banner, QRIS & Aset, Konfigurasi, Tema, Waiting List, Pengajuan Mundur, Captain & Saldo, upload gambar.
 import {
   esc, wib, rp, UUID, rpc, sb, count, setSetting, getSetting, audit, notify,
   getState, setState, clearState, b, BACK, show, stLabel, getT, patchT, checkVals,
@@ -13,14 +13,32 @@ export const KEEP = ['m:wx:', 'm:cx:ok'];
 const sh = (env, chat, mid, v) => show(env, chat, mid, v.text, v.markup);
 const okNote = (ok) => (ok ? '🔔 Notifikasi terkirim ke Captain.' : '⚠️ Notifikasi ke Captain GAGAL dikirim.');
 
+// ================= TEMA MUSIMAN =================
+H.thm = async (env, chat, mid, p) => {
+  const a = p[2], v = p[3];
+  if (!a) {
+    const cur = await getSetting(env, 'active_theme') || 'default';
+    return show(env, chat, mid, `<b>🎨 Tema Musiman</b>\nTema aktif: <b>${esc(cur)}</b>\nPilih tema baru:`, {
+      inline_keyboard: [
+        [b('Default (Dark Chrome)', 'm:thm:s:default'), b('🌙 Lebaran', 'm:thm:s:lebaran')],
+        [b('🎄 Natal', 'm:thm:s:natal'), b('🎃 Halloween', 'm:thm:s:halloween')],
+        [b('🇮🇩 17 Agustus', 'm:thm:s:agustus'), b('🌊 Ocean', 'm:thm:s:ocean')],
+        [b('⬅️ Pengaturan', 'm:set')]
+      ]
+    });
+  }
+  if (a === 's') {
+    await setSetting(env, 'active_theme', `"${v}"`);
+    await audit(env, 'ubah_tema', 'site_settings', v);
+    return show(env, chat, mid, `✅ Tema berhasil diubah ke: <b>${esc(v)}</b>.\nWebsite akan otomatis update dalam beberapa detik.`, { inline_keyboard: [[b('⬅️ Kembali', 'm:thm')]] });
+  }
+};
+
 // ================= BANNER =================
 async function bnList(env, notice) {
   const rows = (await sb(env, 'GET', 'banners?select=id,title,sort_order,is_active&order=sort_order.asc,created_at.asc&limit=20')) || [];
   const kb = rows.map((r, i) => [b(`${i + 1}. ${r.is_active ? '✅' : '⛔'} ${String(r.title || '(tanpa judul)').slice(0, 30)}`, 'm:bn:v:' + r.id)]);
-  return {
-    text: (notice ? notice + '\n\n' : '') + '<b>🖼 Banner</b>\n' + (rows.length ? 'Urutan tampil di website (atas = pertama). Pilih banner:' : 'Belum ada banner.'),
-    markup: { inline_keyboard: [[b('➕ Upload Banner', 'm:bn:new')], ...kb, ...BACK] },
-  };
+  return { text: (notice ? notice + '\n\n' : '') + '<b>🖼 Banner</b>\n' + (rows.length ? 'Urutan tampil di website (atas = pertama). Pilih banner:' : 'Belum ada banner.'), markup: { inline_keyboard: [[b('➕ Upload Banner', 'm:bn:new')], ...kb, ...BACK] } };
 }
 async function bnGet(env, id) {
   if (!UUID.test(id)) throw new Error('ID banner tidak valid');
@@ -192,7 +210,6 @@ async function onUpload(env, chat, st, img) {
 U.bn_up = onUpload; U.tb_up = onUpload; U.as_up = onUpload;
 
 // ================= KONFIGURASI =================
-// 👇 INI BAGIAN YANG GUA TAMBAHIN (admin_fee_qris)
 const CFG = [
   ['admin_whatsapp', 'WhatsApp Admin'], 
   ['waitlist_offer_minutes', 'Batas respons Waiting List (menit)'], 
@@ -447,8 +464,7 @@ H.cp = async (env, chat, mid, p) => {
     if (!UUID.test(id)) throw new Error('ID user tidak valid');
     const rows = await sb(env, 'GET', `profiles?id=eq.${id}&select=username`);
     if (!rows?.[0]) throw new Error('Captain tidak ditemukan');
-    return show(env, chat, mid, `<b>🗑 Mulai penghapusan akun</b>\nCaptain: ${esc(rows[0].username)}\nMasa tunggu 30 hari, Captain bisa membatalkan. Akun yang masih punya turnamen aktif, payout tertunda, atau saldo akan ditunda otomatis oleh sistem.\n\nLanjut?`,
-      { inline_keyboard: [[b('🗑 Ya, mulai', 'm:cp:dy:' + id), b('✖️ Batal', 'm:cp:u:' + id)]] });
+    return show(env, chat, mid, `<b>🗑 Mulai penghapusan akun</b>\nCaptain: ${esc(rows[0].username)}\nMasa tunggu 30 hari, Captain bisa membatalkan.\n\nLanjut?`, { inline_keyboard: [[b('🗑 Ya, mulai', 'm:cp:dy:' + id), b('✖️ Batal', 'm:cp:u:' + id)]] });
   }
   if (a === 'dy') {
     if (!UUID.test(id)) throw new Error('ID user tidak valid');
@@ -476,8 +492,7 @@ T.cp_rsn = async (env, chat, st, text) => {
   if (text.length < 3 || text.length > 200) return show(env, chat, null, '❌ Alasan 3 sampai 200 karakter. Ketik lagi atau /batal.', { inline_keyboard: [[b('✖️ Batal', 'm:cp:u:' + st.data.uid)]] });
   const d = { ...st.data, rsn: text };
   await setState(env, chat, 'cp_conf', d);
-  return show(env, chat, null, `<b>Konfirmasi ubah saldo</b>\nCaptain: ${esc(d.uname)}\nPerubahan: <b>${d.amt > 0 ? '+' : '-'}${rp(Math.abs(d.amt))}</b>\nAlasan: ${esc(d.rsn)}\n\nProses?`,
-    { inline_keyboard: [[b('✅ Ya, proses', 'm:cx:ok'), b('✖️ Batal', 'm:cp:u:' + d.uid)]] });
+  return show(env, chat, null, `<b>Konfirmasi ubah saldo</b>\nCaptain: ${esc(d.uname)}\nPerubahan: <b>${d.amt > 0 ? '+' : '-'}${rp(Math.abs(d.amt))}</b>\nAlasan: ${esc(d.rsn)}\n\nProses?`, { inline_keyboard: [[b('✅ Ya, proses', 'm:cx:ok'), b('✖️ Batal', 'm:cp:u:' + d.uid)]] });
 };
 H.cx = async (env, chat, mid, p) => {
   if (p[2] !== 'ok') return;
