@@ -10,249 +10,315 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#050505;--panel:#121212;--glass:rgba(18,18,22,.95);--gold:#d4af37;--glow:rgba(212,175,55,.5);--silver:#b0b0b0;--text:#fff;--muted:#777;--border:rgba(212,175,55,.25);--danger:#e53935;--success:#43a047;--info:#29b6f6;--cyan:#00bcd4}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:'Poppins',sans-serif;user-select:none}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--gold);border-radius:10px}
-body{background:var(--bg);color:var(--text);overflow-x:hidden;padding-bottom:90px;background-image:linear-gradient(rgba(212,175,55,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,.03) 1px,transparent 1px);background-size:40px 40px;transition:.5s}
-h1,h2,h3{font-family:'Orbitron',sans-serif}.hidden{display:none!important}
+/* ============================================
+   VARIABEL & RESET
+   ============================================ */
+:root {
+  --bg: #050505; --panel: #121212; --panel-glass: rgba(18, 18, 22, 0.95);
+  --gold: #d4af37; --gold-glow: rgba(212, 175, 55, 0.5); --silver: #b0b0b0;
+  --text: #ffffff; --muted: #777777; --border: rgba(212, 175, 55, 0.25);
+  --danger: #e53935; --success: #43a047; --info: #29b6f6; --cyan: #00bcd4;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Poppins', sans-serif; user-select: none; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
+body {
+  background-color: var(--bg); color: var(--text); overflow-x: hidden; padding-bottom: 90px;
+  background-image: linear-gradient(rgba(212, 175, 55, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(212, 175, 55, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px; background-position: center top; transition: 0.5s;
+}
+h1, h2, h3 { font-family: 'Orbitron', sans-serif; }
+.hidden { display: none !important; }
+
 /* TEMA MUSIMAN */
-body.theme-lebaran{--gold:#00e676;--glow:rgba(0,230,118,.5);background-image:linear-gradient(rgba(0,230,118,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,118,.03) 1px,transparent 1px)}
-body.theme-natal{--gold:#e53935;--glow:rgba(229,57,53,.5);background-image:linear-gradient(rgba(229,57,53,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(229,57,53,.03) 1px,transparent 1px)}
-body.theme-halloween{--gold:#ff9800;--glow:rgba(255,152,0,.5);background-image:linear-gradient(rgba(255,152,0,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,152,0,.03) 1px,transparent 1px)}
-body.theme-agustus{--gold:#f44336;--glow:rgba(244,67,54,.5);background-image:linear-gradient(rgba(244,67,54,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(244,67,54,.03) 1px,transparent 1px)}
-body.theme-ocean{--gold:#00bcd4;--glow:rgba(0,188,212,.5);background-image:linear-gradient(rgba(0,188,212,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,188,212,.03) 1px,transparent 1px)}
-/* ANIMASI */
-@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes glitch{0%{text-shadow:2px 0 red,-2px 0 blue;transform:translate(0)}20%{text-shadow:-2px 0 red,2px 0 blue;transform:translate(-2px,2px)}40%{text-shadow:2px 0 red,-2px 0 blue;transform:translate(2px,-2px)}60%{text-shadow:-2px 0 red,2px 0 blue;transform:translate(-2px,-2px)}80%{text-shadow:2px 0 red,-2px 0 blue;transform:translate(2px,2px)}100%{text-shadow:none;transform:translate(0)}}
-@keyframes pulseRed{0%{box-shadow:0 0 0 0 rgba(229,57,53,.7)}70%{box-shadow:0 0 0 8px rgba(229,57,53,0)}100%{box-shadow:0 0 0 0 rgba(229,57,53,0)}}
-@keyframes breathe{0%,100%{opacity:.8;filter:drop-shadow(0 0 5px var(--glow))}50%{opacity:1;filter:drop-shadow(0 0 15px var(--gold))}}
-@keyframes slideInBottom{from{transform:translateY(100%)}to{transform:translateY(0)}}
-@keyframes slideInTop{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
-@keyframes fadeOut{to{opacity:0;transform:translateY(-10px)}}
-@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-@keyframes float{from{transform:translateY(0)}to{transform:translateY(-8px)}}
-@keyframes click{0%{transform:scale(1)}50%{transform:scale(.92)}100%{transform:scale(1)}}
-@keyframes holo{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes zoom{0%{opacity:0;transform:scale(.5) translateY(50px)}100%{opacity:1;transform:scale(1) translateY(0)}}
-@keyframes flash{0%{left:-35%;opacity:0}20%{opacity:1}100%{left:130%;opacity:0}}
-@keyframes liquid{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-@keyframes scan{0%{background-position:0 0}100%{background-position:0 100%}}
-@keyframes neon{from{box-shadow:0 0 5px var(--gold)}to{box-shadow:0 0 25px var(--gold),0 0 50px var(--gold)}}
-@keyframes ripple{to{transform:scale(4);opacity:0}}
-@keyframes flip{0%,100%{transform:rotateX(0)}50%{transform:rotateX(180deg)}}
-@keyframes twinkle{0%{opacity:.2;transform:scale(.8)}100%{opacity:1;transform:scale(1.2);box-shadow:0 0 8px var(--gold)}}
-@keyframes skeleton{0%{background-color:#1a1a1a}50%{background-color:#2a2a2a}100%{background-color:#1a1a1a}}
-@keyframes confetti{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(500px) rotate(720deg);opacity:0}}
-.view{animation:fadeInUp .4s ease-out}
-.skeleton{animation:skeleton 1.5s infinite;border-radius:8px;color:transparent!important;pointer-events:none}
-/* INTRO */
-#intro{position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:opacity .8s,visibility .8s;font-family:'Rajdhani',monospace;overflow:hidden}
-#intro.hidden{opacity:0;visibility:hidden}
-#intro::before{content:'';position:absolute;width:min(75vw,340px);aspect-ratio:1;border:1px solid rgba(255,255,255,.12);border-radius:50%;box-shadow:0 0 60px rgba(212,175,55,.08);animation:spin 8s linear infinite;z-index:1}
-#intro::after{content:'';position:absolute;width:min(90vw,400px);aspect-ratio:1;border:1px dashed rgba(255,255,255,.15);border-radius:50%;animation:spin 15s linear infinite reverse;z-index:1}
-.stars{position:absolute;inset:0;overflow:hidden;z-index:0}
-.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle 2s infinite alternate}
-.intro-box{text-align:center;display:flex;flex-direction:column;align-items:center;padding:20px;z-index:2}
-.intro-logo{width:120px;margin-bottom:20px;filter:drop-shadow(0 0 25px var(--glow));animation:zoom 1.5s cubic-bezier(.16,1,.3,1) both}
-.intro-title{font-size:2.2rem;color:var(--gold);letter-spacing:8px;margin-bottom:10px;animation:glitch .5s infinite}
-.intro-sub{font-size:.8rem;color:var(--silver);letter-spacing:5px;margin-bottom:30px}
-.intro-flash{position:absolute;z-index:1;left:-35%;top:0;width:25%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.15),transparent);transform:skewX(-18deg);animation:flash 1.4s 1.1s ease-out both;pointer-events:none}
-.terminal{font-family:'Rajdhani',monospace;color:var(--success);font-size:.75rem;text-align:left;width:min(300px,80vw);margin-bottom:20px;height:60px}
-.terminal p{margin:2px 0;opacity:0;animation:fadeInUp .2s forwards}
-.loader{font-size:2rem;color:var(--gold);animation:spin 1.5s infinite linear;margin-top:20px;text-shadow:0 0 10px var(--gold)}
-#skip{position:absolute;bottom:40px;background:rgba(255,255,255,.05);color:var(--silver);border:1px solid rgba(255,255,255,.2);padding:8px 24px;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:.75rem;opacity:0;pointer-events:none;transition:.3s;z-index:10}
-#skip.show{opacity:1;pointer-events:auto}#skip:hover{background:var(--gold);color:#000}
-/* NAVBAR */
-.running{background:#0a0a0a;color:var(--gold);font-size:.65rem;padding:6px 0;white-space:nowrap;overflow:hidden;border-bottom:1px solid #222;display:flex;font-family:'Rajdhani',sans-serif;font-weight:700}
-.running span{display:inline-block;padding-left:100%;animation:marquee 20s linear infinite}
-nav{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:rgba(5,5,5,.95);border-bottom:1px solid #222;position:sticky;top:0;z-index:100;height:60px}
-.brand{display:flex;align-items:center;gap:8px;cursor:pointer}.brand img{height:30px;animation:breathe 3s infinite}.brand span{font-family:'Orbitron',sans-serif;font-weight:800;font-size:1rem;color:var(--gold)}
-.nav-act{display:flex;align-items:center;gap:15px}
-.nav-btn{background:transparent;border:none;color:var(--silver);font-size:1.2rem;cursor:pointer;position:relative;transition:.3s;display:flex;align-items:center}
-.nav-btn:hover{color:var(--gold)}
-.badge{position:absolute;top:-5px;right:-8px;background:var(--danger);color:#fff;font-size:.55rem;padding:2px 5px;border-radius:10px;font-weight:bold}
-.clock{font-family:'Orbitron',sans-serif;font-size:.65rem;color:var(--cyan)}
-.server{display:flex;justify-content:center;gap:15px;font-size:.6rem;color:var(--muted);background:#080808;padding:4px 0;border-bottom:1px solid #111;font-family:'Rajdhani',sans-serif;font-weight:600}
-.server span{display:flex;align-items:center;gap:4px}.dot{width:6px;height:6px;background:var(--success);border-radius:50%;box-shadow:0 0 5px var(--success)}
-/* BOTTOM NAV */
-.btm-nav{position:fixed;bottom:0;left:0;width:100%;background:rgba(10,10,10,.98);border-top:1px solid #222;display:flex;justify-content:space-around;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:100}
-.btm-nav button{background:transparent;border:none;color:var(--muted);font-size:.65rem;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.3s;font-weight:600;position:relative;width:60px;font-family:'Rajdhani',sans-serif}
-.btm-nav button i{font-size:1.2rem;margin-bottom:2px;transition:.3s}
-.btm-nav button.active{color:var(--gold)}.btm-nav button.active i{transform:translateY(-3px);text-shadow:0 0 10px var(--glow)}
-.btm-nav button.active::after{content:'';position:absolute;top:-8px;width:20px;height:3px;background:var(--gold);border-radius:0 0 5px 5px;box-shadow:0 0 10px var(--gold)}
-/* FLOATING */
-.wa-float{position:fixed;bottom:85px;right:20px;width:50px;height:50px;background:#25D366;color:#fff;border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:1.5rem;box-shadow:0 4px 15px rgba(37,211,102,.4);z-index:99;border:2px solid #fff;text-decoration:none}
-.chat-float{position:fixed;bottom:85px;left:20px;width:50px;height:50px;background:var(--panel);color:var(--gold);border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:1.5rem;box-shadow:0 4px 15px rgba(212,175,55,.4);z-index:99;border:2px solid var(--gold);cursor:pointer;transition:.3s}
-.chat-float:hover{transform:scale(1.1);background:var(--gold);color:#000}
-.top-btn{position:fixed;bottom:145px;right:20px;width:40px;height:40px;background:var(--panel);color:var(--gold);border:1px solid var(--gold);border-radius:50%;display:none;justify-content:center;align-items:center;font-size:1rem;z-index:99;cursor:pointer}
-.top-btn.show{display:flex}
-/* LAYOUT */
-.container{max-width:800px;margin:15px auto;padding:0 15px}
-.glass{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
-.title{font-size:1.1rem;color:#fff;margin-bottom:15px;border-bottom:1px solid #333;padding-bottom:10px;display:flex;align-items:center;gap:8px;font-family:'Rajdhani',sans-serif;text-transform:uppercase}
-/* HERO & BANNER */
-.hero{position:relative;width:100%;height:200px;border-radius:16px;overflow:hidden;margin-bottom:20px;border:1px solid var(--border);background:#111 center/cover;display:flex;flex-direction:column;justify-content:flex-end;padding:20px}
-.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.95) 10%,rgba(0,0,0,.2) 100%);z-index:1}
-.hero-txt{position:relative;z-index:2}
-.tag{background:rgba(212,175,55,.15);color:var(--gold);border:1px solid var(--gold);padding:4px 10px;border-radius:4px;font-size:.6rem;font-weight:700;margin-bottom:8px;display:inline-block;font-family:'Rajdhani',sans-serif}
-.hero-title{font-size:1.4rem;color:#fff;margin-bottom:5px}
-.hero-meta{display:flex;gap:15px;font-size:.75rem;color:var(--silver);margin-bottom:15px;font-family:'Rajdhani',sans-serif;font-weight:600}
-.btn-hero{background:linear-gradient(135deg,#b8860b,var(--gold));color:#000;padding:10px 20px;border-radius:8px;font-family:'Orbitron',sans-serif;font-size:.75rem;font-weight:700;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-/* IKLAN GH TOPUP (FIX BUG 5) */
-.sponsor{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(270deg,#111,#1a1a1a,#111);background-size:200% 200%;animation:liquid 5s infinite;border:2px solid var(--gold);border-radius:16px;padding:20px;margin-bottom:20px;cursor:pointer;position:relative;overflow:hidden;perspective:1000px;transition:.3s;box-shadow:0 0 15px rgba(212,175,55,.3)}
-.sponsor::before{content:'';position:absolute;inset:0;background:linear-gradient(45deg,transparent,rgba(212,175,55,.3),transparent);background-size:200% 200%;animation:liquid 3s infinite;pointer-events:none}
-.sponsor:hover{animation:neon 1.5s infinite alternate;transform:scale(1.02)}
-.sponsor img{height:60px;z-index:2;position:relative;filter:drop-shadow(0 0 10px #fff)}
-.sponsor-txt{font-size:.85rem;color:#fff;position:relative;height:60px;width:70%;z-index:2;display:flex;flex-direction:column;justify-content:center}
-.sp-txt{position:absolute;top:0;left:0;width:100%;opacity:0;transition:.5s;font-weight:700;font-family:'Orbitron',sans-serif;text-shadow:0 2px 4px #000}
-.sp-txt.active{opacity:1;transform:translateY(0)}
-.sp-btn{background:var(--gold);color:#000;padding:5px 12px;border-radius:6px;font-size:.65rem;font-weight:800;margin-top:8px;display:inline-block;width:fit-content;font-family:'Rajdhani',sans-serif;letter-spacing:1px;border:none;cursor:pointer;animation:float 1s infinite alternate}
-.diamond{position:absolute;right:90px;bottom:20px;font-size:2rem;animation:float 1s infinite alternate;z-index:2;filter:drop-shadow(0 0 8px var(--gold))}
-.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.3);transform:scale(0);animation:ripple .6s linear;pointer-events:none}
-/* LIST TURNAMEN */
-.count-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
-.count-box{display:flex;gap:8px}
-.cd{background:#111;border:1px solid #333;padding:5px 10px;border-radius:6px;text-align:center;min-width:45px}
-.cd-n{font-family:'Orbitron',sans-serif;font-size:1.1rem;color:var(--gold);font-weight:800}
-.cd-l{font-size:.5rem;color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:700}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.card{background:#121212;border:1px solid #222;border-radius:12px;overflow:hidden;transition:.3s;position:relative;display:flex;flex-direction:column;cursor:pointer;border-left:3px solid var(--gold)}
-.card:hover{border-color:var(--gold);transform:translateY(-4px);box-shadow:0 10px 20px rgba(0,0,0,.5)}
-.card-img{position:relative;width:100%;height:100px}.card-img img{width:100%;height:100%;object-fit:cover}
-.card-info{padding:12px;flex-grow:1;display:flex;flex-direction:column}
-.status{font-size:.55rem;padding:3px 6px;border-radius:4px;font-weight:700;display:inline-block;margin-bottom:8px;width:fit-content;text-transform:uppercase;font-family:'Rajdhani',sans-serif}
-.st-live{background:var(--danger);color:#fff;animation:pulseRed 2s infinite}
-.st-open{background:rgba(67,160,71,.2);color:var(--success);border:1px solid var(--success)}
-.card-title{font-family:'Orbitron',sans-serif;font-size:.75rem;color:#fff;line-height:1.3;margin-bottom:8px;height:2.6em;overflow:hidden}
-.card-prize{font-size:.8rem;color:var(--gold);font-weight:700;margin-bottom:10px;font-family:'Rajdhani',sans-serif}
-.card-div{border-top:1px dashed #444;margin:0 12px;position:relative}
-.card-div::before,.card-div::after{content:'';position:absolute;top:-6px;width:12px;height:12px;background:var(--bg);border-radius:50%;border:1px solid #222}
-.card-div::before{left:-19px;border-right-color:transparent;border-top-color:transparent;transform:rotate(45deg)}
-.card-div::after{right:-19px;border-left-color:transparent;border-bottom-color:transparent;transform:rotate(45deg)}
-.card-foot{padding:8px 12px;display:flex;justify-content:space-between;align-items:center;font-size:.6rem;color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:600}
-.empty{grid-column:1/-1;text-align:center;padding:50px 20px;background:#0a0a0a;border:1px dashed #333;border-radius:12px}
-.empty i{font-size:3.5rem;color:#222;margin-bottom:15px;display:block}
-.empty h3{font-size:.95rem;color:#555;margin-bottom:8px;font-family:'Rajdhani',sans-serif}.empty p{font-size:.75rem;color:#444}
-/* HALL OF FAME */
-.hof{display:flex;justify-content:space-around;align-items:flex-end;height:100px;margin-top:10px}
-.hof-item{text-align:center;width:30%}
-.hof-av{width:40px;height:40px;background:#222;margin:0 auto 5px;border:2px solid #444;display:flex;justify-content:center;align-items:center;font-size:1rem;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)}
-.hof-1 .hof-av{width:55px;height:55px;border-color:var(--gold);box-shadow:0 0 15px var(--glow);font-size:1.5rem;animation:float 2s infinite alternate}
-.hof-n{font-size:.65rem;font-weight:bold;color:#fff;font-family:'Rajdhani',sans-serif}.hof-p{font-size:.55rem;color:var(--gold);font-family:'Rajdhani',sans-serif}
-/* DETAIL */
-.detail-img{width:100%;height:180px;object-fit:cover;border-radius:12px;margin-bottom:15px;border:1px solid #333}
-.detail-title{font-size:1.2rem;color:var(--gold);margin-bottom:5px}
-.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
-.meta-box{background:#111;padding:12px;border-radius:8px;border:1px solid #222;text-align:center}
-.meta-box span{display:block;font-size:.65rem;color:var(--muted);margin-bottom:4px;font-family:'Rajdhani',sans-serif}
-.meta-box strong{font-size:.85rem;color:var(--gold);font-family:'Orbitron',sans-serif}
-.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:20px 0;height:150px}
-.p-box{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:32%;border-radius:8px 8px 0 0;padding:10px 5px;border:1px solid #333;border-bottom:none;text-align:center}
-.p-box .medal{font-size:1.5rem;margin-bottom:5px}.p-name{font-size:.65rem;color:#fff;font-weight:700;font-family:'Rajdhani',sans-serif;line-height:1;margin-bottom:3px}.p-prize{font-size:.7rem;color:var(--gold);font-weight:800;font-family:'Rajdhani',sans-serif;white-space:nowrap}
-.p-1{height:100%;background:linear-gradient(to top,rgba(212,175,55,.2),rgba(212,175,55,.05));border-color:var(--gold);z-index:2}
-.p-2{height:75%;background:linear-gradient(to top,rgba(176,176,176,.15),transparent)}
-.p-3{height:60%;background:linear-gradient(to top,rgba(205,127,50,.15),transparent)}
-/* MAPS */
-.map-pool{display:flex;gap:10px;overflow-x:auto;padding-bottom:10px;margin-bottom:15px}
-.map-card{min-width:120px;background:#111;border:1px solid #333;border-radius:8px;overflow:hidden;position:relative}
-.map-card img{width:100%;height:60px;object-fit:cover}.map-info{padding:5px;text-align:center}
-.map-name{font-size:.7rem;font-weight:bold;color:var(--gold);font-family:'Rajdhani',sans-serif}.map-match{font-size:.55rem;color:var(--muted);font-family:'Rajdhani',sans-serif}
-.map-stat{position:absolute;top:5px;right:5px;font-size:.5rem;padding:2px 5px;border-radius:3px;font-weight:bold;font-family:'Rajdhani',sans-serif}
-.ms-done{background:var(--success);color:#fff}.ms-live{background:var(--danger);color:#fff;animation:pulseRed 1s infinite}.ms-next{background:#333;color:#fff}
+body.theme-lebaran { --gold: #00e676; --gold-glow: rgba(0,230,118,.5); }
+body.theme-natal { --gold: #e53935; --gold-glow: rgba(229,57,53,.5); }
+body.theme-halloween { --gold: #ff9800; --gold-glow: rgba(255,152,0,.5); }
+body.theme-agustus { --gold: #f44336; --gold-glow: rgba(244,67,54,.5); }
+body.theme-ocean { --gold: #00bcd4; --gold-glow: rgba(0,188,212,.5); }
+
+/* ============================================
+   ANIMASI
+   ============================================ */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes glitchText { 0% { text-shadow: 2px 0 red, -2px 0 blue; transform: translate(0); } 20% { text-shadow: -2px 0 red, 2px 0 blue; transform: translate(-2px, 2px); } 40% { text-shadow: 2px 0 red, -2px 0 blue; transform: translate(2px, -2px); } 60% { text-shadow: -2px 0 red, 2px 0 blue; transform: translate(-2px, -2px); } 80% { text-shadow: 2px 0 red, -2px 0 blue; transform: translate(2px, 2px); } 100% { text-shadow: none; transform: translate(0); } }
+@keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(229, 57, 53, 0); } 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0); } }
+@keyframes breathe { 0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 5px var(--gold-glow)); } 50% { opacity: 1; filter: drop-shadow(0 0 15px var(--gold)); } }
+@keyframes slideInBottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes slideInTop { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes float { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+@keyframes click { 0% { transform: scale(1); } 50% { transform: scale(0.92); } 100% { transform: scale(1); } }
+@keyframes holo { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes zoom { 0% { opacity: 0; transform: scale(0.5) translateY(50px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes skeleton { 0% { background-color: #1a1a1a; } 50% { background-color: #2a2a2a; } 100% { background-color: #1a1a1a; } }
+.view { animation: fadeInUp 0.4s ease-out; }
+.skeleton { animation: skeleton 1.5s infinite; border-radius: 8px; color: transparent !important; pointer-events: none; }
+
+/* ============================================
+   INTRO SCREEN & PARTIKEL
+   ============================================ */
+#intro-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.8s ease, visibility 0.8s; font-family: 'Rajdhani', monospace; overflow: hidden; }
+#intro-screen.hidden { opacity: 0; visibility: hidden; }
+#intro-screen::before { content: ''; position: absolute; width: min(75vw, 340px); aspect-ratio: 1; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 50%; box-shadow: 0 0 60px rgba(212, 175, 55, 0.08); animation: spin 8s linear infinite; z-index: 1; }
+#intro-screen::after { content: ''; position: absolute; width: min(90vw, 400px); aspect-ratio: 1; border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 50%; animation: spin 15s linear infinite reverse; z-index: 1; }
+.stars { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
+.star { position: absolute; background: #fff; border-radius: 50%; animation: breathe 2s infinite alternate; }
+.intro-box { text-align: center; display: flex; flex-direction: column; align-items: center; padding: 20px; z-index: 2; }
+.intro-logo { width: 120px; margin-bottom: 20px; filter: drop-shadow(0 0 25px var(--gold-glow)); animation: zoom 1.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.intro-title { font-size: 2.2rem; color: var(--gold); letter-spacing: 8px; margin-bottom: 10px; animation: glitchText 0.5s infinite; }
+.intro-sub { font-size: 0.8rem; color: var(--silver); letter-spacing: 5px; margin-bottom: 30px; }
+.terminal { font-family: 'Rajdhani', monospace; color: var(--success); font-size: 0.75rem; text-align: left; width: min(300px, 80vw); margin-bottom: 20px; height: 60px; }
+.terminal p { margin: 2px 0; opacity: 0; animation: fadeInUp 0.2s forwards; }
+.loader { font-size: 2rem; color: var(--gold); animation: spin 1.5s infinite linear; margin-top: 20px; text-shadow: 0 0 10px var(--gold); }
+#skip-btn { position: absolute; bottom: 40px; background: rgba(255, 255, 255, 0.05); color: var(--silver); border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 24px; border-radius: 20px; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 0.75rem; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 10; }
+#skip-btn.show { opacity: 1; pointer-events: auto; }
+
+/* ============================================
+   NAVBAR & NAVIGASI
+   ============================================ */
+.running { background: #0a0a0a; color: var(--gold); font-size: 0.65rem; padding: 6px 0; white-space: nowrap; overflow: hidden; border-bottom: 1px solid #222; display: flex; font-family: 'Rajdhani', sans-serif; font-weight: 700; }
+.running span { display: inline-block; padding-left: 100%; animation: marquee 20s linear infinite; }
+nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: rgba(5, 5, 5, 0.95); border-bottom: 1px solid #222; position: sticky; top: 0; z-index: 100; height: 60px; }
+.brand { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.brand img { height: 30px; animation: breathe 3s infinite; }
+.brand span { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 1rem; color: var(--gold); }
+.nav-act { display: flex; align-items: center; gap: 15px; }
+.nav-btn { background: transparent; border: none; color: var(--silver); font-size: 1.2rem; cursor: pointer; position: relative; transition: 0.3s; display: flex; align-items: center; }
+.nav-btn:hover { color: var(--gold); }
+.badge { position: absolute; top: -5px; right: -8px; background: var(--danger); color: #fff; font-size: 0.55rem; padding: 2px 5px; border-radius: 10px; font-weight: bold; }
+.clock { font-family: 'Orbitron', sans-serif; font-size: 0.65rem; color: var(--cyan); }
+.server { display: flex; justify-content: center; gap: 15px; font-size: 0.6rem; color: var(--muted); background: #080808; padding: 4px 0; border-bottom: 1px solid #111; font-family: 'Rajdhani', sans-serif; font-weight: 600; }
+.server span { display: flex; align-items: center; gap: 4px; }
+.dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; box-shadow: 0 0 5px var(--success); }
+.btm-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10, 10, 10, 0.98); border-top: 1px solid #222; display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); z-index: 100; }
+.btm-nav button { background: transparent; border: none; color: var(--muted); font-size: 0.65rem; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: 0.3s; font-weight: 600; position: relative; width: 60px; font-family: 'Rajdhani', sans-serif; }
+.btm-nav button i { font-size: 1.2rem; margin-bottom: 2px; transition: 0.3s; }
+.btm-nav button.active { color: var(--gold); }
+.btm-nav button.active i { transform: translateY(-3px); text-shadow: 0 0 10px var(--gold-glow); }
+.btm-nav button.active::after { content: ''; position: absolute; top: -8px; width: 20px; height: 3px; background: var(--gold); border-radius: 0 0 5px 5px; box-shadow: 0 0 10px var(--gold); }
+
+/* ============================================
+   FLOATING & LAYOUT
+   ============================================ */
+.wa-float { position: fixed; bottom: 85px; right: 20px; width: 50px; height: 50px; background: #25D366; color: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); z-index: 99; border: 2px solid #fff; text-decoration: none; }
+.chat-float { position: fixed; bottom: 85px; left: 20px; width: 50px; height: 50px; background: var(--panel); color: var(--gold); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4); z-index: 99; border: 2px solid var(--gold); cursor: pointer; transition: 0.3s; }
+.container { max-width: 800px; margin: 15px auto; padding: 0 15px; }
+.glass { background: var(--panel-glass); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); }
+.title { font-size: 1.1rem; color: #fff; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; gap: 8px; font-family: 'Rajdhani', sans-serif; text-transform: uppercase; }
+
+/* ============================================
+   HERO BANNER & IKLAN GH TOPUP
+   ============================================ */
+.hero { position: relative; width: 100%; height: 220px; border-radius: 16px; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--border); background: #111 center/cover; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; transition: 0.5s; }
+.hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.2) 100%); z-index: 1; }
+.hero-txt { position: relative; z-index: 2; }
+.tag { background: rgba(212, 175, 55, 0.15); color: var(--gold); border: 1px solid var(--gold); padding: 4px 10px; border-radius: 4px; font-size: 0.6rem; font-weight: 700; margin-bottom: 8px; display: inline-block; font-family: 'Rajdhani', sans-serif; }
+.hero-title { font-size: 1.4rem; color: #fff; margin-bottom: 5px; }
+.hero-meta { display: flex; gap: 15px; font-size: 0.75rem; color: var(--silver); margin-bottom: 15px; font-family: 'Rajdhani', sans-serif; font-weight: 600; }
+.btn-hero { background: linear-gradient(135deg, #b8860b, var(--gold)); color: #000; padding: 10px 20px; border-radius: 8px; font-family: 'Orbitron', sans-serif; font-size: 0.75rem; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.sponsor { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(270deg, #111, #1a1a1a, #111); background-size: 200% 200%; animation: holo 5s infinite; border: 2px solid var(--gold); border-radius: 16px; padding: 20px; margin-bottom: 20px; cursor: pointer; position: relative; overflow: hidden; perspective: 1000px; transition: 0.3s; box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); }
+.sponsor img { height: 60px; z-index: 2; position: relative; filter: drop-shadow(0 0 10px #fff); }
+.sponsor-txt { font-size: 0.85rem; color: #fff; position: relative; height: 60px; width: 70%; z-index: 2; display: flex; flex-direction: column; justify-content: center; }
+.sp-txt { position: absolute; top: 0; left: 0; width: 100%; opacity: 0; transition: 0.5s; font-weight: 700; font-family: 'Orbitron', sans-serif; text-shadow: 0 2px 4px #000; }
+.sp-txt.active { opacity: 1; transform: translateY(0); }
+.sp-btn { background: var(--gold); color: #000; padding: 5px 12px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; margin-top: 8px; display: inline-block; width: fit-content; font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; border: none; cursor: pointer; animation: float 1s infinite alternate; }
+.diamond { position: absolute; right: 90px; bottom: 20px; font-size: 2rem; animation: float 1s infinite alternate; z-index: 2; filter: drop-shadow(0 0 8px var(--gold)); }
+.ripple { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.3); transform: scale(0); animation: click 0.6s linear; pointer-events: none; }
+
+/* ============================================
+   KARTU TURNAMEN (SKELETON & LOADING)
+   ============================================ */
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.card { background: #121212; border: 1px solid #222; border-radius: 12px; overflow: hidden; transition: 0.3s; position: relative; display: flex; flex-direction: column; cursor: pointer; border-left: 3px solid var(--gold); }
+.card:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); }
+.card-img { position: relative; width: 100%; height: 100px; }
+.card-img img { width: 100%; height: 100%; object-fit: cover; }
+.card-info { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; }
+.status { font-size: 0.55rem; padding: 3px 6px; border-radius: 4px; font-weight: 700; display: inline-block; margin-bottom: 8px; width: fit-content; text-transform: uppercase; font-family: 'Rajdhani', sans-serif; }
+.st-live { background: var(--danger); color: #fff; animation: pulseRed 2s infinite; }
+.st-open { background: rgba(67, 160, 71, 0.2); color: var(--success); border: 1px solid var(--success); }
+.card-title { font-family: 'Orbitron', sans-serif; font-size: 0.75rem; color: #fff; line-height: 1.3; margin-bottom: 8px; height: 2.6em; overflow: hidden; }
+.card-prize { font-size: 0.8rem; color: var(--gold); font-weight: 700; margin-bottom: 10px; font-family: 'Rajdhani', sans-serif; }
+.card-div { border-top: 1px dashed #444; margin: 0 12px; position: relative; }
+.card-div::before, .card-div::after { content: ''; position: absolute; top: -6px; width: 12px; height: 12px; background: var(--bg); border-radius: 50%; border: 1px solid #222; }
+.card-div::before { left: -19px; border-right-color: transparent; border-top-color: transparent; transform: rotate(45deg); }
+.card-div::after { right: -19px; border-left-color: transparent; border-bottom-color: transparent; transform: rotate(45deg); }
+.card-foot { padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; color: var(--muted); font-family: 'Rajdhani', sans-serif; font-weight: 600; }
+.empty { grid-column: 1/-1; text-align: center; padding: 50px 20px; background: #0a0a0a; border: 1px dashed #333; border-radius: 12px; }
+
+/* ============================================
+   DETAIL TURNAMEN & MAPS
+   ============================================ */
+.detail-img { width: 100%; height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
+.detail-title { font-size: 1.2rem; color: var(--gold); margin-bottom: 5px; }
+.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.meta-box { background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; text-align: center; }
+.meta-box span { display: block; font-size: 0.65rem; color: var(--muted); margin-bottom: 4px; font-family: 'Rajdhani', sans-serif; }
+.meta-box strong { font-size: 0.85rem; color: var(--gold); font-family: 'Orbitron', sans-serif; }
+.map-pool { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
+.map-card { min-width: 120px; background: #111; border: 1px solid #333; border-radius: 8px; overflow: hidden; position: relative; }
+.map-card img { width: 100%; height: 60px; object-fit: cover; }
+.map-info { padding: 5px; text-align: center; }
+.map-name { font-size: 0.7rem; font-weight: bold; color: var(--gold); font-family: 'Rajdhani', sans-serif; }
+.map-match { font-size: 0.55rem; color: var(--muted); font-family: 'Rajdhani', sans-serif; }
+.map-stat { position: absolute; top: 5px; right: 5px; font-size: 0.5rem; padding: 2px 5px; border-radius: 3px; font-weight: bold; font-family: 'Rajdhani', sans-serif; }
+.ms-done { background: var(--success); color: #fff; }
+.ms-live { background: var(--danger); color: #fff; animation: pulseRed 1s infinite; }
+.ms-next { background: #333; color: #fff; }
+.live-box { margin-top: 20px; background: #111; border: 1px solid #333; border-radius: 12px; padding: 20px; text-align: center; position: relative; overflow: hidden; }
+.live-icon { font-size: 2rem; color: var(--danger); margin-bottom: 10px; animation: pulseRed 2s infinite; border-radius: 50%; display: inline-block; padding: 10px; }
+.live-text { font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: #fff; font-weight: bold; }
+
+/* ============================================
+   PODIUM & PESERTA
+   ============================================ */
+.podium { display: flex; align-items: flex-end; justify-content: center; gap: 10px; margin: 20px 0; height: 150px; }
+.p-box { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 32%; border-radius: 8px 8px 0 0; padding: 10px 5px; border: 1px solid #333; border-bottom: none; text-align: center; }
+.p-box .medal { font-size: 1.5rem; margin-bottom: 5px; }
+.p-name { font-size: 0.65rem; color: #fff; font-weight: 700; font-family: 'Rajdhani', sans-serif; line-height: 1; margin-bottom: 3px; }
+.p-prize { font-size: 0.7rem; color: var(--gold); font-weight: 800; font-family: 'Rajdhani', sans-serif; white-space: nowrap; }
+.p-1 { height: 100%; background: linear-gradient(to top, rgba(212,175,55,.2), rgba(212,175,55,.05)); border-color: var(--gold); z-index: 2; }
+.p-2 { height: 75%; background: linear-gradient(to top, rgba(176,176,176,.15), transparent); }
+.p-3 { height: 60%; background: linear-gradient(to top, rgba(205,127,50,.15), transparent); }
+.part-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.part-item { display: flex; align-items: center; gap: 10px; background: #111; padding: 8px 12px; border-radius: 8px; border: 1px solid #222; position: relative; }
+.part-item img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid #333; }
+.part-item span { font-size: 0.75rem; font-weight: 600; color: var(--silver); font-family: 'Rajdhani', sans-serif; }
+
+/* ============================================
+   DASHBOARD & ID CARD (3D TILT)
+   ============================================ */
+.id-card { background: linear-gradient(135deg, #1a1a1a, #0a0a0a); border: 1px solid var(--gold); border-radius: 16px; padding: 20px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(212, 175, 55, 0.15); transition: transform 0.1s ease-out; transform-style: preserve-3d; }
+.id-card::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.05) 50%, transparent 60%); animation: holo 5s infinite linear; pointer-events: none; }
+.id-head { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(212, 175, 55, 0.2); padding-bottom: 15px; transform: translateZ(20px); }
+.av-wrap { position: relative; width: 60px; height: 60px; }
+.av-ring { position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(var(--gold) 75%, #333 0); }
+.av { position: relative; width: 100%; height: 100%; border-radius: 50%; background: #111; color: var(--gold); display: flex; justify-content: center; align-items: center; font-size: 1.8rem; border: 2px solid #111; }
+.id-info h3 { font-size: 1.1rem; color: #fff; margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
+.tier { font-size: 0.55rem; background: #333; padding: 2px 6px; border-radius: 4px; color: var(--gold); border: 1px solid var(--gold); font-family: 'Rajdhani', sans-serif; }
+.id-info p { font-size: 0.7rem; color: var(--silver); font-family: 'Rajdhani', sans-serif; }
+.id-body { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; transform: translateZ(20px); }
+.id-stat span { display: block; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; font-family: 'Rajdhani', sans-serif; }
+.id-stat strong { font-size: 0.9rem; color: var(--gold); font-family: 'Orbitron', sans-serif; display: flex; align-items: center; gap: 5px; }
+
+/* ROSTER FLIP CARDS & OPTION BUTTON */
+.ros-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.flip { background: transparent; width: 100%; height: 120px; perspective: 1000px; cursor: pointer; }
+.flip-in { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+.flip.flipped .flip-in { transform: rotateY(180deg); }
+.flip-front, .flip-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 12px; border: 1px solid #333; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; }
+.flip-front { background: #111; color: #fff; }
+.flip-back { background: linear-gradient(135deg, #1a1a1a, #2a2a2a); color: #fff; transform: rotateY(180deg); border-color: var(--gold); }
+.fc-nick { font-family: 'Orbitron', sans-serif; font-weight: bold; color: var(--gold); font-size: 0.9rem; margin-bottom: 5px; }
+.fc-uid { font-size: 0.65rem; color: var(--muted); }
+.fc-role { margin-top: 10px; font-size: 0.6rem; padding: 2px 8px; border-radius: 4px; font-family: 'Rajdhani', sans-serif; font-weight: 700; }
+.fc-role.main { background: rgba(212, 175, 55, 0.2); color: var(--gold); }
+.fc-role.sub { background: rgba(255, 255, 255, 0.1); color: var(--silver); }
+.opt-btn { position: absolute; top: 5px; right: 5px; background: transparent; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; z-index: 10; padding: 5px; }
+.opt-btn:hover { color: var(--gold); }
+
+/* ============================================
+   WIZARD & RECEIPT
+   ============================================ */
+.stepper { display: flex; justify-content: space-between; margin-bottom: 20px; position: relative; }
+.stepper::before { content: ''; position: absolute; top: 15px; left: 0; width: 100%; height: 2px; background: #333; z-index: 1; }
+.step { width: 30px; height: 30px; border-radius: 50%; background: #222; border: 2px solid #333; display: flex; justify-content: center; align-items: center; font-size: 0.7rem; font-weight: bold; color: var(--muted); position: relative; z-index: 2; }
+.step.active { background: var(--gold); border-color: var(--gold); color: #000; }
+.step.done { background: var(--success); border-color: var(--success); color: #fff; }
+.receipt { background: #fff; color: #000; padding: 20px; font-family: 'Courier New', monospace; border-radius: 8px; margin-bottom: 15px; }
+.r-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
+.r-total { font-weight: bold; font-size: 1rem; margin-top: 10px; border-bottom: none; }
+.timer { font-family: 'Orbitron', sans-serif; font-size: 1.5rem; color: var(--danger); font-weight: 800; text-align: center; margin-bottom: 15px; }
+
+/* ============================================
+   CHAT (GLOBAL & TURNAMEN)
+   ============================================ */
+.chat-box { background: #111; border: 1px solid #333; border-radius: 8px; padding: 10px; margin-top: 15px; height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+.chat-msg { font-size: 0.75rem; color: var(--silver); animation: fadeInUp 0.5s; word-wrap: break-word; }
+.chat-msg img { max-width: 80px; border-radius: 6px; margin-top: 4px; display: block; }
+.chat-name { color: var(--cyan); font-weight: bold; }
+.chat-name.admin { color: var(--gold); }
+.chat-input { display: flex; gap: 5px; margin-top: 10px; align-items: center; }
+.chat-input input { flex: 1; padding: 10px 12px; border-radius: 20px; border: 1px solid #333; background: #0a0a0a; color: #fff; font-size: 0.8rem; font-family: 'Poppins', sans-serif; }
+.chat-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--gold); color: #000; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+.stk-btn { width: 40px; height: 40px; border-radius: 50%; background: #222; color: var(--gold); border: 1px solid #444; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+.sticker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 200px; overflow-y: auto; padding: 10px; background: #0a0a0a; border-radius: 8px; margin-top: 8px; }
+.sticker-grid img { width: 100%; aspect-ratio: 1; object-fit: contain; background: #111; border-radius: 6px; cursor: pointer; padding: 4px; }
+.sticker-upload { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1; background: #1a1a1a; border: 2px dashed var(--gold); border-radius: 6px; cursor: pointer; color: var(--gold); font-size: 1.2rem; }
+
+/* ============================================
+   TOAST & MODAL
+   ============================================ */
+#notif-container { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.toast { background: var(--panel); border: 1px solid #333; border-radius: 10px; padding: 15px; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8); animation: slideInTop 0.4s; pointer-events: auto; position: relative; overflow: hidden; }
+.t-icon { font-size: 1.2rem; flex-shrink: 0; }
+.t-cont { flex-grow: 1; }
+.t-title { font-size: 0.8rem; font-weight: bold; color: #fff; font-family: 'Rajdhani', sans-serif; }
+.t-close { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; }
+.ti { border-left: 4px solid var(--info); } .ti .t-icon { color: var(--info); }
+.tw { border-left: 4px solid var(--gold); } .tw .t-icon { color: var(--gold); }
+.td { border-left: 4px solid var(--danger); } .td .t-icon { color: var(--danger); }
+.ts { border-left: 4px solid var(--success); } .ts .t-icon { color: var(--success); }
+
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 2000; display: none; align-items: flex-end; justify-content: center; }
+.modal.active { display: flex; }
+.m-box { background: #0f0f0f; border-top: 1px solid var(--gold); border-radius: 20px 20px 0 0; padding: 25px 20px; width: 100%; max-width: 500px; animation: slideInBottom 0.3s; position: relative; max-height: 90dvh; overflow-y: auto; }
+.m-box h3 { color: var(--gold); margin-bottom: 15px; text-align: center; font-family: 'Orbitron', sans-serif; }
+.m-close { position: absolute; top: 15px; right: 15px; font-size: 1.2rem; color: var(--muted); cursor: pointer; }
+
+/* FORM & BUTTONS */
+.f-group { margin-bottom: 15px; }
+.f-group label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; font-family: 'Rajdhani', sans-serif; }
+input, select, textarea { width: 100%; padding: 12px 15px; background: rgba(0, 0, 0, 0.6); border: 1px solid #333; border-radius: 8px; color: #fff; font-family: 'Poppins', sans-serif; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px rgba(212,175,55,.2); }
+.btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #b8860b, var(--gold)); color: #000; border: none; border-radius: 8px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 0.85rem; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.btn:active { animation: click 0.3s; }
+.btn:disabled { background: #333; color: #777; cursor: not-allowed; }
+.btn-sec { background: transparent; border: 1px solid #555; color: var(--silver); }
+.btn-danger { background: rgba(229, 57, 53, 0.1); border: 1px solid var(--danger); color: var(--danger); }
+.btn-sm { width: auto; padding: 8px 15px; font-size: 0.7rem; }
+
 /* TABS & FAQ */
-.tabs{display:flex;gap:10px;margin-bottom:15px;background:#111;padding:5px;border-radius:10px;border:1px solid #222;overflow-x:auto}
-.tab{padding:10px 15px;background:transparent;border:none;color:var(--muted);border-radius:8px;font-family:'Rajdhani',sans-serif;cursor:pointer;font-size:.8rem;font-weight:700;white-space:nowrap}
-.tab.active{background:var(--gold);color:#000}
-details{background:#111;border:1px solid #222;border-radius:8px;padding:12px;margin-bottom:10px;font-size:.8rem}
-details[open]{border-color:var(--gold)}
-summary{cursor:pointer;color:var(--gold);font-weight:600;outline:none;display:flex;justify-content:space-between;font-family:'Rajdhani',sans-serif;font-size:.9rem}
-details p{margin-top:10px;color:var(--silver);line-height:1.6}
-/* PESERTA */
-.part-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.part-item{display:flex;align-items:center;gap:10px;background:#111;padding:8px 12px;border-radius:8px;border:1px solid #222;position:relative}
-.part-item img{width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid #333}
-.part-item span{font-size:.75rem;font-weight:600;color:var(--silver);font-family:'Rajdhani',sans-serif}
-/* CHAT */
-.chat-box{background:#111;border:1px solid #333;border-radius:8px;padding:10px;margin-top:15px;height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:5px}
-.chat-msg{font-size:.7rem;color:var(--silver);animation:fadeInUp .5s;word-wrap:break-word}
-.chat-msg img{max-width:80px;border-radius:6px;margin-top:4px;display:block}
-.chat-name{color:var(--cyan);font-weight:bold}.chat-name.admin{color:var(--gold)}
-.chat-input{display:flex;gap:5px;margin-top:10px;align-items:center}
-.chat-input input{flex:1;padding:10px 12px;border-radius:20px;border:1px solid #333;background:#0a0a0a;color:#fff;font-size:.8rem;font-family:'Poppins',sans-serif}
-.chat-input input:focus{outline:none;border-color:var(--gold)}
-.chat-btn{width:40px;height:40px;border-radius:50%;background:var(--gold);color:#000;border:none;cursor:pointer;display:flex;justify-content:center;align-items:center;flex-shrink:0}
-.stk-btn{width:40px;height:40px;border-radius:50%;background:#222;color:var(--gold);border:1px solid #444;cursor:pointer;display:flex;justify-content:center;align-items:center;flex-shrink:0}
-/* FORMS & BUTTONS */
-.f-group{margin-bottom:15px}.f-group label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:6px;font-family:'Rajdhani',sans-serif}
-input,select,textarea{width:100%;padding:12px 15px;background:rgba(0,0,0,.6);border:1px solid #333;border-radius:8px;color:#fff;font-family:'Poppins',sans-serif}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 10px rgba(212,175,55,.2)}
-.btn{width:100%;padding:14px;background:linear-gradient(135deg,#b8860b,var(--gold));color:#000;border:none;border-radius:8px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:.85rem;cursor:pointer;text-transform:uppercase;letter-spacing:1px;position:relative;overflow:hidden;display:flex;justify-content:center;align-items:center;gap:8px}
-.btn:active{animation:click .3s}.btn:disabled{background:#333;color:#777;cursor:not-allowed}
-.btn-sec{background:transparent;border:1px solid #555;color:var(--silver)}
-.btn-danger{background:rgba(229,57,53,.1);border:1px solid var(--danger);color:var(--danger)}
-.btn-sm{width:auto;padding:8px 15px;font-size:.7rem}
-/* DASHBOARD */
-.id-card{background:linear-gradient(135deg,#1a1a1a,#0a0a0a);border:1px solid var(--gold);border-radius:16px;padding:20px;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(212,175,55,.15)}
-.id-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent 40%,rgba(255,255,255,.05) 50%,transparent 60%);animation:holo 5s infinite linear;pointer-events:none}
-.id-head{display:flex;align-items:center;gap:15px;margin-bottom:15px;border-bottom:1px solid rgba(212,175,55,.2);padding-bottom:15px}
-.av-wrap{position:relative;width:60px;height:60px}.av-ring{position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(var(--gold) 75%,#333 0)}
-.av{position:relative;width:100%;height:100%;border-radius:50%;background:#111;color:var(--gold);display:flex;justify-content:center;align-items:center;font-size:1.8rem;border:2px solid #111}
-.id-info h3{font-size:1.1rem;color:#fff;margin-bottom:3px;display:flex;align-items:center;gap:5px}
-.tier{font-size:.55rem;background:#333;padding:2px 6px;border-radius:4px;color:var(--gold);border:1px solid var(--gold);font-family:'Rajdhani',sans-serif}
-.id-info p{font-size:.7rem;color:var(--silver);font-family:'Rajdhani',sans-serif}
-.id-body{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.id-stat span{display:block;font-size:.6rem;color:var(--muted);text-transform:uppercase;font-family:'Rajdhani',sans-serif}
-.id-stat strong{font-size:.9rem;color:var(--gold);font-family:'Orbitron',sans-serif;display:flex;align-items:center;gap:5px}
-/* ROSTER */
-.ros-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.flip{background:transparent;width:100%;height:120px;perspective:1000px;cursor:pointer}
-.flip-in{position:relative;width:100%;height:100%;transition:transform .6s;transform-style:preserve-3d}
-.flip.flipped .flip-in{transform:rotateY(180deg)}
-.flip-front,.flip-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;border:1px solid #333;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:10px}
-.flip-front{background:#111;color:#fff}.flip-back{background:linear-gradient(135deg,#1a1a1a,#2a2a2a);color:#fff;transform:rotateY(180deg);border-color:var(--gold)}
-.fc-nick{font-family:'Orbitron',sans-serif;font-weight:bold;color:var(--gold);font-size:.9rem;margin-bottom:5px}.fc-uid{font-size:.65rem;color:var(--muted)}
-.fc-role{margin-top:10px;font-size:.6rem;padding:2px 8px;border-radius:4px;font-family:'Rajdhani',sans-serif;font-weight:700}
-.fc-role.main{background:rgba(212,175,55,.2);color:var(--gold)}.fc-role.sub{background:rgba(255,255,255,.1);color:var(--silver)}
-.opt-btn{position:absolute;top:5px;right:5px;background:transparent;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;z-index:10;padding:5px}
-.opt-btn:hover{color:var(--gold)}
-/* TOAST & MODAL */
-#notif{position:fixed;top:70px;left:50%;transform:translateX(-50%);width:90%;max-width:400px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
-.toast{background:var(--panel);border:1px solid #333;border-radius:10px;padding:15px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 5px 20px rgba(0,0,0,.8);animation:slideInTop .4s;pointer-events:auto;position:relative;overflow:hidden}
-.t-icon{font-size:1.2rem;flex-shrink:0}.t-cont{flex-grow:1}
-.t-title{font-size:.8rem;font-weight:bold;color:#fff;font-family:'Rajdhani',sans-serif}
-.t-close{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:1rem}
-.ti{border-left:4px solid var(--info)}.ti .t-icon{color:var(--info)}
-.tw{border-left:4px solid var(--gold)}.tw .t-icon{color:var(--gold)}
-.td{border-left:4px solid var(--danger)}.td .t-icon{color:var(--danger)}
-.ts{border-left:4px solid var(--success)}.ts .t-icon{color:var(--success)}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:none;align-items:flex-end;justify-content:center}
-.modal.active{display:flex}
-.m-box{background:#0f0f0f;border-top:1px solid var(--gold);border-radius:20px 20px 0 0;padding:25px 20px;width:100%;max-width:500px;animation:slideInBottom .3s;position:relative;max-height:90dvh;overflow-y:auto}
-.m-box h3{color:var(--gold);margin-bottom:15px;text-align:center;font-family:'Orbitron',sans-serif}
-.m-close{position:absolute;top:15px;right:15px;font-size:1.2rem;color:var(--muted);cursor:pointer}
-/* STEPPER */
-.stepper{display:flex;justify-content:space-between;margin-bottom:20px;position:relative}
-.stepper::before{content:'';position:absolute;top:15px;left:0;width:100%;height:2px;background:#333;z-index:1}
-.step{width:30px;height:30px;border-radius:50%;background:#222;border:2px solid #333;display:flex;justify-content:center;align-items:center;font-size:.7rem;font-weight:bold;color:var(--muted);position:relative;z-index:2}
-.step.active{background:var(--gold);border-color:var(--gold);color:#000}.step.done{background:var(--success);border-color:var(--success);color:#fff}
-/* RECEIPT */
-.receipt{background:#fff;color:#000;padding:20px;font-family:'Courier New',monospace;border-radius:8px;margin-bottom:15px}
-.r-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:.8rem;border-bottom:1px dashed #ccc;padding-bottom:5px}
-.r-total{font-weight:bold;font-size:1rem;margin-top:10px;border-bottom:none}
-.timer{font-family:'Orbitron',sans-serif;font-size:1.5rem;color:var(--danger);font-weight:800;text-align:center;margin-bottom:15px}
-.glitch-404{font-family:'Orbitron',sans-serif;font-size:6rem;font-weight:900;color:var(--danger);animation:glitch .5s infinite;text-align:center;padding-top:50px}
-footer{text-align:center;padding:20px 0;font-size:.65rem;color:var(--muted);border-top:1px solid #222;margin-top:20px;font-family:'Rajdhani',sans-serif}
-footer a{color:var(--gold);text-decoration:none}
-@media (max-width:480px){.grid{grid-template-columns:1fr}.meta-grid{grid-template-columns:1fr}.part-list{grid-template-columns:1fr}.ros-grid{grid-template-columns:1fr}}
+.tabs { display: flex; gap: 10px; margin-bottom: 15px; background: #111; padding: 5px; border-radius: 10px; border: 1px solid #222; overflow-x: auto; }
+.tab { padding: 10px 15px; background: transparent; border: none; color: var(--muted); border-radius: 8px; font-family: 'Rajdhani', sans-serif; cursor: pointer; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+.tab.active { background: var(--gold); color: #000; }
+details { background: #111; border: 1px solid #222; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.8rem; }
+details[open] { border-color: var(--gold); }
+summary { cursor: pointer; color: var(--gold); font-weight: 600; outline: none; display: flex; justify-content: space-between; font-family: 'Rajdhani', sans-serif; font-size: 0.9rem; }
+details p { margin-top: 10px; color: var(--silver); line-height: 1.6; }
+
+/* E-TICKET DESIGN */
+.ticket-wrap { background: linear-gradient(135deg, #121212, #050505); border-radius: 20px; border: 1px solid var(--gold); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8); display: flex; position: relative; overflow: hidden; margin-bottom: 20px; }
+.ticket-wrap::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.05) 50%, transparent 60%); animation: holo 5s infinite linear; pointer-events: none; }
+.t-left { flex: 1; padding: 20px; border-right: 2px dashed #333; position: relative; z-index: 2; }
+.t-right { width: 120px; padding: 20px 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; z-index: 2; background: rgba(212,175,55,.05); }
+.t-hole { position: absolute; width: 20px; height: 20px; background: #050505; border-radius: 50%; border: 1px solid var(--gold); }
+.t-hole.top { top: -10px; left: -10px; } .t-hole.bottom { bottom: -10px; left: -10px; }
+.t-code-lbl { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; }
+.t-code { font-family: 'Orbitron', sans-serif; font-size: 1.5rem; font-weight: 900; color: var(--gold); letter-spacing: 3px; text-shadow: 0 0 10px var(--gold-glow); }
+.t-qr { width: 80px; height: 80px; background: #fff; border-radius: 8px; padding: 4px; margin-bottom: 10px; }
+.t-qr img { width: 100%; height: 100%; }
+
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr; }
+  .meta-grid { grid-template-columns: 1fr; }
+  .part-list { grid-template-columns: 1fr; }
+  .ros-grid { grid-template-columns: 1fr; }
+  .ticket-wrap { flex-direction: column; }
+  .t-left { border-right: none; border-bottom: 2px dashed #333; }
+  .t-right { width: 100%; }
+  .t-hole.top { left: 45%; } .t-hole.bottom { left: 45%; }
+}
 </style>
 </head>
 <body>
 
-<!-- INTRO -->
-<div id="intro">
+<!-- INTRO SCREEN -->
+<div id="intro-screen">
   <div class="stars" id="stars"></div>
-  <div class="intro-flash"></div>
   <div class="intro-box">
     <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" class="intro-logo" onerror="this.style.display='none'">
     <h1 class="intro-title">GH-T ARENA</h1>
@@ -260,7 +326,7 @@ footer a{color:var(--gold);text-decoration:none}
     <div class="terminal" id="term"></div>
     <i class="fa-solid fa-crosshairs loader"></i>
   </div>
-  <button id="skip" onclick="skipIntro()">LEWATI INTRO ↗</button>
+  <button id="skip-btn" onclick="skipIntro()">LEWATI INTRO ↗</button>
 </div>
 
 <div class="running"><span>🔥 SELAMAT DATANG DI GH-T ARENA 🔥 DAFTARKAN TIM MU SEKARANG DAN RAIH HADIAH JUTAAN RUPIAH! 🔥</span></div>
@@ -273,9 +339,8 @@ footer a{color:var(--gold);text-decoration:none}
   </div>
   <div class="nav-act">
     <span class="clock" id="clock">00:00:00</span>
-    <button class="nav-btn" onclick="handleAuth()"><i class="fa-solid fa-right-to-bracket" id="auth-ic"></i><span id="auth-tx" style="font-size:.6rem;margin-left:3px;">Login</span></button>
     <button class="nav-btn" onclick="nav('notif')"><i class="fa-solid fa-bell"></i><span class="badge hidden" id="notif-badge">0</span></button>
-    <button class="nav-btn" onclick="nav('dash')"><i class="fa-solid fa-circle-user"></i></button>
+    <button class="nav-btn" onclick="handleAuth()"><i class="fa-solid fa-right-to-bracket" id="auth-ic"></i><span id="auth-tx" style="font-size:0.6rem;margin-left:3px;">Login</span></button>
   </div>
 </nav>
 
@@ -283,7 +348,7 @@ footer a{color:var(--gold);text-decoration:none}
   <span><div class="dot"></div> Server: Online</span><span>Ping: 15ms</span><span>Region: ID</span>
 </div>
 
-<div id="notif"></div>
+<div id="notif-container"></div>
 
 <div class="container" id="content">
 
@@ -310,44 +375,32 @@ footer a{color:var(--gold);text-decoration:none}
     <img src="https://i.ibb.co.com/WW9NXHjZ/1000367499-removebg-preview.png" onerror="this.style.display='none'">
   </div>
 
-  <div class="count-head">
-    <div style="font-family:'Orbitron',sans-serif;font-size:.9rem;font-weight:bold;color:#fff">NEXT TOURNAMENT</div>
-    <div class="count-box">
-      <div class="cd"><div class="cd-n" id="cd-d">00</div><div class="cd-l">Hari</div></div>
-      <div class="cd"><div class="cd-n" id="cd-h">00</div><div class="cd-l">Jam</div></div>
-      <div class="cd"><div class="cd-n" id="cd-m">00</div><div class="cd-l">Mnt</div></div>
-      <div class="cd"><div class="cd-n" id="cd-s">00</div><div class="cd-l">Dtk</div></div>
-    </div>
-  </div>
-
   <h2 class="title">Turnamen Tersedia</h2>
-  <div class="grid" id="tour-grid">
-    <div class="empty"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat...</p></div>
-  </div>
+  <div class="grid" id="tour-grid"></div>
 
   <div class="glass" style="margin-top:20px">
     <h3 class="title" style="font-size:.9rem;text-align:center;justify-content:center;border:none">👑 HALL OF FAME 👑</h3>
-    <div class="hof">
-      <div class="hof-item hof-2"><div class="hof-av">🥈</div><div class="hof-n">-</div><div class="hof-p">-</div></div>
-      <div class="hof-item hof-1"><div class="hof-av">🥇</div><div class="hof-n">-</div><div class="hof-p">-</div></div>
-      <div class="hof-item hof-3"><div class="hof-av">🥉</div><div class="hof-n">-</div><div class="hof-p">-</div></div>
+    <div class="podium" style="height: 80px;">
+      <div class="p-box p-2"><div class="medal">🥈</div><div class="p-name">-</div><div class="p-prize">-</div></div>
+      <div class="p-box p-1"><div class="medal">🥇</div><div class="p-name">-</div><div class="p-prize">-</div></div>
+      <div class="p-box p-3"><div class="medal">🥉</div><div class="p-name">-</div><div class="p-prize">-</div></div>
     </div>
-    <p style="font-size:.7rem;color:var(--muted);text-align:center;margin-top:15px">Belum ada juara sebelumnya.</p>
   </div>
 
   <div class="glass" style="margin-top:20px">
-    <h3 class="title"><i class="fa-solid fa-book"></i> Panduan Singkat</h3>
-    <div style="display:flex;gap:5px;margin-bottom:15px;overflow-x:auto">
+    <h3 class="title"><i class="fa-solid fa-book"></i> Panduan & FAQ</h3>
+    <div class="tabs">
       <button class="tab active" onclick="switchFaq('umum')">Umum</button>
       <button class="tab" onclick="switchFaq('bayar')">Pembayaran</button>
     </div>
     <div id="faq-umum">
-      <details><summary>Bagaimana cara daftar? <i class="fa-solid fa-chevron-down"></i></summary><p>Login, buat tim, isi roster, lalu pilih turnamen dan bayar.</p></details>
-      <details><summary>Apakah bisa ganti pemain? <i class="fa-solid fa-chevron-down"></i></summary><p>Bisa sebelum 1 jam jadwal turnamen dimulai.</p></details>
+      <details><summary>Bagaimana cara daftar turnamen? <i class="fa-solid fa-chevron-down"></i></summary><p>Login/Register -> Buka menu Dash -> Buat Tim & Isi Roster -> Kembali ke Home -> Pilih Turnamen -> Daftar -> Pilih Tim -> Bayar via QRIS.</p></details>
+      <details><summary>Apakah bisa ganti pemain? <i class="fa-solid fa-chevron-down"></i></summary><p>Bisa, edit roster di Dashboard sebelum 1 jam jadwal turnamen dimulai.</p></details>
+      <details><summary>Turnamen Offline itu apa? <i class="fa-solid fa-chevron-down"></i></summary><p>Turnamen yang diadakan secara fisik (kopdar). Setelah daftar, kamu akan mendapatkan E-Ticket untuk di-scan panitia di lokasi.</p></details>
     </div>
     <div id="faq-bayar" class="hidden">
-      <details><summary>Metode pembayaran apa saja? <i class="fa-solid fa-chevron-down"></i></summary><p>Hanya QRIS untuk pendaftaran.</p></details>
-      <details><summary>Bagaimana jika turnamen batal? <i class="fa-solid fa-chevron-down"></i></summary><p>Dana akan dikembalikan 100% ke Saldo akun kamu.</p></details>
+      <details><summary>Metode pembayaran apa saja? <i class="fa-solid fa-chevron-down"></i></summary><p>Pendaftaran hanya via QRIS. Pencairan hadiah via DANA.</p></details>
+      <details><summary>Bagaimana jika turnamen batal? <i class="fa-solid fa-chevron-down"></i></summary><p>Dana akan dikembalikan 100% ke Saldo akun kamu (bisa ditarik ke DANA).</p></details>
     </div>
   </div>
 </div>
@@ -359,6 +412,15 @@ footer a{color:var(--gold);text-decoration:none}
     <img src="" class="detail-img" id="det-img" onerror="this.src='https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg'">
     <h1 class="detail-title" id="det-title">-</h1>
     <span class="status st-open" style="margin-bottom:15px" id="det-status">-</span>
+    
+    <!-- Info Offline -->
+    <div id="det-offline" class="hidden" style="background:rgba(212,175,55,.1); border:1px solid var(--gold); padding:10px; border-radius:8px; margin-bottom:15px;">
+      <p style="font-size:.8rem;color:var(--gold);font-weight:bold;margin-bottom:5px;">📍 INFO LOKASI (OFFLINE)</p>
+      <p style="font-size:.8rem;color:#fff;" id="det-loc-name">-</p>
+      <p style="font-size:.75rem;color:var(--silver);margin-bottom:8px;" id="det-loc-addr">-</p>
+      <a href="#" id="det-loc-maps" target="_blank" class="btn btn-sm" style="background:#333;color:#fff;text-decoration:none;display:inline-block;"><i class="fa-solid fa-map-location-dot"></i> Buka Google Maps</a>
+    </div>
+
     <div class="meta-grid">
       <div class="meta-box"><span>Total Hadiah</span><strong id="det-prize">-</strong></div>
       <div class="meta-box"><span>Biaya Masuk</span><strong id="det-fee">-</strong></div>
@@ -368,12 +430,7 @@ footer a{color:var(--gold);text-decoration:none}
 
     <div id="det-br">
       <h3 class="title">Map Pool BR</h3>
-      <div class="map-pool" id="map-pool"><p style="color:var(--muted);font-size:.8rem">Memuat map...</p></div>
-    </div>
-
-    <div id="det-cs" class="hidden">
-      <h3 class="title">Bracket CS</h3>
-      <div style="background:#111;border:1px solid #222;border-radius:8px;padding:20px;text-align:center;color:var(--muted);font-size:.8rem">Bracket akan muncul setelah turnamen dimulai.</div>
+      <div class="map-pool" id="map-pool"></div>
     </div>
 
     <h3 class="title" style="margin-top:20px">Distribusi Hadiah</h3>
@@ -383,23 +440,21 @@ footer a{color:var(--gold);text-decoration:none}
       <div class="p-box p-3"><div class="medal">🥉</div><div class="p-name">Juara 3</div><div class="p-prize" id="p-3">-</div></div>
     </div>
 
-    <h3 class="title">Aturan</h3>
-    <details><summary>Ketentuan Umum <i class="fa-solid fa-chevron-down"></i></summary><p>Wajib menggunakan nickname yang sama dengan UID. Dilarang menggunakan cheat, emulator. Keputusan admin mutlak.</p></details>
-
     <h3 class="title">Peserta</h3>
-    <div class="part-list" id="part-list"><p style="color:var(--muted);font-size:.8rem">Belum ada peserta.</p></div>
+    <div class="part-list" id="part-list"></div>
 
     <h3 class="title" style="margin-top:20px"><i class="fa-solid fa-comments"></i> Live Chat Turnamen</h3>
     <div class="chat-box" id="chat-tour"><p style="text-align:center;color:var(--muted);font-size:.8rem">Memuat chat...</p></div>
     <div class="chat-input">
       <input type="text" id="chat-tour-in" placeholder="Ketik pesan..." onkeypress="if(event.key==='Enter')sendTourChat()">
+      <button class="stk-btn" onclick="toggleSticker('tour')"><i class="fa-solid fa-face-smile"></i></button>
       <button class="chat-btn" onclick="sendTourChat()"><i class="fa-solid fa-paper-plane"></i></button>
     </div>
+    <div class="sticker-grid hidden" id="stk-tour"></div>
 
-    <!-- LIVE STREAM (Click to Play) -->
-    <div class="glass" id="stream-box" style="margin-top:20px;background:#111;border:1px solid #333;border-radius:12px;padding:20px;text-align:center;display:none">
-      <div style="font-size:2rem;color:var(--danger);margin-bottom:10px;animation:pulseRed 2s infinite"><i class="fa-brands fa-youtube"></i></div>
-      <div style="font-family:'Orbitron',sans-serif;font-size:.8rem;color:#fff;font-weight:bold;">🔴 LIVE STREAMING</div>
+    <div class="live-box" id="stream-box" style="display:none">
+      <div class="live-icon"><i class="fa-brands fa-youtube"></i></div>
+      <div class="live-text">🔴 LIVE STREAMING</div>
       <button class="btn btn-danger btn-sm" style="margin-top:15px;width:auto" onclick="openStream()">Tonton Live</button>
     </div>
 
@@ -411,7 +466,7 @@ footer a{color:var(--gold);text-decoration:none}
 <!-- VIEW: MY TOURNAMENTS -->
 <div id="v-my-tour" class="view hidden">
   <h2 class="title">Turnamen Saya</h2>
-  <div id="my-tour-list"><p style="text-align:center;color:var(--muted);font-size:.85rem;padding:20px">Kamu belum mengikuti turnamen apapun.</p></div>
+  <div id="my-tour-list"></div>
 </div>
 
 <!-- VIEW: DASHBOARD -->
@@ -458,9 +513,7 @@ footer a{color:var(--gold);text-decoration:none}
     <div style="background:#111;padding:10px;border-radius:8px;margin-bottom:15px;border:1px solid #333">
       <div class="f-group"><input type="text" id="new-pl-nick" placeholder="Nickname FF"></div>
       <div class="f-group"><input type="text" id="new-pl-uid" placeholder="UID FF"></div>
-      <div class="f-group">
-        <select id="new-pl-role"><option value="main">Main (Max 4)</option><option value="sub">Cadangan (Max 2)</option></select>
-      </div>
+      <div class="f-group"><select id="new-pl-role"><option value="main">Main (Max 4)</option><option value="sub">Cadangan (Max 2)</option></select></div>
       <button class="btn btn-sm" style="background:var(--success);color:#fff" onclick="addPlayer(this)">Tambah Pemain</button>
     </div>
     <div class="ros-grid" id="pl-list"></div>
@@ -488,13 +541,14 @@ footer a{color:var(--gold);text-decoration:none}
   <div class="glass">
     <div id="rs1">
       <h3 style="color:var(--gold);margin-bottom:15px;font-family:'Rajdhani',sans-serif">1. Data DANA</h3>
-      <div class="f-group"><label>Nomor DANA</label><input type="text" id="reg-dana-num" placeholder="08xxxxxxxxxx"></div>
-      <div class="f-group"><label>Nama Pemilik</label><input type="text" id="reg-dana-name" placeholder="Nama sesuai akun DANA"></div>
+      <div class="f-group"><label>Nomor DANA</label><input type="text" id="reg-dana-num" readonly></div>
+      <div class="f-group"><label>Nama Pemilik</label><input type="text" id="reg-dana-name" readonly></div>
+      <p style="font-size:0.7rem;color:var(--muted);margin-bottom:15px">*Data diambil otomatis dari profil. Ubah di Dashboard jika salah.</p>
       <button class="btn" onclick="stepReg(2)">Lanjut <i class="fa-solid fa-arrow-right"></i></button>
     </div>
     <div id="rs2" class="hidden">
       <h3 style="color:var(--gold);margin-bottom:15px;font-family:'Rajdhani',sans-serif">2. Pilih Tim</h3>
-      <div id="reg-team-list"><p style="color:var(--muted);font-size:.8rem">Memuat tim...</p></div>
+      <div id="reg-team-list"></div>
       <div id="reg-team-empty" class="hidden" style="text-align:center;padding:20px">
         <p style="color:var(--danger);margin-bottom:10px">Kamu belum punya tim.</p>
         <button class="btn btn-sm" onclick="nav('dash')">Buat Tim Dulu</button>
@@ -503,13 +557,13 @@ footer a{color:var(--gold);text-decoration:none}
       <button class="btn btn-sec" style="margin-top:10px" onclick="stepReg(1)">Kembali</button>
     </div>
     <div id="rs3" class="hidden">
-      <h3 style="color:var(--gold);margin-bottom:15px;font-family:'Rajdhani',sans-serif">3. Pilih Roster (4 Main + 2 Sub)</h3>
-      <div id="reg-ros-fields"><p style="color:var(--muted);font-size:.8rem">Memuat...</p></div>
-      <button class="btn" style="margin-top:15px" onclick="stepReg(4)">Lanjut <i class="fa-solid fa-arrow-right"></i></button>
+      <h3 style="color:var(--gold);margin-bottom:15px;font-family:'Rajdhani',sans-serif">3. Konfirmasi Roster</h3>
+      <div id="reg-ros-fields"></div>
+      <button class="btn" style="margin-top:15px" onclick="stepReg(4)">Lanjut Bayar <i class="fa-solid fa-arrow-right"></i></button>
       <button class="btn btn-sec" style="margin-top:10px" onclick="stepReg(2)">Kembali</button>
     </div>
     <div id="rs4" class="hidden">
-      <h3 style="color:var(--gold);margin-bottom:15px;font-family:'Rajdhani',sans-serif">4. Bayar</h3>
+      <h3 style="color:var(--gold);margin-bottom:15px;font-family:'Rajdhani',sans-serif">4. Pembayaran</h3>
       <div class="receipt" id="reg-receipt"></div>
       <div class="timer" id="qr-timer">05:00</div>
       <div id="qr-img" style="text-align:center;margin-bottom:15px"></div>
@@ -526,7 +580,7 @@ footer a{color:var(--gold);text-decoration:none}
     <h2 class="title" style="margin:0;border:none">Notifikasi</h2>
     <button class="btn btn-sm btn-sec" onclick="markAllRead()">Tandai Dibaca</button>
   </div>
-  <div class="glass" style="padding:0" id="notif-list"><p style="padding:15px;font-size:.8rem;color:var(--muted);text-align:center">Belum ada notifikasi.</p></div>
+  <div class="glass" style="padding:0" id="notif-list"></div>
 </div>
 
 <!-- VIEW: AUTH -->
@@ -557,41 +611,37 @@ footer a{color:var(--gold);text-decoration:none}
 
 <!-- VIEW: 404 -->
 <div id="v-404" class="view hidden">
-  <h1 class="glitch-404">404</h1>
+  <h1 style="font-family:'Orbitron';font-size:6rem;color:var(--danger);text-align:center;padding-top:50px">404</h1>
   <h2 style="color:#fff;text-align:center;font-family:'Orbitron',sans-serif">AREA RESTRICTED</h2>
-  <p style="color:var(--muted);text-align:center;margin:10px 0 20px">YOU HAVE BEEN ELIMINATED</p>
-  <div style="text-align:center"><button class="btn btn-danger btn-sm" onclick="nav('home')">Kembali</button></div>
+  <div style="text-align:center;margin-top:20px"><button class="btn btn-danger btn-sm" onclick="nav('home')">Kembali</button></div>
 </div>
 
 </div><!-- /container -->
-
-<footer>&copy; 2026 GH-T ARENA. <a href="#" onclick="toast('Syarat & Ketentuan Berlaku','info');return false">Syarat & Ketentuan Berlaku.</a></footer>
 
 <!-- BOTTOM NAV -->
 <div class="btm-nav hidden" id="btm-nav">
   <button class="active" data-v="home" onclick="nav('home')"><i class="fa-solid fa-house"></i>Home</button>
   <button data-v="my-tour" onclick="nav('my-tour')"><i class="fa-solid fa-list-check"></i>Turnamen</button>
-  <button data-v="dash" onclick="nav('dash')"><i class="fa-solid fa-shield-halved"></i>Dash</button>
   <button data-v="notif" onclick="nav('notif')"><i class="fa-solid fa-bell"></i>Notif</button>
+  <button data-v="dash" onclick="nav('dash')"><i class="fa-solid fa-circle-user"></i>Profil</button>
 </div>
 
 <!-- FLOATING -->
 <a href="https://wa.me/6283848591646" target="_blank" class="wa-float"><i class="fa-brands fa-whatsapp"></i></a>
 <div class="chat-float" onclick="openGlobalChat()"><i class="fa-solid fa-comments"></i></div>
-<div class="top-btn" id="topBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i class="fa-solid fa-arrow-up"></i></div>
 
 <!-- MODAL: GLOBAL CHAT -->
 <div id="m-chat" class="modal" onclick="if(event.target===this)closeGlobalChat()">
   <div class="m-box" style="height:85vh;display:flex;flex-direction:column">
     <i class="fa-solid fa-xmark m-close" onclick="closeGlobalChat()"></i>
     <h3><i class="fa-solid fa-globe"></i> Chat Global</h3>
-    <div class="chat-box" id="global-chat" style="flex:1;height:auto;margin-bottom:10px"><p style="text-align:center;color:var(--muted);font-size:.8rem">Memuat chat...</p></div>
+    <div class="chat-box" id="global-chat" style="flex:1;height:auto;margin-bottom:10px"></div>
     <div class="chat-input">
       <input type="text" id="global-in" placeholder="Ketik pesan..." onkeypress="if(event.key==='Enter')sendGlobalChat()">
-      <button class="stk-btn" onclick="toggleSticker()"><i class="fa-solid fa-face-smile"></i></button>
+      <button class="stk-btn" onclick="toggleSticker('global')"><i class="fa-solid fa-face-smile"></i></button>
       <button class="chat-btn" onclick="sendGlobalChat()"><i class="fa-solid fa-paper-plane"></i></button>
     </div>
-    <div class="hidden" id="stk-picker" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:200px;overflow-y:auto;padding:10px;background:#0a0a0a;border-radius:8px;margin-top:8px"></div>
+    <div class="sticker-grid hidden" id="stk-global"></div>
   </div>
 </div>
 
@@ -600,12 +650,10 @@ footer a{color:var(--gold);text-decoration:none}
   <div class="m-box">
     <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-wd')"></i>
     <h3><i class="fa-solid fa-money-bill-transfer"></i> Tarik Saldo</h3>
-    <p style="font-size:.75rem;color:var(--muted);margin-bottom:15px">Minimal penarikan Rp 10.000. Pastikan nomor DANA sudah benar.</p>
-    <div class="f-group"><label>Nominal (Rp)</label><input type="number" id="wd-amt" placeholder="Contoh: 50000"></div>
+    <div class="f-group"><label>Nominal (Rp)</label><input type="number" id="wd-amt" placeholder="Min 10.000"></div>
     <div class="f-group"><label>Nomor DANA</label><input type="text" id="wd-dana-num" readonly></div>
-    <div class="f-group"><label>Nama DANA</label><input type="text" id="wd-dana-name" readonly></div>
     <button class="btn" onclick="submitWdSaldo()">Ajukan Penarikan</button>
-    <button class="btn btn-sec" style="margin-top:10px;background:#25D366;color:#fff;border:none" onclick="openWAWd()"><i class="fa-brands fa-whatsapp"></i> Hubungi Admin via WA</button>
+    <button class="btn btn-sec" style="margin-top:10px;background:#25D366;color:#fff;border:none" onclick="openWAWd()"><i class="fa-brands fa-whatsapp"></i> WA Admin</button>
   </div>
 </div>
 
@@ -627,21 +675,29 @@ footer a{color:var(--gold);text-decoration:none}
 <div id="m-wd-tour" class="modal" onclick="if(event.target===this)closeModal('m-wd-tour')">
   <div class="m-box">
     <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-wd-tour')"></i>
-    <h3><i class="fa-solid fa-right-from-bracket"></i> Mundur dari Turnamen</h3>
-    <p style="font-size:.8rem;color:var(--silver);margin-bottom:10px">Yakin ingin mundur? Refund akan diproses oleh Admin sesuai kebijakan.</p>
-    <div class="f-group"><label>Alasan</label><textarea id="wd-reason" rows="3" placeholder="Alasan mundur..."></textarea></div>
+    <h3><i class="fa-solid fa-right-from-bracket"></i> Mundur Turnamen</h3>
+    <div class="f-group"><label>Alasan</label><textarea id="wd-reason" rows="3"></textarea></div>
     <button class="btn btn-danger" onclick="submitWdTour(this)">Ajukan Mundur</button>
+  </div>
+</div>
+
+<!-- MODAL: E-TICKET -->
+<div id="m-ticket" class="modal" onclick="if(event.target===this)closeModal('m-ticket')">
+  <div class="m-box">
+    <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-ticket')"></i>
+    <h3><i class="fa-solid fa-ticket"></i> E-Ticket</h3>
+    <div id="ticket-content"></div>
+    <button class="btn" style="margin-top:15px" onclick="closeModal('m-ticket')">Tutup</button>
   </div>
 </div>
 
 <!-- MODAL: LEDGER & PAYOUTS -->
 <div id="m-ledger" class="modal" onclick="if(event.target===this)closeModal('m-ledger')">
-  <div class="m-box"><i class="fa-solid fa-xmark m-close" onclick="closeModal('m-ledger')"></i><h3><i class="fa-solid fa-wallet"></i> Riwayat Saldo</h3><div id="ledger-list"><p style="text-align:center;color:var(--muted);font-size:.8rem">Memuat...</p></div></div>
+  <div class="m-box"><i class="fa-solid fa-xmark m-close" onclick="closeModal('m-ledger')"></i><h3>Riwayat Saldo</h3><div id="ledger-list"></div></div>
 </div>
 <div id="m-payout" class="modal" onclick="if(event.target===this)closeModal('m-payout')">
-  <div class="m-box"><i class="fa-solid fa-xmark m-close" onclick="closeModal('m-payout')"></i><h3><i class="fa-solid fa-trophy"></i> Riwayat Hadiah</h3><div id="payout-list"><p style="text-align:center;color:var(--muted);font-size:.8rem">Memuat...</p></div></div>
+  <div class="m-box"><i class="fa-solid fa-xmark m-close" onclick="closeModal('m-payout')"></i><h3>Riwayat Hadiah</h3><div id="payout-list"></div></div>
 </div>
-
 <script>
 // ============================================
 // KONFIGURASI SUPABASE
@@ -664,7 +720,7 @@ const rp = n => 'Rp ' + Number(n||0).toLocaleString('id-ID');
 
 function toast(msg, type='info') {
   if (navigator.vibrate) navigator.vibrate(50);
-  const c = $('notif'), t = document.createElement('div');
+  const c = $('notif-container'), t = document.createElement('div');
   t.className = `toast t${type.charAt(0)}`;
   const icons = { info: 'fa-info-circle', success: 'fa-check-circle', danger: 'fa-ban', warning: 'fa-exclamation-triangle', gold: 'fa-crown' };
   t.innerHTML = `<i class="fa-solid ${icons[type]||'fa-info-circle'} t-icon"></i><div class="t-cont"><div class="t-title">${msg}</div></div><button class="t-close" onclick="this.parentElement.remove()">×</button>`;
@@ -692,13 +748,18 @@ function closeModal(id) { $(id).classList.remove('active'); }
 
 async function ensureSession() {
   const { data: { session }, error } = await sb.auth.getSession();
-  if (error || !session) { toast('Sesi habis, silakan login ulang', 'danger'); setTimeout(() => window.location.reload(), 1500); return false; }
+  if (error || !session) {
+    const { data: { session: refreshed } } = await sb.auth.refreshSession();
+    if (!refreshed) {
+      toast('Sesi benar-benar habis, silakan login ulang', 'danger');
+      setTimeout(() => window.location.reload(), 1500);
+      return false;
+    }
+  }
   return true;
 }
 
-// ============================================
 // ANTI TOXIC & STAR GENERATOR
-// ============================================
 const BAD_WORDS = ['anjing', 'bangsat', 'kontol', 'memek', 'babi', 'goblok', 'tolol', 'idiot'];
 function censorText(text) {
   let clean = text;
@@ -717,12 +778,9 @@ function generateStars() {
   }
 }
 
-// ============================================
-// FITUR IKLAN GH TOPUP (BUG 5)
-// ============================================
+// IKLAN GH TOPUP EFFECT
 function triggerRipple(e) {
-  const b = $('sponsor');
-  const rect = b.getBoundingClientRect();
+  const b = $('sponsor'), rect = b.getBoundingClientRect();
   const r = document.createElement('span'); r.className = 'ripple';
   r.style.left = (e.clientX - rect.left) + 'px'; r.style.top = (e.clientY - rect.top) + 'px';
   r.style.width = r.style.height = '20px'; b.appendChild(r);
@@ -733,7 +791,10 @@ function triggerRipple(e) {
 // ============================================
 // AUTH & NAVIGATION
 // ============================================
-function handleAuth() { if (user) { if(confirm('Yakin ingin logout?')) sb.auth.signOut().then(() => location.reload()); } else nav('auth'); }
+function handleAuth() { 
+  if (user) { if(confirm('Yakin ingin logout?')) sb.auth.signOut().then(() => location.reload()); } 
+  else nav('auth'); 
+}
 function updateAuthUI() {
   if (user) { $('auth-ic').className = 'fa-solid fa-right-from-bracket'; $('auth-tx').innerText = 'Logout'; }
   else { $('auth-ic').className = 'fa-solid fa-right-to-bracket'; $('auth-tx').innerText = 'Login'; }
@@ -763,8 +824,12 @@ async function doRegister(btn) {
   btn.disabled = true; btn.innerText = 'Memproses...';
   const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { username: uname } } });
   if (error) { toast(translateError(error.message), 'danger'); btn.disabled = false; btn.innerText = 'Daftar Akun'; return; }
-  if (data.session) { user = data.user; await initProfile(); await loadSettings(); setupRealtime(); updateAuthUI(); toast('Registrasi Berhasil!', 'success'); nav('home'); }
-  else { toast('Cek email untuk konfirmasi, lalu login.', 'info'); switchAuth('login'); btn.disabled = false; btn.innerText = 'Daftar Akun'; }
+  if (data.session) { 
+    user = data.user; await initProfile(); await loadSettings(); setupRealtime(); updateAuthUI(); 
+    toast('Registrasi Berhasil!', 'success'); nav('home'); 
+  } else { 
+    toast('Cek email untuk konfirmasi, lalu login.', 'info'); switchAuth('login'); btn.disabled = false; btn.innerText = 'Daftar Akun'; 
+  }
 }
 
 async function forgotPass() {
@@ -786,7 +851,7 @@ async function initProfile() {
 }
 
 // ============================================
-// REALTIME LISTENERS (FIX BUG 1 & 2)
+// REALTIME LISTENERS (BUG FIX 1 & 2)
 // ============================================
 function setupRealtime() {
   if (!user) return;
@@ -808,13 +873,12 @@ function setupRealtime() {
 }
 
 // ============================================
-// LOAD DATA
+// LOAD SETTINGS & THEME
 // ============================================
 async function loadSettings() {
   const { data } = await sb.from('site_settings').select('key,value');
   if (data) {
     data.forEach(r => settings[r.key] = r.value);
-    // Terapkan Tema
     const theme = settings.active_theme ? settings.active_theme.replace(/"/g, '') : 'default';
     document.body.className = 'theme-' + theme;
   }
@@ -845,7 +909,7 @@ async function saveDana(btn) {
 }
 
 // ============================================
-// LOAD TOURNAMENTS
+// LOAD TOURNAMENTS (BUG FIX BANNER & OFFLINE)
 // ============================================
 async function loadHeroBanner() {
   const { data } = await sb.from('banners').select('image_url').eq('is_active', true).order('sort_order', { ascending: true }).limit(1).maybeSingle();
@@ -877,7 +941,7 @@ async function loadTournaments() {
         <p class="card-prize">${rp(t.prize_pool)}</p>
       </div>
       <div class="card-div"></div>
-      <div class="card-foot"><span><i class="fa-solid fa-users"></i> ${t.total_slots} Tim</span><span>${t.format}</span></div>
+      <div class="card-foot"><span><i class="fa-solid fa-users"></i> ${t.total_slots} Tim</span><span>${t.is_offline ? '📍 Offline' : t.format}</span></div>
     </div>
   `).join('');
   
@@ -905,27 +969,41 @@ async function openDetail(mode, id) {
   $('det-slots').innerText = `${data.filled_slots} / ${data.total_slots} Tim`;
   $('det-date').innerText = data.schedule_at ? new Date(data.schedule_at).toLocaleDateString('id-ID') : '-';
 
+  // OFFLINE INFO
+  if (data.is_offline) {
+    $('det-offline').classList.remove('hidden');
+    $('det-loc-name').innerText = data.location_name || 'Lokasi belum diatur';
+    $('det-loc-addr').innerText = data.location_address || '';
+    if (data.location_maps_url) {
+      $('det-loc-maps').style.display = 'inline-block';
+      $('det-loc-maps').href = data.location_maps_url;
+    } else {
+      $('det-loc-maps').style.display = 'none';
+    }
+  } else {
+    $('det-offline').classList.add('hidden');
+  }
+
   const total = Number(data.prize_pool) || 0;
   $('p-1').innerText = rp(Math.round(total * 0.5));
   $('p-2').innerText = rp(Math.round(total * 0.3));
   $('p-3').innerText = rp(Math.round(total * 0.2));
 
   $('det-br').classList.toggle('hidden', mode !== 'BR');
-  $('det-cs').classList.toggle('hidden', mode !== 'CS');
-
+  
   if (mode === 'BR') loadMaps(id);
   loadParticipants(id);
   loadTourChat(id);
   checkWaitlist(id);
   
   if (data.stream_url) { $('stream-box').style.display = 'block'; } else { $('stream-box').style.display = 'none'; }
-  
   nav('detail');
 }
 
 function openStream() {
   if (curTourData && curTourData.stream_url) {
-    window.open(curTourData.stream_url, '_blank');
+    let embedUrl = curTourData.stream_url.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/").split('&')[0];
+    window.open(embedUrl + "?autoplay=1", '_blank');
   } else {
     toast('Link Live Stream belum tersedia.', 'warning');
   }
@@ -945,10 +1023,11 @@ async function joinWaitlist() {
   if (error) return toast(translateError(error.message), 'danger');
   toast('Kamu masuk daftar tunggu', 'success');
 }
+
 async function loadMaps(tid) {
   const c = $('map-pool');
   const { data } = await sb.from('br_matches').select(`match_no, status, map_id, game_maps(name, image_url)`).eq('tournament_id', tid).order('match_no');
-  if (!data || data.length === 0) { c.innerHTML = '<p style="color:var(--muted);font-size:.8rem">Belum ada map yang diatur.</p>'; return; }
+  if (!data || data.length === 0) { c.innerHTML = '<p style="color:var(--muted);font-size:.8rem">Belum ada map.</p>'; return; }
   c.innerHTML = data.map(m => {
     const name = m.game_maps?.name || 'Belum diatur';
     const img = m.game_maps?.image_url || 'https://i.ibb.co.com/JSyg2V6/image-search-1768105911966.webp';
@@ -958,6 +1037,7 @@ async function loadMaps(tid) {
     return `<div class="map-card">${badge}<img src="${img}" onerror="this.src='https://i.ibb.co.com/JSyg2V6/image-search-1768105911966.webp'"><div class="map-info"><div class="map-name">${name}</div><div class="map-match">Match ${m.match_no}</div></div></div>`;
   }).join('');
 }
+
 async function loadParticipants(tid) {
   const list = $('part-list');
   const { data } = await sb.from('v_participants_public').select('*').eq('tournament_id', tid);
@@ -965,18 +1045,21 @@ async function loadParticipants(tid) {
   list.innerHTML = data.map(r => `<div class="part-item">${r.logo_url ? `<img src="${r.logo_url}">` : '<i class="fa-solid fa-shield-halved" style="color:var(--gold)"></i>'}<span>${r.team_name}</span></div>`).join('');
 }
 
-// CHAT
+// ============================================
+// CHAT SYSTEM (GLOBAL & TOURNAMENT)
+// ============================================
 const rateLimit = {}; const RATE_MS = 3000;
 function checkRate(scope) {
   const now = Date.now(), last = rateLimit[scope] || 0;
   if (now - last < RATE_MS) { toast(`⏱️ Tunggu ${Math.ceil((RATE_MS - (now - last)) / 1000)} detik!`, 'warning'); return false; }
   rateLimit[scope] = now; return true;
 }
+
 async function loadTourChat(tid) {
   const box = $('chat-tour');
   box.innerHTML = '<p style="text-align:center;color:var(--muted);font-size:.8rem">Memuat chat...</p>';
   const { data, error } = await sb.from('tournament_chats').select('*').eq('tournament_id', tid).order('created_at', { ascending: true }).limit(50);
-  if (error) { box.innerHTML = '<p style="text-align:center;color:var(--danger);font-size:.8rem">Gagal memuat chat (khusus peserta).</p>'; return; }
+  if (error) { box.innerHTML = '<p style="text-align:center;color:var(--danger);font-size:.8rem">Gagal memuat chat.</p>'; return; }
   if (!data || data.length === 0) { box.innerHTML = '<p style="text-align:center;color:var(--muted);font-size:.8rem">Belum ada chat.</p>'; }
   else { box.innerHTML = data.map(c => `<div class="chat-msg"><span class="chat-name ${c.username === 'Admin' ? 'admin' : ''}">${c.username}:</span> ${c.message}</div>`).join(''); box.scrollTop = box.scrollHeight; }
   
@@ -1000,7 +1083,7 @@ async function sendTourChat() {
 }
 
 function openGlobalChat() { if (!user) return toast('Login dulu untuk chat!', 'danger'); openModal('m-chat'); loadGlobalChat(); }
-function closeGlobalChat() { closeModal('m-chat'); if (chatSub) sb.removeChannel(chatSub); $('stk-picker').classList.add('hidden'); }
+function closeGlobalChat() { closeModal('m-chat'); if (chatSub) sb.removeChannel(chatSub); $('stk-global').classList.add('hidden'); }
 async function loadGlobalChat() {
   const box = $('global-chat');
   const { data, error } = await sb.from('global_chats').select('*').order('created_at', { ascending: false }).limit(50);
@@ -1028,40 +1111,43 @@ async function sendGlobalChat() {
   if (error) return toast(translateError(error.message), 'danger'); inp.value = '';
 }
 
-// STICKER
+// STICKER SYSTEM
 const STK = [
   'https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.webp','https://fonts.gstatic.com/s/e/notoemoji/latest/1f60e/512.webp','https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.webp','https://fonts.gstatic.com/s/e/notoemoji/latest/1f4aa/512.webp','https://fonts.gstatic.com/s/e/notoemoji/latest/1f680/512.webp','https://fonts.gstatic.com/s/e/notoemoji/latest/1f3c6/512.webp','https://fonts.gstatic.com/s/e/notoemoji/latest/2764_fe0f/512.webp','https://fonts.gstatic.com/s/e/notoemoji/latest/1f44d/512.webp'
 ];
-function toggleSticker() {
-  const p = $('stk-picker');
+function toggleSticker(scope) {
+  const p = scope === 'global' ? $('stk-global') : $('stk-tour');
   if (p.classList.contains('hidden')) {
-    p.innerHTML = `<label style="display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:1;background:#1a1a1a;border:2px dashed var(--gold);border-radius:6px;cursor:pointer;color:var(--gold);font-size:1.2rem"><input type="file" accept="image/*" hidden onchange="uploadSticker(this)"><i class="fa-solid fa-plus"></i></label>` + STK.map(u => `<img src="${u}" style="width:100%;aspect-ratio:1;object-fit:contain;background:#111;border-radius:6px;cursor:pointer;padding:4px" onclick="sendSticker('${u}')">`).join('');
+    p.innerHTML = `<label class="sticker-upload"><input type="file" accept="image/*" hidden onchange="uploadSticker(this, '${scope}')"><i class="fa-solid fa-plus"></i></label>` + STK.map(u => `<img src="${u}" onclick="sendSticker('${u}', '${scope}')">`).join('');
     p.classList.remove('hidden');
   } else p.classList.add('hidden');
 }
-async function uploadSticker(inp) {
+async function uploadSticker(inp, scope) {
   if (!await ensureSession()) return;
   const file = inp.files[0]; if (!file) return;
   if (file.size > 5 * 1024 * 1024) { toast('❌ Maksimal 5 MB', 'danger'); inp.value = ''; return; }
-  toast('⏳ Mengompres & upload...', 'info');
+  toast('⏳ Upload...', 'info');
   try {
-    // Simple compress image logic (using canvas) omitted for brevity, directly upload
     const path = `stk-${user.id}-${Date.now()}.jpg`;
     const { error: upErr } = await sb.storage.from('stickers').upload(path, file);
     if (upErr) throw upErr;
     const { data: u } = sb.storage.from('stickers').getPublicUrl(path);
     await sb.from('global_chats').insert({ user_id: user.id, username: profile?.username || 'Captain', sticker_url: u.publicUrl });
-    toast('✅ Stiker terkirim!', 'success'); inp.value = ''; $('stk-picker').classList.add('hidden');
-  } catch (err) { toast('Gagal upload: ' + (err.message || err), 'danger'); inp.value = ''; }
+    toast('✅ Terkirim!', 'success'); inp.value = ''; 
+  } catch (err) { toast('Gagal: ' + (err.message || err), 'danger'); inp.value = ''; }
 }
-async function sendSticker(url) {
+async function sendSticker(url, scope) {
   if (!await ensureSession()) return;
-  $('stk-picker').classList.add('hidden');
-  await sb.from('global_chats').insert({ user_id: user.id, username: profile?.username || 'Captain', sticker_url: url });
+  $(scope === 'global' ? 'stk-global' : 'stk-tour').classList.add('hidden');
+  if (scope === 'global') {
+    await sb.from('global_chats').insert({ user_id: user.id, username: profile?.username || 'Captain', sticker_url: url });
+  } else {
+    await sb.from('tournament_chats').insert({ tournament_id: curTour, user_id: user.id, username: profile?.username || 'Captain', message: url });
+  }
 }
 
 // ============================================
-// TEAMS & ROSTER (FIX BUG 6: HAPUS TIM)
+// TEAMS & ROSTER (BUG FIX 6)
 // ============================================
 async function loadTeams() {
   if (!user) return;
@@ -1073,7 +1159,6 @@ async function loadTeams() {
   $('dash-teams').innerText = `${teams.length} Tim`;
   if (teams.length === 0) { list.innerHTML = '<li style="padding:15px;text-align:center;color:var(--muted);font-size:.8rem">Belum ada tim.</li>'; return; }
   
-  // Cek tim yang sedang aktif turnamen agar tombol hapus di-disable
   const { data: activeRegs } = await sb.from('registrations').select('team_id').eq('owner_id', user.id).in('status', ['menunggu_pembayaran','menunggu_verifikasi','resmi_terdaftar']);
   const busyTeams = new Set((activeRegs || []).map(r => r.team_id));
 
@@ -1177,13 +1262,24 @@ async function delPlayer(btn) {
 }
 
 // ============================================
-// REGISTER WIZARD & FIX BUG 3 & 4
+// REGISTER WIZARD (BUG FIX 3, 4 & AUTO-FILL DANA)
 // ============================================
 async function openRegister() {
   if (!user) return nav('auth');
   if (!curTour) return toast('Turnamen belum dipilih', 'danger');
+  
+  // Auto-fill DANA
+  if (profile?.dana_number) {
+    $('reg-dana-num').value = profile.dana_number;
+    $('reg-dana-name').value = profile.dana_name || '';
+  } else {
+    $('reg-dana-num').value = '';
+    $('reg-dana-name').value = '';
+  }
+  
   nav('reg'); stepReg(1); loadRegTeams();
 }
+
 function stepReg(s) {
   for (let i=1; i<=4; i++) { $(`rs${i}`).classList.toggle('hidden', i !== s); const ind = $(`s${i}`); ind.classList.remove('active', 'done'); if(i<s){ind.classList.add('done');ind.innerHTML='✓';}else if(i===s){ind.classList.add('active');ind.innerHTML=i;}else{ind.innerHTML=i;} }
   if (s === 3) loadRegRoster();
@@ -1226,10 +1322,8 @@ async function finishReg(btn) {
   btn.disabled = true; btn.innerText = 'Memproses...';
   
   try {
-    // 1. Cek Duplikat (Bug Fix 4)
     const { data: exist } = await sb.from('registrations').select('id,status').eq('tournament_id', curTour).eq('team_id', selTeam).maybeSingle();
     
-    // 2. Upload Bukti
     const ext = file.name.split('.').pop(), path = `proof-${Date.now()}.${ext}`;
     const { error: upErr } = await sb.storage.from('payment-proofs').upload(path, file);
     if (upErr) throw upErr;
@@ -1241,14 +1335,12 @@ async function finishReg(btn) {
     let regId;
     if (exist) {
       if (exist.status === 'resmi_terdaftar' || exist.status === 'menunggu_verifikasi') throw new Error('Tim ini sudah terdaftar atau sedang diverifikasi.');
-      // UPDATE baris lama
       const { data: updated, error: regErr } = await sb.from('registrations').update({
         status: 'menunggu_verifikasi', payment_method: 'qris', fee_amount: total, reject_reason: null, incomplete_reason: null
       }).eq('id', exist.id).select().single();
       if (regErr) throw regErr;
       regId = updated.id;
     } else {
-      // INSERT baru
       const { data: inserted, error: regErr } = await sb.from('registrations').insert({
         tournament_id: curTour, team_id: selTeam, owner_id: user.id, team_name: team.name, status: 'menunggu_verifikasi', payment_method: 'qris', fee_amount: total
       }).select().single();
@@ -1256,7 +1348,6 @@ async function finishReg(btn) {
       regId = inserted.id;
     }
 
-    // 3. Insert ke tabel payments (Bug Fix 3)
     const { error: payErr } = await sb.from('payments').upsert({
       registration_id: regId, user_id: user.id, method: 'qris', amount: total, status: 'menunggu_verifikasi', proof_path: path, proof_uploaded_at: new Date().toISOString()
     }, { onConflict: 'registration_id' });
@@ -1280,7 +1371,7 @@ function startQR(dur) {
 }
 
 // ============================================
-// MY TOURNAMENTS & WITHDRAW
+// MY TOURNAMENTS, ROOM ID & E-TICKET (FITUR OFFLINE)
 // ============================================
 async function loadMyTour() {
   if (!user) return;
@@ -1288,19 +1379,27 @@ async function loadMyTour() {
   box.innerHTML = '<p style="text-align:center;color:var(--muted)">Memuat...</p>';
   const { data, error } = await sb.from('registrations').select('*').eq('owner_id', user.id);
   if (error) { box.innerHTML = `<p style="color:var(--danger)">${translateError(error.message)}</p>`; return; }
+  
   if (!data || data.length === 0) { box.innerHTML = `<div class="glass" style="text-align:center;padding:30px"><i class="fa-solid fa-trophy" style="font-size:3rem;color:#333;margin-bottom:15px;display:block"></i><p style="color:var(--muted);font-size:.85rem">Kamu belum mengikuti turnamen apapun.</p></div>`; return; }
   
   const tIds = [...new Set(data.map(r => r.tournament_id))];
-  const { data: tours } = await sb.from('tournaments').select('id,name,format').in('id', tIds);
+  const { data: tours } = await sb.from('tournaments').select('id,name,format,is_offline').in('id', tIds);
   const tMap = Object.fromEntries((tours || []).map(t => [t.id, t]));
   
   const { data: certs } = await sb.from('certificates').select('*').eq('owner_id', user.id);
   const cMap = {}; (certs || []).forEach(c => { cMap[c.tournament_id] = c; });
   
   box.innerHTML = data.map(r => {
-    const t = tMap[r.tournament_id] || { name: 'Unknown', format: '-' };
+    const t = tMap[r.tournament_id] || { name: 'Unknown', format: '-', is_offline: false };
     const cert = cMap[r.tournament_id];
-    return `<div class="glass" style="margin-bottom:15px;border-left:3px solid var(--gold)"><h4 style="color:var(--gold);font-size:.95rem">${t.name}</h4><p style="font-size:.75rem;color:var(--muted);margin:5px 0">Tim: ${r.team_name} • Status: <b style="color:${r.status === 'resmi_terdaftar' ? 'var(--success)' : r.status === 'ditolak' ? 'var(--danger)' : 'var(--warning)'}">${r.status.toUpperCase()}</b></p><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:10px"><button class="btn btn-sm btn-sec" onclick="loadRoom('${r.tournament_id}')">🔑 Room ID</button>${r.status === 'resmi_terdaftar' ? `<button class="btn btn-sm btn-danger" onclick="openWdTour('${r.id}')">↩️ Mundur</button>` : ''}${cert ? `<button class="btn btn-sm" onclick="toast('Sertifikat segera diunduh','info')">🏅 Sertifikat</button>` : ''}</div><div id="room-${r.tournament_id}" class="hidden" style="margin-top:10px;background:#050505;border:1px solid #333;padding:10px;border-radius:8px"></div></div>`;
+    
+    // Tombol E-Ticket hanya muncul kalau turnamen offline & status resmi
+    let btnTicket = '';
+    if (t.is_offline && r.status === 'resmi_terdaftar') {
+      btnTicket = `<button class="btn btn-sm btn-sec" onclick="showTicket('${r.id}')">🎟️ E-Ticket</button>`;
+    }
+
+    return `<div class="glass" style="margin-bottom:15px;border-left:3px solid var(--gold)"><h4 style="color:var(--gold);font-size:.95rem">${t.name}</h4><p style="font-size:.75rem;color:var(--muted);margin:5px 0">Tim: ${r.team_name} • Status: <b style="color:${r.status === 'resmi_terdaftar' ? 'var(--success)' : r.status === 'ditolak' ? 'var(--danger)' : 'var(--warning)'}">${r.status.toUpperCase()}</b></p><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:10px"><button class="btn btn-sm btn-sec" onclick="loadRoom('${r.tournament_id}')">🔑 Room ID</button>${btnTicket}${r.status === 'resmi_terdaftar' ? `<button class="btn btn-sm btn-danger" onclick="openWdTour('${r.id}')">↩️ Mundur</button>` : ''}${cert ? `<button class="btn btn-sm" onclick="toast('Sertifikat segera diunduh','info')">🏅 Sertifikat</button>` : ''}</div><div id="room-${r.tournament_id}" class="hidden" style="margin-top:10px;background:#050505;border:1px solid #333;padding:10px;border-radius:8px"></div></div>`;
   }).join('');
 }
 
@@ -1311,6 +1410,29 @@ async function loadRoom(tid) {
   const { data, error } = await sb.from('tournament_rooms').select('*').eq('tournament_id', tid);
   if (error || !data || data.length === 0) { box.innerHTML = '<p style="font-size:.75rem;color:var(--danger)">🔒 Room ID belum dipublikasikan.</p>'; return; }
   box.innerHTML = data.map(room => `<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222;padding:5px 0"><div><div style="font-size:.7rem;color:var(--silver)">Room ID: <b style="color:var(--gold)">${room.room_id || '-'}</b></div><div style="font-size:.7rem;color:var(--silver)">Pass: <b style="color:var(--gold)">${room.room_password || '-'}</b></div></div><button class="btn btn-sm btn-sec" onclick="copyText('${room.room_id} ${room.room_password}')"><i class="fa-solid fa-copy"></i></button></div>`).join('');
+}
+
+async function showTicket(regId) {
+  const { data: tk } = await sb.from('etickets').select('*').eq('registration_id', regId).single();
+  const { data: reg } = await sb.from('registrations').select('team_name, tournaments(name)').eq('id', regId).single();
+  
+  if (!tk) return toast('Tiket belum dibuat sistem.', 'warning');
+
+  $('ticket-content').innerHTML = `
+    <div class="ticket-wrap">
+      <div class="t-left">
+        <h4 style="font-family:'Orbitron';color:var(--gold);margin-bottom:10px;">${reg.tournaments.name}</h4>
+        <p style="font-size:1.2rem;font-weight:bold;color:#fff;margin-bottom:5px;">${reg.team_name}</p>
+        <p style="font-size:0.7rem;color:var(--silver);">Status: ${tk.is_checked_in ? '<span style="color:var(--success)">SUDAH CHECK-IN</span>' : '<span style="color:var(--danger)">BELUM CHECK-IN</span>'}</p>
+      </div>
+      <div class="t-right">
+        <div class="t-code-lbl">KODE UNIK</div>
+        <div class="t-code">${tk.ticket_code}</div>
+        <div class="t-qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${tk.ticket_code}"></div>
+      </div>
+    </div>
+  `;
+  openModal('m-ticket');
 }
 
 function openWdTour(regId) { wdRegId = regId; $('wd-reason').value = ''; openModal('m-wd-tour'); }
@@ -1331,7 +1453,7 @@ async function submitWdTour(btn) {
 // ============================================
 function openWdSaldo() {
   if (!profile || !profile.dana_number) return toast('Isi data DANA di Dashboard dulu!', 'warning');
-  $('wd-amt').value = ''; $('wd-dana-num').value = profile.dana_number; $('wd-dana-name').value = profile.dana_name; openModal('m-wd');
+  $('wd-amt').value = ''; $('wd-dana-num').value = profile.dana_number; openModal('m-wd');
 }
 async function submitWdSaldo() {
   if (!await ensureSession()) return;
@@ -1365,24 +1487,28 @@ async function openPayouts() {
 }
 
 // ============================================
-// NOTIFIKASI PAGE
+// NOTIFIKASI PAGE & HAPUS NOTIF
 // ============================================
 async function loadNotifs() {
   if (!user) return; const box = $('notif-list');
   const { data } = await sb.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
   if (!data || data.length === 0) { box.innerHTML = '<p style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">Belum ada notifikasi.</p>'; return; }
-  box.innerHTML = data.map(n => `<div style="display:flex;gap:15px;padding:15px;border-bottom:1px solid #222"><div style="color:var(--gold);font-size:1.2rem"><i class="fa-solid fa-bell"></i></div><div><h4 style="font-size:.85rem;color:#fff">${n.title || '-'}</h4><p style="font-size:.75rem;color:var(--silver)">${n.body || ''}</p><span style="font-size:.6rem;color:var(--muted)">${new Date(n.created_at).toLocaleString('id-ID')}</span></div></div>`).join('');
+  box.innerHTML = data.map(n => `<div style="display:flex;gap:15px;padding:15px;border-bottom:1px solid #222"><div style="color:var(--gold);font-size:1.2rem"><i class="fa-solid fa-bell"></i></div><div style="flex:1"><h4 style="font-size:.85rem;color:#fff">${n.title || '-'}</h4><p style="font-size:.75rem;color:var(--silver)">${n.body || ''}</p><span style="font-size:.6rem;color:var(--muted)">${new Date(n.created_at).toLocaleString('id-ID')}</span></div><button onclick="delNotif('${n.id}')" style="background:transparent;border:none;color:var(--danger);cursor:pointer;"><i class="fa-solid fa-trash"></i></button></div>`).join('');
   $('notif-badge').innerText = data.filter(n => !n.is_read).length;
-  $('notif-badge').classList.remove('hidden');
+  if (data.filter(n => !n.is_read).length > 0) $('notif-badge').classList.remove('hidden'); else $('notif-badge').classList.add('hidden');
 }
 async function markAllRead() {
   if (!await ensureSession()) return;
   await sb.from('notifications').update({ is_read: true }).eq('user_id', user.id);
-  $('notif-badge').innerText = 0; $('notif-badge').classList.add('hidden'); loadNotifs();
+  loadNotifs();
+}
+async function delNotif(id) {
+  await sb.from('notifications').delete().eq('id', id);
+  loadNotifs();
 }
 
 // ============================================
-// CLOCK, SPONSOR, FAQ, SCROLL, 404
+// CLOCK, SPONSOR, FAQ, SCROLL, TILT
 // ============================================
 function startClock() {
   setInterval(() => { $('clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false }) + ' WIB'; }, 1000);
@@ -1393,21 +1519,19 @@ function switchFaq(tab) { $('faq-umum').classList.toggle('hidden', tab !== 'umum
 
 const tc = $('tilt-card');
 if (tc) { tc.addEventListener('mousemove', e => { const r = tc.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, rx = ((y - r.height / 2) / (r.height / 2)) * -10, ry = ((x - r.width / 2) / (r.width / 2)) * 10; tc.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`; }); tc.addEventListener('mouseleave', () => { tc.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)'; }); }
-window.addEventListener('scroll', () => { const b = $('topBtn'); if (window.scrollY > 300) b.classList.add('show'); else b.classList.remove('show'); });
-if (window.location.hash === '#404') setTimeout(() => { skipIntro(); nav('404'); }, 100);
 
 // ============================================
 // INIT & ROUTER
 // ============================================
 function typeTerm() {
   const l = ['> Initializing GH-T Arena...', '> Loading Data...', '> Connecting...', '> Welcome, Captain.'], c = $('term'); let i = 0;
-  (function next() { if (i >= l.length) { $('skip').classList.add('show'); return; } const p = document.createElement('p'); p.textContent = l[i]; c.appendChild(p); i++; setTimeout(next, 400); })();
+  (function next() { if (i >= l.length) { $('skip-btn').classList.add('show'); return; } const p = document.createElement('p'); p.textContent = l[i]; c.appendChild(p); i++; setTimeout(next, 400); })();
 }
 generateStars(); typeTerm(); setTimeout(skipIntro, 3800);
 
 function skipIntro() {
   if (introSkip) return; introSkip = true;
-  $('intro').classList.add('hidden'); $('nav').classList.remove('hidden'); $('server').classList.remove('hidden'); $('btm-nav').classList.remove('hidden');
+  $('intro-screen').classList.add('hidden'); $('nav').classList.remove('hidden'); $('server').classList.remove('hidden'); $('btm-nav').classList.remove('hidden');
   startClock(); initAuth();
 }
 
@@ -1430,6 +1554,6 @@ function nav(v) {
   if (v === 'my-tour') loadMyTour();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-</script>
+  </script>
 </body>
-  </html>
+      </html>
