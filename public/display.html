@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GH-T ARENA — Esports Display</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+    :root {
+        --bg: #030303; --panel: #0a0a0a; 
+        --red: #ff1f3d; --red-glow: rgba(255, 31, 61, 0.4);
+        --gold: #ffd700; --gold-glow: rgba(255, 215, 0, 0.4);
+        --silver: #e2e8f0; --muted: #777; --text: #fff;
+    }
+    /* Tema Dinamis */
+    body.theme-natal { --red: #00e676; --red-glow: rgba(0,230,118,0.4); }
+    body.theme-lebaran { --red: #00bcd4; --red-glow: rgba(0,188,212,0.4); }
+    body.theme-agustus { --red: #f44336; --red-glow: rgba(244,67,54,0.4); }
+    body.theme-halloween { --red: #ff9800; --red-glow: rgba(255,152,0,0.4); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    
+    body { background-color: #000; height: 100vh; display: grid; place-items: center; overflow: hidden; }
+    .app-wrapper { 
+        position: relative; width: min(100vw, calc(100vh * 16/9)); aspect-ratio: 16/9; 
+        container-type: size; overflow: hidden; background: var(--bg);
+        background-image: radial-gradient(circle at 50% 0%, rgba(255, 31, 61, 0.15) 0%, transparent 50%), 
+                          linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), 
+                          linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 100% 100%, 4cqw 4cqw, 4cqw 4cqw;
+    }
+
+    h1, h2, h3, h4 { font-family: 'Orbitron', sans-serif; }
+
+    @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 var(--red-glow); } 70% { box-shadow: 0 0 0 1.5cqw transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+    @keyframes glowAnim { 0%, 100% { text-shadow: 0 0 1cqw var(--red-glow); } 50% { text-shadow: 0 0 2cqw var(--red), 0 0 1cqw var(--red-glow); } }
+    @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+    @keyframes floatBox { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.5cqw); } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* HEADER */
+    header { position: absolute; top: 0; left: 0; right: 0; height: 6cqw; display: flex; justify-content: space-between; align-items: center; padding: 0 3cqw; background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%); border-bottom: 0.2cqw solid rgba(255,31,61,0.3); z-index: 10; }
+    .logo-area { display: flex; align-items: center; gap: 1.5cqw; }
+    .logo-area img { height: 4cqw; filter: drop-shadow(0 0 1cqw var(--red)); }
+    .header-title h1 { font-size: 1.8cqw; color: #fff; letter-spacing: 0.2cqw; text-shadow: 0 0 1cqw var(--red); }
+    .header-title p { font-family: 'Rajdhani', sans-serif; font-size: 1cqw; color: var(--silver); text-transform: uppercase; letter-spacing: 0.2cqw; }
+    .status-area { display: flex; align-items: center; gap: 2cqw; }
+    .live-badge { background: rgba(255,31,61,0.2); border: 0.15cqw solid var(--red); color: var(--red); padding: 0.4cqw 1.2cqw; border-radius: 2cqw; font-weight: 800; font-family: 'Orbitron', sans-serif; font-size: 1cqw; display: flex; align-items: center; gap: 0.8cqw; animation: glowAnim 2s infinite alternate; }
+    .live-dot { width: 0.8cqw; height: 0.8cqw; background: var(--red); border-radius: 50%; box-shadow: 0 0 0.5cqw var(--red); }
+    .clock { font-family: 'Orbitron', sans-serif; font-size: 1.8cqw; color: #fff; }
+
+    /* MAIN SCENE */
+    main { position: absolute; inset: 6cqw 0 3cqw 0; padding: 2cqw 3cqw; display: flex; justify-content: center; align-items: center; }
+    .scene { width: 100%; height: 100%; display: none; flex-direction: column; }
+    .scene.active { display: flex; animation: fadeIn 0.4s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+    
+    .page-title { font-size: 2cqw; color: #fff; text-align: center; margin-bottom: 1.5cqw; letter-spacing: 0.3cqw; text-transform: uppercase; text-shadow: 0 0 1.5cqw var(--red); }
+
+    /* PANELS */
+    .panel { background: rgba(10,10,10,0.85); border: 1px solid rgba(255,31,61,0.3); border-top: 0.25cqw solid var(--red); clip-path: polygon(0 0, calc(100% - 1.5cqw) 0, 100% 1.5cqw, 100% 100%, 1.5cqw 100%, 0 calc(100% - 1.5cqw)); overflow: hidden; box-shadow: 0 0 2cqw rgba(0,0,0,0.8); }
+    .ph { font: 700 1.1cqw Orbitron; padding: 0.6cqw 1.2cqw; background: linear-gradient(90deg, var(--red), transparent); color: #fff; letter-spacing: 0.1cqw; }
+
+    /* STANDBY */
+    #scene-standby { justify-content: center; align-items: center; text-align: center; }
+    .standby-logo { width: 15cqw; margin-bottom: 1.5cqw; filter: drop-shadow(0 0 3cqw var(--red)); animation: floatBox 4s ease-in-out infinite; }
+    .standby-title { font-size: 4cqw; color: #fff; letter-spacing: 1cqw; margin-bottom: 0.5cqw; text-shadow: 0 0 2cqw var(--red); }
+    .standby-sub { font-size: 1.5cqw; color: var(--gold); letter-spacing: 0.4cqw; text-transform: uppercase; margin-bottom: 3cqw; font-weight: 700; }
+    
+    .cd { display: flex; align-items: center; gap: 1cqw; }
+    .reel { width: 7cqw; height: 9cqw; overflow: hidden; border-radius: 0.5cqw; border: 1px solid var(--red); background: linear-gradient(#0a0a0a, #1c1012 50%, #0a0a0a); box-shadow: inset 0 0 1.5cqw #000, 0 0 2cqw var(--red-glow); position: relative; }
+    .strip { will-change: transform; transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1); }
+    .strip i { display: block; height: 9cqw; font: 900 7cqw/9cqw Orbitron; font-style: normal; text-align: center; color: #fff; text-shadow: 0 0 1cqw var(--red); }
+    .sep { font: 900 6cqw Orbitron; color: var(--red); }
+
+    /* BR LEADERBOARD */
+    #br-wrap { display: flex; gap: 2cqw; height: 100%; }
+    #br-tbl { flex: 1; display: flex; flex-direction: column; }
+    #pred { width: 25cqw; display: flex; flex-direction: column; }
+    
+    .row { display: grid; grid-template-columns: 3fr repeat(6, 1fr) 1.2fr 1.2fr 1fr; align-items: center; height: 3.2cqw; padding: 0 1.5cqw; font-family: 'Rajdhani'; font-weight: 700; font-size: 1.4cqw; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent); }
+    .row.h { font-family: 'Orbitron'; font-size: 1cqw; color: var(--red); height: 3cqw; background: #050505; border-bottom: 0.2cqw solid var(--red); }
+    .row.r1 { background: linear-gradient(90deg, rgba(255,215,0,0.15), transparent); border-left: 0.3cqw solid var(--gold); }
+    .row.r2 { background: linear-gradient(90deg, rgba(226,232,240,0.1), transparent); border-left: 0.3cqw solid var(--silver); }
+    .row.r3 { background: linear-gradient(90deg, rgba(205,127,50,0.1), transparent); border-left: 0.3cqw solid #cd7f32; }
+    
+    .tm { display: flex; align-items: center; gap: 1cqw; text-align: left; font-size: 1.5cqw; white-space: nowrap; overflow: hidden; }
+    .lg { width: 2.5cqw; height: 2.5cqw; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: #222; font-family: 'Orbitron'; border: 1px solid var(--red); flex: none; font-size: 1.2cqw; color: var(--gold); }
+    .rk { font-family: 'Orbitron'; font-weight: 900; font-size: 1.6cqw; color: var(--gold); }
+    
+    .pi { display: flex; align-items: center; gap: 1cqw; padding: 0.6cqw 1.5cqw; font-size: 1.2cqw; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .pi em { font-family: 'Orbitron'; font-weight: 900; color: var(--red); font-style: normal; width: 2.5cqw; }
+    .pi small { display: block; color: var(--muted); font-size: 0.9cqw; }
+    .pi b { margin-left: auto; font-family: 'Orbitron'; color: var(--gold); }
+
+    /* CS BRACKET */
+    #cs-wrap { display: flex; flex-direction: column; height: 100%; gap: 1cqw; }
+    #cs-modes { display: flex; gap: 1cqw; height: 3.5cqw; }
+    .btn { font-family: 'Orbitron'; font-weight: 700; font-size: 1cqw; color: var(--silver); background: #111; border: 1px solid rgba(255,31,61,0.3); padding: 0 2cqw; border-radius: 0.4cqw; cursor: pointer; transition: 0.2s; }
+    .btn.on, .btn:hover { background: var(--red); color: #fff; border-color: var(--red); box-shadow: 0 0 1.5cqw var(--red-glow); }
+    
+    #cs-stage { flex: 1; position: relative; min-height: 0; overflow: hidden; }
+    .plot { position: absolute; inset: 0; }
+    .plot svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .plot path { fill: none; stroke: rgba(255,31,61,0.3); stroke-width: 2; vector-effect: non-scaling-stroke; }
+    .plot path.w { stroke: var(--red); stroke-width: 3; }
+    
+    .mb { position: absolute; height: 5.5cqw; transform: translateY(-50%); background: linear-gradient(135deg, #1a0f12, #0b0e13); border: 1px solid rgba(255,31,61,0.4); border-left: 0.3cqw solid var(--red); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 0.8cqw), calc(100% - 0.8cqw) 100%, 0 100%); font-family: 'Rajdhani'; font-weight: 700; font-size: 1.1cqw; }
+    .mt { display: flex; align-items: center; gap: 0.5cqw; height: 50%; padding: 0 0.8cqw; color: var(--silver); }
+    .mt span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mt b { margin-left: auto; font-family: 'Orbitron'; }
+    .mt.w { background: linear-gradient(90deg, rgba(255,215,0,0.2), transparent); color: var(--gold); }
+    .mt.l { background: rgba(255,31,61,0.1); color: var(--red); text-decoration: line-through; opacity: 0.7; }
+
+    /* LIVE STREAM */
+    #lv-wrap { display: flex; width: 100%; height: 100%; gap: 2cqw; }
+    #lv-v { flex: 1; border: 2px solid rgba(255,31,61,0.5); border-radius: 0.5cqw; overflow: hidden; background: #000; position: relative; transition: 0.3s; }
+    #lv-v iframe { width: 100%; height: 100%; border: none; }
+    .side { width: 28cqw; display: flex; flex-direction: column; gap: 1.5cqw; }
+    
+    #chat-p { flex: 1.2; }
+    #map-p { flex: 1; }
+    .side .panel { height: 100%; }
+    
+    #chat { padding: 1cqw 1.5cqw; overflow-y: auto; height: calc(100% - 3cqw); display: flex; flex-direction: column; gap: 0.5cqw; }
+    #chat p { font-size: 1.3cqw; padding: 0.4cqw 0; border-bottom: 1px solid rgba(255,255,255,0.05); animation: slideUp 0.3s ease-out forwards; }
+    #chat b { color: var(--red); }
+    
+    .mp { display: flex; align-items: center; gap: 1.5cqw; padding: 0.8cqw 1.5cqw; border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Rajdhani'; font-weight: 700; font-size: 1.2cqw; animation: slideUp 0.4s ease-out; }
+    .mp img { width: 8cqw; height: 4cqw; object-fit: cover; border-radius: 0.4cqw; border: 1px solid rgba(255,31,61,0.3); }
+    .mp em { margin-left: auto; font-family: 'Orbitron'; font-style: normal; font-size: 0.8cqw; padding: 0.3cqw 1cqw; border-radius: 0.3cqw; }
+    .mp em.selesai { background: rgba(67,160,71,0.2); color: #43a047; border: 1px solid #43a047; }
+    .mp em.live { background: rgba(255,31,61,0.2); color: var(--red); border: 1px solid var(--red); animation: pulseRed 1.5s infinite; }
+    .mp em.next { background: #222; color: var(--silver); border: 1px solid #555; }
+    
+    .full #lv-v { position: absolute; inset: 0; z-index: 100; border-radius: 0; border: none; }
+    .full .side { opacity: 0; pointer-events: none; }
+
+    /* FOOTER & SPONSOR */
+    footer { position: absolute; bottom: 0; left: 0; right: 0; height: 3cqw; background: linear-gradient(90deg, #1a0505, var(--red), #1a0505); display: flex; align-items: center; overflow: hidden; z-index: 10; }
+    .running-text { white-space: nowrap; padding-left: 100%; font-family: 'Rajdhani'; font-weight: 800; font-size: 1.3cqw; color: #fff; animation: marquee 25s linear infinite; }
+    
+    #sp { position: absolute; top: 8cqw; right: -50cqw; z-index: 7; display: flex; align-items: center; gap: 1cqw; padding: 1cqw 2cqw; font-family: 'Orbitron'; font-weight: 700; font-size: 1.1cqw; background: rgba(10,10,10,0.95); border: 2px solid var(--gold); border-right: 0; border-radius: 0.8cqw 0 0 0.8cqw; transition: transform 0.7s cubic-bezier(0.2, 0.9, 0.2, 1); box-shadow: 0 0 2cqw rgba(255,215,0,0.3); }
+    #sp.in { transform: translateX(-52cqw); }
+    #sp img { height: 4cqw; }
+
+    /* UI KONTROL & FULLSCREEN BUTTON */
+    #ctl { position: absolute; left: 2cqw; bottom: 4cqw; z-index: 10000; display: flex; gap: 0.5cqw; padding: 0.5cqw; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,31,61,0.3); border-radius: 0.4cqw; opacity: 0.6; transition: opacity 0.3s; }
+    #ctl:hover { opacity: 1; }
+    #ctl .btn { height: 2.2cqw; padding: 0 1.2cqw; font-size: 0.85cqw; }
+    #ctl .btn.full-btn { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 900; margin-left: 0.5cqw; }
+    #ctl .btn.full-btn:hover { background: #fff; }
+
+    /* CANVAS TRANSISI */
+    #transition-canvas { position: absolute; inset: 0; z-index: 9999; pointer-events: none; display: none; background: transparent; }
+</style>
+</head>
+<body class="theme-default">
+
+<div class="app-wrapper" id="app-wrapper">
+    <header>
+        <div class="logo-area">
+            <img id="h-logo" src="" alt="Logo" style="display:none;">
+            <div class="header-title">
+                <h1 id="h-name">GH-T ARENA</h1>
+                <p>Free Fire Championship</p>
+            </div>
+        </div>
+        <div class="status-area">
+            <div class="live-badge" id="h-st"><div class="live-dot"></div> LIVE</div>
+            <div class="clock" id="clock">00:00:00</div>
+        </div>
+    </header>
+
+    <main>
+        <!-- STANDBY -->
+        <div id="scene-standby" class="scene active">
+            <img id="sb-logo" class="standby-logo" src="" alt="Logo" style="display:none;">
+            <h1 class="standby-title">GH-T ARENA</h1>
+            <div class="standby-sub" id="standby-sub">MATCH WILL START IN</div>
+            <div class="cd" id="cd"></div>
+        </div>
+
+        <!-- BR LEADERBOARD -->
+        <div id="scene-br" class="scene">
+            <h2 class="page-title">KLASEMEN BATTLE ROYALE</h2>
+            <div id="br-wrap">
+                <div class="panel" id="br-tbl">
+                    <div class="ph">BATTLE ROYALE LEADERBOARD</div>
+                    <div class="row h">
+                        <span style="text-align:left">TIM</span>
+                        <span>M1</span><span>M2</span><span>M3</span><span>M4</span><span>M5</span><span>M6</span>
+                        <span>TOTAL<br>KILL</span><span>TOTAL<br>POIN</span><span>RANK</span>
+                    </div>
+                    <div id="br-list">
+                        <div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Memuat Data...</div>
+                    </div>
+                </div>
+                <div class="panel" id="pred">
+                    <div class="ph"><i class="fa-solid fa-skull"></i> PREDATOR</div>
+                    <div id="pr-list" style="padding: 1cqw; text-align: center; color: var(--muted);">Belum ada data</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CS BRACKET -->
+        <div id="scene-cs" class="scene">
+            <h2 class="page-title">BRACKET CLASH SQUAD</h2>
+            <div id="cs-wrap">
+                <div id="cs-modes">
+                    <button class="btn on" data-m="single">SINGLE</button>
+                    <button class="btn" data-m="double">DOUBLE</button>
+                    <button class="btn" data-m="bye">BYE</button>
+                </div>
+                <div id="cs-stage">
+                     <div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Memuat Bracket...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIVE STREAM -->
+        <div id="scene-live" class="scene">
+            <div id="lv-wrap">
+                <div id="lv-v"><iframe id="lv-f" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
+                <div class="side">
+                    <div class="panel" id="chat-p">
+                        <div class="ph"><i class="fa-solid fa-comments"></i> LIVE CHAT</div>
+                        <div id="chat">
+                            <p style="text-align:center; color:var(--muted); margin-top:2cqw;">Belum ada chat</p>
+                        </div>
+                    </div>
+                    <div class="panel" id="map-p">
+                        <div class="ph"><i class="fa-solid fa-map"></i> MAP POOL</div>
+                        <div id="maps">
+                            <div style="text-align:center; color:var(--muted); padding: 2cqw;">Memuat map...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="sp"></div>
+    <footer><div class="running-text" id="mq-text">🔥 SELAMAT DATANG DI GH-T ARENA 🔥</div></footer>
+
+    <!-- UI Kontrol & Tombol Fullscreen -->
+    <div id="ctl">
+        <button class="btn" data-s="standby">STANDBY</button>
+        <button class="btn" data-s="br">BR</button>
+        <button class="btn" data-s="cs">CS</button>
+        <button class="btn" data-s="live">LIVE</button>
+        <button class="btn full-btn" id="fv"><i class="fa-solid fa-expand"></i> FULL</button>
+    </div>
+
+    <canvas id="transition-canvas"></canvas>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// 1. SETUP SUPABASE (OTOMATIS & OFFLINE ONLY)
+// ═══════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let TOURNAMENT_ID = new URLSearchParams(window.location.search).get('t') || null;
+
+let siteSettings = { logo: '', runningText: '', activeTheme: 'default' };
+let tournamentInfo = { name: '', status: '', schedule: '', streamUrl: '', bannerUrl: '' };
+let brData = []; let predatorData = []; let mapData = []; let chatData = []; let sponsorData = []; 
+let csData = { single: [], double: [], bye: [] };
+let currentCsMode = 'single';
+
+// ═══════════════════════════════════════════════════════════
+// 2. FUNGSI FETCH DATA (AUTO-DETECT OFFLINE)
+// ═══════════════════════════════════════════════════════════
+async function fetchData() {
+    try {
+        // Jika tidak ada ID turnamen di URL, cari otomatis dari database
+        if (!TOURNAMENT_ID) {
+            console.log("Mencari turnamen OFFLINE yang aktif...");
+            
+            // HANYA CARI TURNAMEN OFFLINE
+            const { data: activeTour } = await sb.from('tournaments')
+                .select('id')
+                .eq('is_offline', true)
+                .in('status', ['berlangsung', 'pendaftaran_dibuka'])
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            
+            if (activeTour) {
+                TOURNAMENT_ID = activeTour.id;
+            } else {
+                const { data: latestTour } = await sb.from('tournaments')
+                    .select('id')
+                    .eq('is_offline', true)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                if (latestTour) TOURNAMENT_ID = latestTour.id;
+            }
+        }
+
+        if (!TOURNAMENT_ID) {
+            console.warn("Tidak ada turnamen OFFLINE yang ditemukan.");
+            renderAll(); 
+            return;
+        }
+
+        console.log("Memuat data untuk Turnamen OFFLINE ID:", TOURNAMENT_ID);
+
+        // 1. Fetch Turnamen
+        const { data: tour } = await sb.from('v_tournaments_public').select('*').eq('id', TOURNAMENT_ID).single();
+        if(tour) tournamentInfo = { name: tour.name, status: tour.status, schedule: tour.schedule_at, streamUrl: tour.stream_url, bannerUrl: tour.banner_url };
+
+        // 2. Fetch Setting Web
+        const { data: settings } = await sb.from('site_settings').select('key, value');
+        if(settings) {
+            settings.forEach(s => {
+                if(s.key === 'logo_transparent') siteSettings.logo = s.value;
+                if(s.key === 'display_running_text') siteSettings.runningText = s.value;
+                if(s.key === 'active_theme') siteSettings.activeTheme = s.value.replace(/"/g, '');
+            });
+        }
+
+        // 3. Fetch Leaderboard BR
+        const { data: br } = await sb.from('v_leaderboard_public').select('*').eq('tournament_id', TOURNAMENT_ID).order('rank_no');
+        if(br) {
+            brData = br.map(t => ({
+                id: t.registration_id, name: t.team_name, logo: t.logo_url, rank: t.rank_no,
+                totalKills: t.total_kills, totalPts: t.total_points,
+                matches: [] 
+            }));
+        }
+
+        // 4. Fetch Predator
+        const { data: pred } = await sb.from('v_predator_live').select('*').eq('tournament_id', TOURNAMENT_ID);
+        if(pred) predatorData = pred.map(p => ({ nickname: p.nickname, team: p.team_name, kills: p.total_kills }));
+
+        // 5. Fetch Map Pool
+        const { data: maps } = await sb.from('br_matches').select('match_no, status, game_maps(name, image_url)').eq('tournament_id', TOURNAMENT_ID).order('match_no');
+        if(maps) mapData = maps.map(m => ({ name: m.game_maps?.name || 'Map', image: m.game_maps?.image_url || '', status: m.status === 'selesai' ? 'selesai' : (m.status === 'berlangsung' ? 'live' : 'next') }));
+
+        // 6. Fetch Chat
+        const { data: chat } = await sb.from('tournament_chats').select('username, message').eq('tournament_id', TOURNAMENT_ID).order('created_at', {ascending: false}).limit(20);
+        if(chat) chatData = chat.reverse();
+
+        // 7. Fetch Sponsor
+        const { data: sp } = await sb.from('sponsors').select('*').eq('is_active', true).order('sort_order');
+        if(sp) sponsorData = sp.map(s => ({ name: s.name, logo: s.logo_url }));
+
+        // 8. Fetch Bracket CS
+        const { data: cs } = await sb.from('v_cs_bracket_public').select('*').eq('tournament_id', TOURNAMENT_ID).order('round_no');
+        if(cs) {
+            csData.single = cs.filter(m => m.format === 'single' || !m.format).map(mapCsMatch);
+            csData.double = cs.filter(m => m.format === 'double').map(mapCsMatch);
+            csData.bye = cs.filter(m => m.format === 'bye').map(mapCsMatch);
+        }
+
+        renderAll();
+        setupRealtime();
+
+    } catch(err) { 
+        console.error("Error Fetch Data:", err); 
+        renderAll();
+    }
+}
+
+function mapCsMatch(m) {
+    return {
+        id: m.id, round: m.round_no, a: m.team_a_name, b: m.team_b_name,
+        sa: m.score_a, sb: m.score_b,
+        winner: m.winner_name === m.team_a_name ? 'A' : (m.winner_name === m.team_b_name ? 'B' : null),
+        next: m.next_win_match
+    };
+}
+
+// ═══════════════════════════════════════════════════════════
+// 3. FUNGSI RENDER UI (Tanpa Dummy)
+// ═══════════════════════════════════════════════════════════
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const lg=(u,n)=>u?`<img class="lg" src="${esc(u)}" alt="" onerror="this.style.opacity=0">`:`<span class="lg">${esc((n||'?')[0])}</span>`;
+
+function renderAll() {
+    document.body.className = 'theme-' + siteSettings.activeTheme;
+    const L = siteSettings.logo;
+    ['#h-logo','#sb-logo'].forEach(q=>{ const el=$(q); if(L) { el.src=L; el.style.display='block'; } else { el.style.display='none'; } });
+    $('#h-name').textContent = tournamentInfo.name || 'GH-T ARENA';
+    $('#mq-text').textContent = siteSettings.runningText || '🔥 SELAMAT DATANG DI GH-T ARENA 🔥';
+    
+    const st = $('#h-st');
+    st.innerHTML = `<div class="live-dot"></div> ${tournamentInfo.status ? tournamentInfo.status.toUpperCase() : 'LIVE'}`;
+    
+    startCountdown();
+    renderBR();
+    renderCS();
+    renderLive();
+    startSponsorLoop();
+}
+
+// COUNTDOWN
+let cdInterval;
+function startCountdown() {
+    if(cdInterval) clearInterval(cdInterval);
+    const cdContainer = $('#cd');
+    if(cdContainer.children.length === 0) {
+        cdContainer.innerHTML = [0,1,'s',2,3,'s',4,5].map(x => x=='s' ? '<span class="sep">:</span>' : `<div class="reel"><div class="strip"><i>0</i></div></div>`).join('');
+    }
+    
+    const STR = $$('.strip'), CUR = [];
+    cdInterval = setInterval(() => {
+        let target = new Date(tournamentInfo.schedule).getTime();
+        if(isNaN(target)) target = Date.now(); 
+        const t = Math.max(0, Math.floor((target - Date.now()) / 1000));
+        
+        if(t === 0) $('#standby-sub').textContent = "MATCH IS STARTING";
+        else $('#standby-sub').textContent = "MATCH WILL START IN";
+
+        [Math.min(99, Math.floor(t / 3600)), Math.floor(t % 3600 / 60), t % 60].flatMap(n => [Math.floor(n / 10), n % 10]).forEach((v, i) => {
+            const s = STR[i], o = CUR[i]; if(o === v) return; CUR[i] = v;
+            if(o == null) { s.innerHTML = `<i>${v}</i>`; return; }
+            s.style.transition = 'none'; s.style.transform = 'none'; s.innerHTML = `<i>${o}</i><i>${v}</i>`; void s.offsetHeight;
+            s.style.transition = 'transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1)'; s.style.transform = 'translateY(-9cqw)';
+            clearTimeout(s._t); s._t = setTimeout(() => { s.style.transition = 'none'; s.style.transform = 'none'; s.innerHTML = `<i>${v}</i>`; }, 650);
+        });
+    }, 1000);
+}
+
+// BR LEADERBOARD
+function renderBR() {
+    const L = $('#br-list'), old = {};
+    [...L.children].forEach(r => old[r.dataset.id] = r.getBoundingClientRect().top);
+    const rows = [...brData].sort((a,b) => a.rank - b.rank);
+    
+    [...L.children].forEach(r => { if(!rows.some(t => t.id === r.dataset.id)) r.remove() });
+    
+    if(rows.length === 0) {
+        L.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Belum ada data Leaderboard</div>';
+        return;
+    }
+
+    rows.forEach(t => {
+        let r = [...L.children].find(x => x.dataset.id === t.id);
+        if(!r) { r = document.createElement('div'); r.dataset.id = t.id; }
+        r.className = 'row' + (t.rank <= 3 ? ' r' + t.rank : '');
+        const mc = i => { const m = (t.matches||[]).find(x => x.m == i); return m ? `<span><b>#${m.pos}</b></span>` : '<span style="opacity:0.3">-</span>'; };
+        r.innerHTML = `
+            <div class="tm">${lg(t.logo,t.name)}${esc(t.name)}</div>
+            ${[1,2,3,4,5,6].map(mc).join('')}
+            <b>${t.totalKills}</b><b>${t.totalPts}</b><b class="rk">${t.rank}</b>`;
+        L.appendChild(r);
+    });
+    
+    [...L.children].forEach(r => {
+        const o = old[r.dataset.id];
+        if(o == null) return;
+        const d = o - r.getBoundingClientRect().top;
+        if(d) r.animate([{transform:`translateY(${d}px)`, backgroundColor: d>0 ? 'rgba(67,160,71,0.4)' : 'rgba(229,57,53,0.4)'}, {transform:'none', backgroundColor:'transparent'}], {duration:800, easing:'cubic-bezier(0.2, 0.8, 0.2, 1)'});
+    });
+    
+    $('#pr-list').innerHTML = [...predatorData].sort((a,b)=>b.kills-a.kills).slice(0,5).map((p,i)=>`<div class="pi"><em>${i+1}</em><div>${esc(p.nickname)}<small>${esc(p.team)}</small></div><b>${p.kills}</b></div>`).join('') || '<div style="text-align:center; padding: 2cqw; color: var(--muted);">Belum ada data</div>';
+}
+
+// CS BRACKET
+function renderCS() {
+    $$('#cs-modes .btn').forEach(b => b.classList.toggle('on', b.dataset.m === currentCsMode));
+    const d = csData[currentCsMode];
+    const stage = $('#cs-stage');
+    stage.innerHTML = '';
+    
+    if(!d || d.length === 0) {
+        stage.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Bracket belum tersedia</div>';
+        return;
+    }
+
+    const rounds = {};
+    d.forEach(m => { if(!rounds[m.round]) rounds[m.round] = []; rounds[m.round].push(m); });
+    const maxRound = Math.max(...Object.keys(rounds).map(Number));
+    
+    const nodes = [], edges = [];
+    const cw = 100 / (maxRound + 1);
+    const bw = cw * 0.8;
+
+    for(let r=1; r<=maxRound; r++) {
+        if(!rounds[r]) continue;
+        const ms = rounds[r];
+        ms.forEach((m, i) => {
+            nodes.push({ m, x: (r-1)*cw, y: 10 + (i+0.5) * (80/ms.length), id: m.id });
+        });
+    }
+
+    let svg = '', html = '';
+    for(let r=1; r<maxRound; r++) {
+        if(!rounds[r]) return;
+        rounds[r].forEach(m => {
+            if(!m.next) return;
+            const n1 = nodes.find(x => x.id === m.id);
+            const n2 = nodes.find(x => x.id === m.next);
+            if(n1 && n2) {
+                const x1 = n1.x + bw, x2 = n2.x;
+                const y1 = n1.y, y2 = n2.y;
+                const xm = (x1 + x2) / 2;
+                svg += `<path class="${m.winner ? 'w' : ''}" d="M${x1} ${y1} H${xm} V${y2} H${x2}"/>`;
+            }
+        });
+    }
+
+    nodes.forEach(n => {
+        const m = n.m;
+        const aW = m.winner === 'A', bW = m.winner === 'B';
+        const aC = aW ? 'w' : (bW ? 'l' : '');
+        const bC = bW ? 'w' : (aW ? 'l' : '');
+        
+        html += `<div class="mb" style="left:${n.x}%;top:${n.y}%;width:${bw}%">
+            <div class="mt ${aC}"><span>${esc(m.a||'TBD')}</span><b>${m.sa ?? ''}</b></div>
+            <div class="mt ${bC}"><span>${esc(m.b||'TBD')}</span><b>${m.sb ?? ''}</b></div>
+        </div>`;
+    });
+
+    stage.innerHTML = `<div class="plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none">${svg}</svg>${html}</div>`;
+}
+
+// LIVE STREAM
+function renderLive() {
+    const f = $('#lv-f');
+    if(tournamentInfo.streamUrl) {
+        let embedUrl = tournamentInfo.streamUrl.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/").split('&')[0];
+        if(f.getAttribute('src') !== embedUrl) f.src = embedUrl;
+    }
+    
+    const c = $('#chat');
+    if(chatData.length === 0) {
+        c.innerHTML = '<p style="text-align:center; color:var(--muted); margin-top:2cqw;">Belum ada chat</p>';
+    } else {
+        c.innerHTML = chatData.map(x => `<p><b>${esc(x.username)}</b> ${esc(x.message)}</p>`).join('');
+        c.scrollTop = c.scrollHeight;
+    }
+
+    $('#maps').innerHTML = mapData.map(m => `
+        <div class="mp">
+            <img src="${esc(m.image)}" onerror="this.src='https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg'">
+            <span>${esc(m.name)}</span>
+            <em class="${esc(m.status)}">${esc(m.status.toUpperCase())}</em>
+        </div>
+    `).join('') || '<div style="text-align:center; color:var(--muted); padding: 2cqw;">Belum ada Map</div>';
+}
+
+// SPONSOR
+let spI = 0, spTimeout;
+function startSponsorLoop() {
+    if(spTimeout) clearTimeout(spTimeout);
+    if(!sponsorData.length) return;
+    
+    const s = sponsorData[spI++ % sponsorData.length], e = $('#sp');
+    e.innerHTML = `<img src="${s.logo || ''}" alt="" onerror="this.remove()"><span>${s.name}</span>`;
+    e.classList.add('in');
+    
+    spTimeout = setTimeout(() => {
+        e.classList.remove('in'); 
+        spTimeout = setTimeout(startSponsorLoop, 9000);
+    }, 5000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// 4. REALTIME LISTENER
+// ═══════════════════════════════════════════════════════════
+function setupRealtime() {
+    sb.channel('rt_chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tournament_chats', filter: `tournament_id=eq.${TOURNAMENT_ID}` }, payload => {
+        chatData.push(payload.new); if(chatData.length > 50) chatData.shift();
+        if(document.getElementById('scene-live').classList.contains('active')) renderLive();
+    }).subscribe();
+
+    sb.channel('rt_update').on('postgres_changes', { event: '*', schema: 'public', table: 'registrations', filter: `tournament_id=eq.${TOURNAMENT_ID}` }, payload => {
+        fetchData(); 
+    }).subscribe();
+}
+
+// ═══════════════════════════════════════════════════════════
+// 5. TRANSISI G & H (DURASI 3.5 DETIK)
+// ═══════════════════════════════════════════════════════════
+const tcv = document.getElementById('transition-canvas');
+const tctx = tcv.getContext('2d');
+const appWrapper = document.getElementById('app-wrapper');
+let tW, tH;
+function resizeT() { tW = tcv.width = appWrapper.clientWidth; tH = tcv.height = appWrapper.clientHeight; }
+window.addEventListener('resize', resizeT);
+
+let transitioning = false, flashAmt = 0, startT = 0;
+let particles = [];
+const rnd = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, p) => a + (b - a) * p;
+
+function limb(x1, y1, x2, y2, w) { tctx.lineCap = 'round'; tctx.strokeStyle = '#0a0a0a'; tctx.lineWidth = w + 5; tctx.beginPath(); tctx.moveTo(x1, y1); tctx.lineTo(x2, y2); tctx.stroke(); tctx.strokeStyle = '#e2e8f0'; tctx.lineWidth = w; tctx.stroke(); }
+function eye(x, y, r, px, py, pr) { tctx.fillStyle = '#fff'; tctx.strokeStyle = '#000'; tctx.lineWidth = 3; tctx.beginPath(); tctx.arc(x, y, r, 0, 7); tctx.fill(); tctx.stroke(); tctx.fillStyle = '#000'; tctx.beginPath(); tctx.arc(x + px * (r - pr - 1), y + py * (r - pr - 1), pr, 0, 7); tctx.fill(); }
+const CHROME = ['#ffffff', '#e2e8f0', '#7c8797', '#cbd5e1'];
+const grad = (y, s, c) => { const g = tctx.createLinearGradient(0, y - s * .5, 0, y + s * .5); c.forEach((v, i) => g.addColorStop(i / (c.length - 1), v)); return g; };
+function person(ch, x, y, o) {
+    tctx.save(); tctx.translate(x, y); tctx.scale(o.sc, o.sc);
+    const sw = Math.sin(o.walk) * 20 * o.amp;
+    limb(-24, 56, -24 + sw, 100, 11); limb(24, 56, 24 - sw, 100, 11);
+    tctx.fillStyle = '#0b0b0b'; tctx.strokeStyle = '#e2e8f0'; tctx.lineWidth = 2;
+    [-24 + sw, 24 - sw].forEach(fx => { tctx.beginPath(); tctx.ellipse(fx + 6, 102, 17, 7, 0, 0, 7); tctx.fill(); tctx.stroke(); });
+    const h = o.hands; limb(-56, 8, h[0], h[1], 10); limb(56, 8, h[2], h[3], 10);
+    tctx.font = '900 160px Orbitron, sans-serif'; tctx.textAlign = 'center'; tctx.textBaseline = 'middle';
+    for (let i = 13; i > 0; i--) { tctx.fillStyle = `rgb(${34 + i * 3},${42 + i * 3},${54 + i * 3})`; tctx.fillText(ch, i * .8, i * .9); }
+    tctx.lineWidth = 6; tctx.strokeStyle = '#0a0a0a'; tctx.strokeText(ch, 0, 0);
+    tctx.shadowColor = 'rgba(0,229,255,.45)'; tctx.shadowBlur = 18;
+    tctx.fillStyle = grad(0, 150, CHROME); tctx.fillText(ch, 0, 0); tctx.shadowBlur = 0;
+    const s = o.sur, er = lerp(13, 17, s), pr = lerp(6, 3.2, s);
+    eye(-19, -26, er, o.lx, o.ly, pr); eye(19, -26, er, o.lx, o.ly, pr);
+    tctx.restore();
+}
+function gun(x, y, ang, rc, s) {
+    tctx.save(); tctx.translate(x + 80 * s, y + 25 * s); tctx.scale(s, s); tctx.rotate(ang); tctx.translate(-rc, 0);
+    const r = (c, a, b, w, h) => { tctx.fillStyle = c; tctx.fillRect(a, b, w, h) };
+    r('#1b2330', -34, -5, 36, 16); r('#94a3b8', 0, -9, 52, 18); r('#e2e8f0', 0, -9, 52, 4); r('#334155', 52, -6, 66, 12); r('#64748b', 30, 8, 30, 9); r('#0b0f14', 118, -8, 7, 16);
+    tctx.shadowColor = '#00e5ff'; tctx.shadowBlur = 10; r('#00e5ff', 8, -1, 106, 3); tctx.restore();
+}
+function burst(n, x, y) {
+    for (let i = 0; i < n; i++) {
+        const a = rnd(0, 6.283), v = rnd(10, 40);
+        particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, color: Math.random() > 0.5 ? '#00e5ff' : '#fff', size: rnd(2,6) });
+    }
+}
+
+function playSFX(type) {
+    try {
+        const AC = new (window.AudioContext || window.webkitAudioContext)();
+        if(type === 'boom') {
+            const o = AC.createOscillator(), g = AC.createGain();
+            o.type = 'sine'; o.frequency.setValueAtTime(150, AC.currentTime);
+            o.frequency.exponentialRampToValueAtTime(30, AC.currentTime + 0.5);
+            g.gain.setValueAtTime(1, AC.currentTime); g.gain.exponentialRampToValueAtTime(0.01, AC.currentTime + 0.5);
+            o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime + 0.5);
+        }
+    } catch(e) {}
+}
+
+function drawTransition() {
+    tctx.clearRect(0, 0, tW, tH);
+    const elapsed = (performance.now() - startT) / 1000;
+    
+    if (elapsed < 2.5) {
+        if (!window._boom && elapsed > 1.5) { 
+            window._boom = true; flashAmt = 1; burst(200, tW/2, tH/2); playSFX('boom');
+        }
+        if (elapsed < 1.5) {
+            const cx = tW/2, cy = tH/2;
+            const pMasuk = Math.min(1, elapsed / 1.2);
+            person('G', lerp(-200, tW*0.25, pMasuk), cy+40, { lx:1, ly:0, sur:0.2, walk: elapsed*15, amp: pMasuk<1?1:0, hands:[-72,50,80,25], sc:1 });
+            gun(lerp(-200, tW*0.25, pMasuk), cy+40, 0, 0, 1);
+            person('H', lerp(tW+200, tW*0.75, pMasuk), cy+40, { lx:-1, ly:0, sur:0.5, walk: elapsed*15, amp: pMasuk<1?1:0, hands:[-80,-68,80,-68], sc:1 });
+        }
+        if (elapsed > 1.5) {
+            particles.forEach(pt => {
+                pt.x += pt.vx; pt.y += pt.vy; pt.life -= 0.02;
+                if (pt.life > 0) { tctx.fillStyle = pt.color; tctx.globalAlpha = pt.life; tctx.beginPath(); tctx.arc(pt.x, pt.y, pt.size, 0, 7); tctx.fill(); }
+            });
+            particles = particles.filter(pt => pt.life > 0);
+            if (flashAmt > 0) { tctx.fillStyle = `rgba(255,255,255,${flashAmt})`; tctx.fillRect(0, 0, tW, tH); flashAmt -= 0.04; }
+        }
+    } else if (elapsed > 2.5 && elapsed < 3.5) {
+        const fade = (elapsed - 2.5) / 1.0;
+        tctx.fillStyle = `rgba(3,3,3,${1 - fade})`; tctx.fillRect(0, 0, tW, tH);
+    } else {
+        tcv.style.display = 'none'; transitioning = false; window.isTransitioning = false; return;
+    }
+    requestAnimationFrame(drawTransition);
+}
+
+window.nav = function(targetScene) {
+    if (window.isTransitioning) return;
+    const currentEl = document.querySelector('.scene.active');
+    const currentId = currentEl ? currentEl.id.replace('scene-', '') : null;
+    if (currentId === targetScene) return;
+    
+    window.isTransitioning = true; transitioning = true;
+    tcv.style.display = 'block'; resizeT();
+    flashAmt = 0; particles = []; window._boom = false; startT = performance.now();
+    drawTransition();
+    
+    setTimeout(() => {
+        if (currentEl) currentEl.classList.remove('active');
+        const newEl = document.getElementById('scene-' + targetScene);
+        if (newEl) newEl.classList.add('active');
+        if (targetScene === 'cs') renderCS();
+    }, 1200);
+};
+
+// ═══════════════════════════════════════════════════════════
+// 6. KONTROL & INIT
+// ═══════════════════════════════════════════════════════════
+$$('#ctl .btn[data-s]').forEach(b => b.onclick = () => nav(b.dataset.s));
+$$('#cs-modes .btn').forEach(b => b.onclick = () => { currentCsMode = b.dataset.m; renderCS(); });
+
+$('#fv').onclick = () => {
+    const f = $('#scene-live').classList.toggle('full');
+    $('#fv').innerHTML = f ? '<i class="fa-solid fa-compress"></i> EXIT' : '<i class="fa-solid fa-expand"></i> FULL';
+};
+
+setInterval(() => { $('#clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false }); }, 1000);
+
+// MULAI OTOMATIS
+fetchData();
+</script>
+</body>
+</html>
