@@ -6,7 +6,7 @@ import {
 
 export const H = {};
 export const T = {};
-export const U = {}; // <--- INI WAJIB ADA BIAR GAK ERROR
+export const U = {};
 
 const sh = (env, chat, mid, v) => show(env, chat, mid, v.text, v.markup);
 
@@ -144,7 +144,12 @@ H.backup = async (env, chat, mid, p) => {
       const ghRes = await fetch(`https://api.github.com/repos/${env.GH_REPO}/git/trees/main?recursive=1`, { headers: { Authorization: `Bearer ${env.GH_TOKEN}`, 'User-Agent': 'gh-t-arena' } });
       const tree = await ghRes.json();
       if (tree.tree) {
-        const files = tree.tree.filter(t => t.type === 'blob' && (t.path.endsWith('.js') || t.path.endsWith('.html') || t.path.endsWith('.toml')));
+        // UPDATE: Filter file yang di-backup (js, html, toml, yml, json, sql)
+        const files = tree.tree.filter(t => t.type === 'blob' && (
+            t.path.endsWith('.js') || t.path.endsWith('.html') || t.path.endsWith('.toml') ||
+            t.path.endsWith('.yml') || t.path.endsWith('.yaml') || t.path.endsWith('.json') ||
+            t.path.endsWith('.sql')
+        ));
         for (const file of files) {
           if (file.size > 500000) continue;
           const rawRes = await fetch(`https://raw.githubusercontent.com/${env.GH_REPO}/main/${file.path}`);
@@ -325,4 +330,66 @@ T.scrim_room = async (env, chat, st, text) => {
   await sb(env, 'PATCH', `scrim_matches?id=eq.${st.data.sid}`, { room_id: parts[0], room_password: parts.slice(1).join(' '), status: 'berlangsung' }, 'return=minimal');
   await clearState(env, chat);
   return show(env, chat, null, '✅ Room ID disimpan, status jadi Berlangsung.', { inline_keyboard: [[b('⬅️ Kembali', 'm:scrim')]] });
+};
+
+// ================= TOP UP SALDO (BARU) =================
+H.tp = async (env, chat, mid, p) => {
+    const a = p[2];
+    
+    if (!a) {
+        const rows = (await sb(env, 'GET', 'topup_requests?status=eq.menunggu_verifikasi&select=id,user_id,amount&order=created_at.asc')) || [];
+        if (!rows.length) {
+            return show(env, chat, mid, '<b>💰 Verifikasi Top Up</b>\nTidak ada pengajuan top up.', { inline_keyboard: [[b('⬅️ Kembali', 'm:main')]] });
+        }
+
+        const uids = rows.map(r => r.user_id);
+        const profs = (await sb(env, 'GET', `profiles?id=in.(${uids.join(',')})&select=id,username`)) || [];
+        const pMap = Object.fromEntries(profs.map(x => [x.id, x.username]));
+
+        const kb = rows.map(r => [b(`Rp ${Number(r.amount).toLocaleString('id-ID')} - ${pMap[r.user_id] || 'User'}`, 'm:tp:v:' + r.id)]);
+        kb.push([b('⬅️ Kembali', 'm:main')]);
+        return show(env, chat, mid, '<b>💰 Verifikasi Top Up</b>\nPilih request:', { inline_keyboard: kb });
+    }
+    
+    if (a === 'v') {
+        const r = (await sb(env, 'GET', `topup_requests?id=eq.${p[3]}&select=*`))?.[0];
+        const prof = (await sb(env, 'GET', `profiles?id=eq.${r.user_id}&select=username`))?.[0];
+        
+        const caption = `<b>💰 Request Top Up</b>\nCaptain: ${prof?.username || '?'}\nNominal: <b>Rp ${Number(r.amount).toLocaleString('id-ID')}</b>`;
+        const kb = { inline_keyboard: [[b('✅ Setujui', 'm:tp:ok:' + r.id), b('❌ Tolak', 'm:tp:no:' + r.id)], [b('⬅️ Kembali', 'm:tp')]] };
+
+        if (r.proof_path) {
+            const path = r.proof_path.split('/').map(encodeURIComponent).join('/');
+            const rSign = await fetch(`${env.SUPABASE_URL}/storage/v1/object/sign/payment-proofs/${path}`, { method: 'POST', headers: sbHeaders(env), body: JSON.stringify({ expiresIn: 3600 }) });
+            const jSign = await rSign.json();
+            if (jSign.signedURL) {
+                await tg(env, 'sendPhoto', { chat_id: chat, photo: env.SUPABASE_URL + jSign.signedURL, caption: caption, parse_mode: 'HTML', reply_markup: kb });
+                return;
+            }
+        }
+        return show(env, chat, mid, caption + '\n\n⚠️ Bukti transfer tidak ditemukan.', { inline_keyboard: kb.inline_keyboard });
+    }
+
+    if (a === 'ok') {
+        await rpc(env, 'admin_approve_topup', { p_request_id: p[3] });
+        return show(env, chat, mid, '✅ Top up disetujui. Saldo user otomatis bertambah.', { inline_keyboard: [[b('⬅️ Kembali', 'm:tp')]] });
+    }
+
+    if (a === 'no') {
+        await setState(env, chat, 'tp_rej', { rid: p[3] });
+        return show(env, chat, mid, '<b>❌ Tolak Top Up</b>\nKetik alasan penolakan:', { inline_keyboard: [[b('✖️ Batal', 'm:tp')]] });
+    }
+};
+
+T.tp_rej = async (env, chat, st, text) => {
+    const rid = st.data?.rid;
+    if (text.length < 3 || text.length > 200) return show(env, chat, null, '❌ Alasan 3-200 karakter.', { inline_keyboard: [[b('✖️ Batal', 'm:tp')]] });
+    
+    await sb(env, 'PATCH', `topup_requests?id=eq.${rid}`, { status: 'ditolak', reject_reason: text, processed_at: new Date().toISOString() }, 'return=minimal');
+    
+    const req = (await sb(env, 'GET', `topup_requests?id=eq.${rid}&select=user_id`))?.[0];
+    if (req) await notify(env, req.user_id, 'saldo', 'Top Up Ditolak', `Pengajuan Top Up Anda ditolak. Alasan: ${text}`);
+    
+    await clearState(env, chat);
+    return show(env, chat, null, '✅ Top up ditolak.', { inline_keyboard: [[b('⬅️ Kembali', 'm:tp')]] });
 };
