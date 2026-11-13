@@ -4,162 +4,276 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GH-T ARENA — Esports Display</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+    /* =========================================
+       TEMA MUSIMAN (OTOMATIS DARI DB)
+       ========================================= */
     :root {
-        --bg: #030303; --panel: #0a0a0a; 
-        --red: #ff1f3d; --red-glow: rgba(255, 31, 61, 0.4);
-        --gold: #ffd700; --gold-glow: rgba(255, 215, 0, 0.4);
-        --silver: #e2e8f0; --muted: #777; --text: #fff;
+        --bg: #030303; --panel: rgba(15, 15, 17, 0.85); 
+        --chrome: #e2e8f0; --cyan: #00e5ff; /* Default Cyan */
+        --gold: #ffd700; --red: #e53935;
+        --border: rgba(226,232,240,.15); --muted: #777;
     }
-    /* Tema Dinamis */
-    body.theme-natal { --red: #00e676; --red-glow: rgba(0,230,118,0.4); }
-    body.theme-lebaran { --red: #00bcd4; --red-glow: rgba(0,188,212,0.4); }
-    body.theme-agustus { --red: #f44336; --red-glow: rgba(244,67,54,0.4); }
-    body.theme-halloween { --red: #ff9800; --red-glow: rgba(255,152,0,0.4); }
+    body.theme-natal { --cyan: #00e676; }
+    body.theme-lebaran { --cyan: #00bcd4; }
+    body.theme-agustus { --cyan: #f44336; }
+    body.theme-halloween { --cyan: #ff9800; }
+    body.theme-ocean { --cyan: #29b6f6; }
+    body.theme-cyberpunk { --cyan: #b388ff; }
 
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-    
     body { background-color: #000; height: 100vh; display: grid; place-items: center; overflow: hidden; }
+
+    /* =========================================
+       WRAPPER 16:9 & BACKGROUND
+       ========================================= */
     .app-wrapper { 
         position: relative; width: min(100vw, calc(100vh * 16/9)); aspect-ratio: 16/9; 
         container-type: size; overflow: hidden; background: var(--bg);
-        background-image: radial-gradient(circle at 50% 0%, rgba(255, 31, 61, 0.15) 0%, transparent 50%), 
-                          linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), 
-                          linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-        background-size: 100% 100%, 4cqw 4cqw, 4cqw 4cqw;
+        background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.05) 0%, transparent 60%), radial-gradient(circle at 50% 100%, rgba(0, 0, 0, 0.8) 0%, transparent 50%), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 3cqw 3cqw, 3cqw 3cqw;
     }
 
-    h1, h2, h3, h4 { font-family: 'Orbitron', sans-serif; }
+    /* Efek Scanline & Partikel */
+    .app-wrapper::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(255,255,255,0.02) 50%); background-size: 100% 4px; z-index: 1; pointer-events: none; animation: scanline 10s linear infinite; }
+    .particles { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+    .particle { position: absolute; background: var(--cyan); border-radius: 50%; opacity: 0.3; box-shadow: 0 0 1cqw var(--cyan); animation: floatUp 12s linear infinite; }
+    .particle:nth-child(1) { width: 0.3cqw; height: 0.3cqw; left: 10%; bottom: -10%; animation-duration: 8s; }
+    .particle:nth-child(2) { width: 0.5cqw; height: 0.5cqw; left: 30%; bottom: -10%; animation-duration: 15s; animation-delay: 2s; }
+    .particle:nth-child(3) { width: 0.2cqw; height: 0.2cqw; left: 50%; bottom: -10%; animation-duration: 10s; animation-delay: 4s; }
+    .particle:nth-child(4) { width: 0.4cqw; height: 0.4cqw; left: 70%; bottom: -10%; animation-duration: 18s; animation-delay: 1s; }
+    .particle:nth-child(5) { width: 0.3cqw; height: 0.3cqw; left: 90%; bottom: -10%; animation-duration: 12s; animation-delay: 5s; }
 
-    @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 var(--red-glow); } 70% { box-shadow: 0 0 0 1.5cqw transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
-    @keyframes glowAnim { 0%, 100% { text-shadow: 0 0 1cqw var(--red-glow); } 50% { text-shadow: 0 0 2cqw var(--red), 0 0 1cqw var(--red-glow); } }
-    @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-    @keyframes floatBox { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.5cqw); } }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* HEADER */
-    header { position: absolute; top: 0; left: 0; right: 0; height: 6cqw; display: flex; justify-content: space-between; align-items: center; padding: 0 3cqw; background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%); border-bottom: 0.2cqw solid rgba(255,31,61,0.3); z-index: 10; }
+    /* HEADER & FOOTER */
+    header { position: absolute; top: 0; left: 0; right: 0; height: 7cqw; display: flex; justify-content: space-between; align-items: center; padding: 0 3cqw; background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%); border-bottom: 0.2cqw solid var(--border); z-index: 10; }
     .logo-area { display: flex; align-items: center; gap: 1.5cqw; }
-    .logo-area img { height: 4cqw; filter: drop-shadow(0 0 1cqw var(--red)); }
-    .header-title h1 { font-size: 1.8cqw; color: #fff; letter-spacing: 0.2cqw; text-shadow: 0 0 1cqw var(--red); }
-    .header-title p { font-family: 'Rajdhani', sans-serif; font-size: 1cqw; color: var(--silver); text-transform: uppercase; letter-spacing: 0.2cqw; }
+    .logo-area img { height: 4cqw; filter: drop-shadow(0 0 1cqw var(--cyan)); }
+    .header-title h1 { font-family: 'Orbitron'; font-size: 2cqw; color: #fff; letter-spacing: 0.2cqw; text-shadow: 0 0 1cqw var(--cyan); }
+    .header-title p { font-family: 'Rajdhani', sans-serif; font-size: 1.2cqw; color: var(--chrome); text-transform: uppercase; letter-spacing: 0.2cqw; }
     .status-area { display: flex; align-items: center; gap: 2cqw; }
-    .live-badge { background: rgba(255,31,61,0.2); border: 0.15cqw solid var(--red); color: var(--red); padding: 0.4cqw 1.2cqw; border-radius: 2cqw; font-weight: 800; font-family: 'Orbitron', sans-serif; font-size: 1cqw; display: flex; align-items: center; gap: 0.8cqw; animation: glowAnim 2s infinite alternate; }
-    .live-dot { width: 0.8cqw; height: 0.8cqw; background: var(--red); border-radius: 50%; box-shadow: 0 0 0.5cqw var(--red); }
+    .live-badge { background: rgba(255,255,255,0.1); border: 0.15cqw solid var(--cyan); color: var(--cyan); padding: 0.4cqw 1.2cqw; border-radius: 2cqw; font-weight: 800; font-family: 'Orbitron', sans-serif; font-size: 1cqw; display: flex; align-items: center; gap: 0.8cqw; }
+    .live-dot { width: 0.8cqw; height: 0.8cqw; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 0.5cqw var(--cyan); animation: pulse 1.5s infinite; }
     .clock { font-family: 'Orbitron', sans-serif; font-size: 1.8cqw; color: #fff; }
+    footer { position: absolute; bottom: 0; left: 0; right: 0; height: 3.5cqw; background: linear-gradient(90deg, #0a0a0a, #1a1a1a, #0a0a0a); border-top: 0.1cqw solid var(--border); display: flex; align-items: center; overflow: hidden; z-index: 10; }
+    .running-text { white-space: nowrap; padding-left: 100%; font-family: 'Rajdhani'; font-weight: 800; font-size: 1.5cqw; color: var(--cyan); animation: marquee 20s linear infinite; }
 
-    /* MAIN SCENE */
-    main { position: absolute; inset: 6cqw 0 3cqw 0; padding: 2cqw 3cqw; display: flex; justify-content: center; align-items: center; }
+    /* MAIN & SCENES */
+    main { position: absolute; inset: 7cqw 0 3.5cqw 0; padding: 2cqw 4cqw; display: flex; justify-content: center; align-items: center; z-index: 5; }
     .scene { width: 100%; height: 100%; display: none; flex-direction: column; }
-    .scene.active { display: flex; animation: fadeIn 0.4s ease-out forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-    
-    .page-title { font-size: 2cqw; color: #fff; text-align: center; margin-bottom: 1.5cqw; letter-spacing: 0.3cqw; text-transform: uppercase; text-shadow: 0 0 1.5cqw var(--red); }
+    .scene.active { display: flex; animation: fadeInScale 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+    .page-title { font-family: 'Orbitron'; font-size: 2.5cqw; color: #fff; text-align: center; margin-bottom: 1.5cqw; letter-spacing: 0.3cqw; text-shadow: 0 0 2cqw var(--cyan); animation: textGlow 3s ease-in-out infinite alternate; font-weight: 900; }
 
-    /* PANELS */
-    .panel { background: rgba(10,10,10,0.85); border: 1px solid rgba(255,31,61,0.3); border-top: 0.25cqw solid var(--red); clip-path: polygon(0 0, calc(100% - 1.5cqw) 0, 100% 1.5cqw, 100% 100%, 1.5cqw 100%, 0 calc(100% - 1.5cqw)); overflow: hidden; box-shadow: 0 0 2cqw rgba(0,0,0,0.8); }
-    .ph { font: 700 1.1cqw Orbitron; padding: 0.6cqw 1.2cqw; background: linear-gradient(90deg, var(--red), transparent); color: #fff; letter-spacing: 0.1cqw; }
-
-    /* STANDBY */
+    /* =========================================
+       SCENE 1: STANDBY (COUNTDOWN)
+       ========================================= */
     #scene-standby { justify-content: center; align-items: center; text-align: center; }
-    .standby-logo { width: 15cqw; margin-bottom: 1.5cqw; filter: drop-shadow(0 0 3cqw var(--red)); animation: floatBox 4s ease-in-out infinite; }
-    .standby-title { font-size: 4cqw; color: #fff; letter-spacing: 1cqw; margin-bottom: 0.5cqw; text-shadow: 0 0 2cqw var(--red); }
-    .standby-sub { font-size: 1.5cqw; color: var(--gold); letter-spacing: 0.4cqw; text-transform: uppercase; margin-bottom: 3cqw; font-weight: 700; }
-    
+    .standby-logo { width: 15cqw; margin-bottom: 1.5cqw; filter: drop-shadow(0 0 3cqw var(--cyan)); animation: floatBox 4s ease-in-out infinite; }
+    .standby-title { font-family: 'Orbitron'; font-size: 4cqw; color: #fff; letter-spacing: 1cqw; margin-bottom: 0.5cqw; text-shadow: 0 0 2cqw var(--cyan); }
+    .standby-sub { font-family: 'Rajdhani'; font-size: 1.5cqw; color: var(--gold); letter-spacing: 0.4cqw; text-transform: uppercase; margin-bottom: 3cqw; font-weight: 700; }
     .cd { display: flex; align-items: center; gap: 1cqw; }
-    .reel { width: 7cqw; height: 9cqw; overflow: hidden; border-radius: 0.5cqw; border: 1px solid var(--red); background: linear-gradient(#0a0a0a, #1c1012 50%, #0a0a0a); box-shadow: inset 0 0 1.5cqw #000, 0 0 2cqw var(--red-glow); position: relative; }
+    .reel { width: 7cqw; height: 9cqw; overflow: hidden; border-radius: 0.5cqw; border: 1px solid var(--cyan); background: linear-gradient(#0a0a0a, #1c1012 50%, #0a0a0a); box-shadow: inset 0 0 1.5cqw #000, 0 0 2cqw rgba(0,229,255,0.3); position: relative; }
     .strip { will-change: transform; transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1); }
-    .strip i { display: block; height: 9cqw; font: 900 7cqw/9cqw Orbitron; font-style: normal; text-align: center; color: #fff; text-shadow: 0 0 1cqw var(--red); }
-    .sep { font: 900 6cqw Orbitron; color: var(--red); }
+    .strip i { display: block; height: 9cqw; font: 900 7cqw/9cqw Orbitron; font-style: normal; text-align: center; color: #fff; text-shadow: 0 0 1cqw var(--cyan); }
+    .sep { font: 900 6cqw Orbitron; color: var(--cyan); }
 
-    /* BR LEADERBOARD */
+    /* =========================================
+       SCENE 2: BR LEADERBOARD (TEXT DIBESARKAN)
+       ========================================= */
     #br-wrap { display: flex; gap: 2cqw; height: 100%; }
     #br-tbl { flex: 1; display: flex; flex-direction: column; }
     #pred { width: 25cqw; display: flex; flex-direction: column; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-top: 0.25cqw solid var(--cyan); clip-path: polygon(0 0, calc(100% - 1.5cqw) 0, 100% 1.5cqw, 100% 100%, 1.5cqw 100%, 0 calc(100% - 1.5cqw)); overflow: hidden; box-shadow: 0 0 2cqw rgba(0,0,0,0.8); }
+    .ph { font: 700 1.1cqw Orbitron; padding: 0.6cqw 1.2cqw; background: linear-gradient(90deg, rgba(226,232,240,0.2), transparent); color: #fff; letter-spacing: 0.1cqw; }
     
-    .row { display: grid; grid-template-columns: 3fr repeat(6, 1fr) 1.2fr 1.2fr 1fr; align-items: center; height: 3.2cqw; padding: 0 1.5cqw; font-family: 'Rajdhani'; font-weight: 700; font-size: 1.4cqw; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent); }
-    .row.h { font-family: 'Orbitron'; font-size: 1cqw; color: var(--red); height: 3cqw; background: #050505; border-bottom: 0.2cqw solid var(--red); }
-    .row.r1 { background: linear-gradient(90deg, rgba(255,215,0,0.15), transparent); border-left: 0.3cqw solid var(--gold); }
-    .row.r2 { background: linear-gradient(90deg, rgba(226,232,240,0.1), transparent); border-left: 0.3cqw solid var(--silver); }
-    .row.r3 { background: linear-gradient(90deg, rgba(205,127,50,0.1), transparent); border-left: 0.3cqw solid #cd7f32; }
+    /* Grid disesuaikan biar muat teks gede */
+    .row { display: grid; grid-template-columns: 3.5fr repeat(6, 1fr) 1.2fr 1.2fr 1fr; align-items: center; height: 3.5cqw; padding: 0 1.5cqw; font-family: 'Rajdhani'; font-weight: 900; font-size: 1.5cqw; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); color: #fff; }
+    .row.h { font-family: 'Orbitron'; font-size: 1.1cqw; color: var(--cyan); height: 3.5cqw; background: #0a0a0a; border-bottom: 0.2cqw solid var(--cyan); }
+    .row.r1 { background: linear-gradient(90deg, rgba(0,229,255,0.15), transparent); border-left: 0.3cqw solid var(--cyan); }
+    .row.r2 { background: linear-gradient(90deg, rgba(148,163,184,0.1), transparent); border-left: 0.3cqw solid #94a3b8; }
+    .row.r3 { background: linear-gradient(90deg, rgba(100,116,139,0.1), transparent); border-left: 0.3cqw solid #64748b; }
+    .tm { display: flex; align-items: center; gap: 1cqw; text-align: left; font-size: 1.5cqw; white-space: nowrap; overflow: hidden; font-weight: 900; }
+    .lg { width: 2.8cqw; height: 2.8cqw; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: #222; font-family: 'Orbitron'; border: 1px solid var(--cyan); flex: none; font-size: 1.2cqw; color: var(--cyan); }
+    .rk { font-family: 'Orbitron'; font-weight: 900; font-size: 1.6cqw; color: var(--cyan); }
     
-    .tm { display: flex; align-items: center; gap: 1cqw; text-align: left; font-size: 1.5cqw; white-space: nowrap; overflow: hidden; }
-    .lg { width: 2.5cqw; height: 2.5cqw; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: #222; font-family: 'Orbitron'; border: 1px solid var(--red); flex: none; font-size: 1.2cqw; color: var(--gold); }
-    .rk { font-family: 'Orbitron'; font-weight: 900; font-size: 1.6cqw; color: var(--gold); }
-    
-    .pi { display: flex; align-items: center; gap: 1cqw; padding: 0.6cqw 1.5cqw; font-size: 1.2cqw; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .pi em { font-family: 'Orbitron'; font-weight: 900; color: var(--red); font-style: normal; width: 2.5cqw; }
-    .pi small { display: block; color: var(--muted); font-size: 0.9cqw; }
-    .pi b { margin-left: auto; font-family: 'Orbitron'; color: var(--gold); }
+    .pi { display: flex; align-items: center; gap: 1cqw; padding: 0.8cqw 1.5cqw; font-size: 1.3cqw; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .pi em { font-family: 'Orbitron'; font-weight: 900; color: var(--cyan); font-style: normal; width: 2.5cqw; }
+    .pi small { display: block; color: var(--muted); font-size: 0.9cqw; font-weight: 600; }
+    .pi b { margin-left: auto; font-family: 'Orbitron'; color: #fff; }
 
-    /* CS BRACKET */
-    #cs-wrap { display: flex; flex-direction: column; height: 100%; gap: 1cqw; }
-    #cs-modes { display: flex; gap: 1cqw; height: 3.5cqw; }
-    .btn { font-family: 'Orbitron'; font-weight: 700; font-size: 1cqw; color: var(--silver); background: #111; border: 1px solid rgba(255,31,61,0.3); padding: 0 2cqw; border-radius: 0.4cqw; cursor: pointer; transition: 0.2s; }
-    .btn.on, .btn:hover { background: var(--red); color: #fff; border-color: var(--red); box-shadow: 0 0 1.5cqw var(--red-glow); }
-    
-    #cs-stage { flex: 1; position: relative; min-height: 0; overflow: hidden; }
-    .plot { position: absolute; inset: 0; }
-    .plot svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .plot path { fill: none; stroke: rgba(255,31,61,0.3); stroke-width: 2; vector-effect: non-scaling-stroke; }
-    .plot path.w { stroke: var(--red); stroke-width: 3; }
-    
-    .mb { position: absolute; height: 5.5cqw; transform: translateY(-50%); background: linear-gradient(135deg, #1a0f12, #0b0e13); border: 1px solid rgba(255,31,61,0.4); border-left: 0.3cqw solid var(--red); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 0.8cqw), calc(100% - 0.8cqw) 100%, 0 100%); font-family: 'Rajdhani'; font-weight: 700; font-size: 1.1cqw; }
-    .mt { display: flex; align-items: center; gap: 0.5cqw; height: 50%; padding: 0 0.8cqw; color: var(--silver); }
-    .mt span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .mt b { margin-left: auto; font-family: 'Orbitron'; }
-    .mt.w { background: linear-gradient(90deg, rgba(255,215,0,0.2), transparent); color: var(--gold); }
-    .mt.l { background: rgba(255,31,61,0.1); color: var(--red); text-decoration: line-through; opacity: 0.7; }
+    /* =========================================
+       SCENE 3: CS SCHEDULE (CARD STYLE)
+       ========================================= */
+    .schedule-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2cqw; padding-right: 1.5cqw; }
+    .schedule-list::-webkit-scrollbar { width: 0.5cqw; }
+    .schedule-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 1cqw; }
+    .schedule-list::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 1cqw; box-shadow: 0 0 1.5cqw var(--cyan); }
+    .round-group { display: flex; flex-direction: column; gap: 1cqw; }
+    .round-header { font-family: 'Orbitron'; font-size: 1.6cqw; color: var(--cyan); letter-spacing: 0.2cqw; text-transform: uppercase; border-bottom: 0.2cqw solid rgba(255,255,255,0.1); padding-bottom: 0.5cqw; margin-bottom: 1cqw; display: flex; align-items: center; gap: 1cqw; text-shadow: 0 0 1cqw var(--cyan); font-weight: 900; }
+    .bo-label { font-family: 'Rajdhani'; font-size: 1.1cqw; background: rgba(255,255,255,0.1); padding: 0.2cqw 1cqw; border-radius: 0.5cqw; border: 1px solid var(--border); text-shadow: none; font-weight: 700; }
+    .match-card { background: var(--panel); border: 0.15cqw solid var(--border); border-radius: 1cqw; display: flex; align-items: center; padding: 1.2cqw 2cqw; backdrop-filter: blur(10px); position: relative; overflow: hidden; opacity: 0; animation: slideIn 0.6s forwards, floatCard 5s ease-in-out infinite; transition: transform 0.3s, border-color 0.3s; }
+    .match-card:hover { transform: scale(1.02) translateX(10px) !important; border-color: var(--cyan); box-shadow: 0 0 3cqw rgba(0,229,255,0.4); z-index: 20; animation-play-state: paused; }
+    .match-info { width: 15cqw; display: flex; flex-direction: column; flex-shrink: 0; }
+    .match-no { font-family: 'Orbitron'; font-size: 1.5cqw; font-weight: 900; color: #fff; }
+    .teams-area { flex: 1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 2cqw; padding: 0 3cqw; border-left: 0.1cqw solid rgba(255,255,255,0.1); border-right: 0.1cqw solid rgba(255,255,255,0.1); }
+    .cs-team-wrap { display: flex; align-items: center; gap: 1cqw; }
+    .cs-team-a .cs-team-wrap { justify-content: flex-end; }
+    .cs-team-b .cs-team-wrap { justify-content: flex-start; }
+    .cs-logo { width: 3cqw; height: 3cqw; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: #222; }
+    .team { font-family: 'Rajdhani'; font-size: 1.8cqw; font-weight: 900; letter-spacing: 0.1cqw; color: var(--cyan); text-shadow: 0 0 0.5cqw rgba(0,229,255,0.3); }
+    .team-a { text-align: right; }
+    .team-b { text-align: left; }
+    .team.loser { color: var(--muted); text-decoration: line-through; text-shadow: none; }
+    .team.loser .cs-logo { opacity: 0.5; filter: grayscale(100%); }
+    .score-box { font-family: 'Orbitron'; font-size: 1.8cqw; font-weight: 900; background: rgba(0,0,0,0.6); padding: 0.5cqw 2cqw; border-radius: 0.5cqw; border: 0.1cqw solid #333; color: #fff; display: flex; align-items: center; gap: 1cqw; }
+    .status-area { width: 18cqw; display: flex; justify-content: flex-end; flex-shrink: 0; }
+    .badge { font-family: 'Orbitron'; font-size: 1cqw; font-weight: 700; padding: 1cqw 1.5cqw; border-radius: 0.5cqw; letter-spacing: 0.1cqw; text-align: center; width: 100%; }
+    .st-done { background: #222; color: var(--cyan); border: 0.1cqw solid var(--cyan); }
+    .st-live { background: rgba(229,57,53,0.15); color: var(--red); border: 0.1cqw solid var(--red); animation: pulseRed 1s infinite; }
+    .match-card.is-live { border-left: 0.4cqw solid var(--red); box-shadow: inset 3cqw 0 5cqw -3cqw rgba(229,57,53,0.4); }
+    .st-next { background: rgba(0,229,255,0.15); color: var(--cyan); border: 0.1cqw solid var(--cyan); box-shadow: 0 0 1.5cqw rgba(0,229,255,0.3); animation: pulseCyan 2s infinite; }
+    .match-card.is-next { border-left: 0.4cqw solid var(--cyan); box-shadow: inset 3cqw 0 5cqw -3cqw rgba(0,229,255,0.4); background: linear-gradient(90deg, rgba(0,229,255,0.05), var(--panel)); }
+    .match-card.is-next::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(0,229,255,0.2), transparent); transform: skewX(-25deg); animation: shimmer 2s infinite; }
+    .st-wait { background: transparent; color: #555; border: 0.1cqw dashed #444; }
 
-    /* LIVE STREAM */
-    #lv-wrap { display: flex; width: 100%; height: 100%; gap: 2cqw; }
-    #lv-v { flex: 1; border: 2px solid rgba(255,31,61,0.5); border-radius: 0.5cqw; overflow: hidden; background: #000; position: relative; transition: 0.3s; }
+    /* =========================================
+       SCENE 4: LIVE STREAM (NORMAL & FULLSCREEN)
+       ========================================= */
+    #lv-wrap { display: flex; width: 100%; height: 100%; gap: 2cqw; transition: 0.5s; }
+    #lv-v { flex: 1; border: 2px solid var(--border); border-radius: 0.5cqw; overflow: hidden; background: #000; position: relative; transition: 0.5s; }
     #lv-v iframe { width: 100%; height: 100%; border: none; }
-    .side { width: 28cqw; display: flex; flex-direction: column; gap: 1.5cqw; }
     
-    #chat-p { flex: 1.2; }
-    #map-p { flex: 1; }
-    .side .panel { height: 100%; }
-    
-    #chat { padding: 1cqw 1.5cqw; overflow-y: auto; height: calc(100% - 3cqw); display: flex; flex-direction: column; gap: 0.5cqw; }
-    #chat p { font-size: 1.3cqw; padding: 0.4cqw 0; border-bottom: 1px solid rgba(255,255,255,0.05); animation: slideUp 0.3s ease-out forwards; }
-    #chat b { color: var(--red); }
-    
-    .mp { display: flex; align-items: center; gap: 1.5cqw; padding: 0.8cqw 1.5cqw; border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Rajdhani'; font-weight: 700; font-size: 1.2cqw; animation: slideUp 0.4s ease-out; }
-    .mp img { width: 8cqw; height: 4cqw; object-fit: cover; border-radius: 0.4cqw; border: 1px solid rgba(255,31,61,0.3); }
-    .mp em { margin-left: auto; font-family: 'Orbitron'; font-style: normal; font-size: 0.8cqw; padding: 0.3cqw 1cqw; border-radius: 0.3cqw; }
+    /* TOMBOL FULLSCREEN VIDEO */
+    .btn-vid-fs { 
+        position: absolute; bottom: 1cqw; right: 1cqw; 
+        background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: var(--cyan); 
+        padding: 0.6cqw 1.2cqw; border-radius: 0.5cqw; cursor: pointer; 
+        font-family: 'Orbitron'; font-size: 0.9cqw; font-weight: 700; display: flex; align-items: center; gap: 0.5cqw;
+        transition: 0.3s; opacity: 0.5; z-index: 10;
+    }
+    .btn-vid-fs:hover { opacity: 1; background: rgba(0,229,255,0.2); border-color: var(--cyan); box-shadow: 0 0 1cqw var(--cyan); }
+
+    .side { width: 28cqw; display: flex; flex-direction: column; gap: 1.5cqw; transition: 0.5s; }
+    #chat-p { flex: 1.2; } #map-p { flex: 1; } .side .panel { height: 100%; }
+
+    /* MAP SCROLL */
+    .map-list { padding: 0.5cqw 1cqw; overflow-y: auto; height: calc(100% - 3cqw); display: flex; flex-direction: column; gap: 0.8cqw; }
+    .map-list::-webkit-scrollbar { width: 0.4cqw; }
+    .map-list::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 1cqw; }
+    .mp { display: flex; align-items: center; gap: 1cqw; padding: 0.6cqw; background: rgba(255,255,255,0.03); border: 1px solid #222; border-radius: 0.4cqw; }
+    .mp img { width: 5cqw; height: 3cqw; object-fit: cover; border-radius: 0.3cqw; border: 1px solid var(--border); }
+    .mp-info { flex: 1; }
+    .mp-name { font-size: 1.1cqw; font-weight: 700; color: #fff; font-family: 'Rajdhani'; }
+    .mp-match { font-size: 0.8cqw; color: var(--muted); }
+    .mp em { font-family: 'Orbitron'; font-style: normal; font-size: 0.7cqw; padding: 0.2cqw 0.8cqw; border-radius: 0.3cqw; font-weight: 700; }
     .mp em.selesai { background: rgba(67,160,71,0.2); color: #43a047; border: 1px solid #43a047; }
-    .mp em.live { background: rgba(255,31,61,0.2); color: var(--red); border: 1px solid var(--red); animation: pulseRed 1.5s infinite; }
-    .mp em.next { background: #222; color: var(--silver); border: 1px solid #555; }
-    
-    .full #lv-v { position: absolute; inset: 0; z-index: 100; border-radius: 0; border: none; }
-    .full .side { opacity: 0; pointer-events: none; }
+    .mp em.live { background: rgba(229,57,53,0.2); color: var(--red); border: 1px solid var(--red); animation: pulseRed 1.5s infinite; }
+    .mp em.next { background: #222; color: var(--chrome); border: 1px solid #555; }
 
-    /* FOOTER & SPONSOR */
-    footer { position: absolute; bottom: 0; left: 0; right: 0; height: 3cqw; background: linear-gradient(90deg, #1a0505, var(--red), #1a0505); display: flex; align-items: center; overflow: hidden; z-index: 10; }
-    .running-text { white-space: nowrap; padding-left: 100%; font-family: 'Rajdhani'; font-weight: 800; font-size: 1.3cqw; color: #fff; animation: marquee 25s linear infinite; }
-    
-    #sp { position: absolute; top: 8cqw; right: -50cqw; z-index: 7; display: flex; align-items: center; gap: 1cqw; padding: 1cqw 2cqw; font-family: 'Orbitron'; font-weight: 700; font-size: 1.1cqw; background: rgba(10,10,10,0.95); border: 2px solid var(--gold); border-right: 0; border-radius: 0.8cqw 0 0 0.8cqw; transition: transform 0.7s cubic-bezier(0.2, 0.9, 0.2, 1); box-shadow: 0 0 2cqw rgba(255,215,0,0.3); }
-    #sp.in { transform: translateX(-52cqw); }
-    #sp img { height: 4cqw; }
+    /* CHAT NORMAL */
+    #chat { padding: 1cqw 1.5cqw; overflow-y: auto; height: calc(100% - 3cqw); display: flex; flex-direction: column; gap: 0.5cqw; }
+    #chat::-webkit-scrollbar { width: 0.4cqw; }
+    #chat::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 1cqw; }
+    #chat p { font-size: 1.2cqw; padding: 0.4cqw 0; border-bottom: 1px solid rgba(255,255,255,0.05); animation: slideUp 0.3s ease-out forwards; }
+    #chat b { color: var(--cyan); }
 
-    /* UI KONTROL & FULLSCREEN BUTTON */
-    #ctl { position: absolute; left: 2cqw; bottom: 4cqw; z-index: 10000; display: flex; gap: 0.5cqw; padding: 0.5cqw; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,31,61,0.3); border-radius: 0.4cqw; opacity: 0.6; transition: opacity 0.3s; }
+    /* FULLSCREEN MODE (Sembunyikan Sidebar, Video Full, Chat Overlay) */
+    #lv-wrap.full-video .side { display: none; }
+    #lv-wrap.full-video #lv-v { border-radius: 0; border: none; }
+    
+    /* OVERLAY CHAT (Hanya Muncul di Full Video) */
+    #chat-overlay { position: absolute; right: 2cqw; bottom: 2cqw; width: 20cqw; display: none; flex-direction: column; justify-content: flex-end; mask-image: linear-gradient(to top, black 80%, transparent 100%); z-index: 10; }
+    #lv-wrap.full-video #chat-overlay { display: flex; }
+    
+    .ov-msg { display: flex; align-items: flex-start; gap: 0.6cqw; padding: 0.4cqw 0.6cqw; margin-bottom: 0.4cqw; background: rgba(0,0,0,0.15); border-radius: 0.4cqw; text-shadow: 0 1px 3px rgba(0,0,0,0.9); will-change: transform, opacity; }
+    .ov-msg.in { animation: chatIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+    .ov-msg.out { animation: chatOut 0.3s ease-in forwards; }
+    .ov-avatar { width: 2cqw; height: 2cqw; border-radius: 50%; display: grid; place-items: center; font-family: 'Orbitron'; font-size: 0.8cqw; font-weight: 900; color: #fff; flex-shrink: 0; border: 1px solid; }
+    .ov-content { flex: 1; }
+    .ov-name { font-family: 'Rajdhani'; font-size: 1cqw; font-weight: 700; color: #fff; }
+    .ov-vip { color: var(--gold); font-size: 0.8cqw; filter: drop-shadow(0 0 0.2cqw var(--gold)); }
+    .ov-text { font-size: 0.9cqw; color: #ddd; line-height: 1.3; word-wrap: break-word; }
+
+    /* =========================================
+       POP-UP SPONSOR MEWAH
+       ========================================= */
+    #sp { position: absolute; top: 8cqw; right: -60cqw; z-index: 999; display: flex; align-items: center; gap: 1.5cqw; padding: 1.5cqw 2.5cqw; font-family: 'Orbitron'; font-weight: 700; font-size: 1.2cqw; background: rgba(15, 15, 17, 0.85); backdrop-filter: blur(15px); border: 1px solid var(--cyan); border-right: none; border-radius: 1cqw 0 0 1cqw; transition: transform 0.8s cubic-bezier(0.2, 0.9, 0.2, 1); box-shadow: 0 0 3cqw rgba(0,229,255,0.3), inset 0 0 2cqw rgba(0,229,255,0.1); animation: floatCard 3s ease-in-out infinite; }
+    #sp::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 0.3cqw; background: var(--cyan); box-shadow: 0 0 1.5cqw var(--cyan); border-radius: 1cqw 0 0 1cqw; }
+    #sp.in { transform: translateX(-60cqw); animation: glitchIn 0.5s forwards, floatCard 3s ease-in-out infinite 0.5s; }
+    #sp img { height: 4.5cqw; filter: drop-shadow(0 0 1cqw var(--cyan)); }
+    #sp span { color: #fff; text-shadow: 0 0 1cqw var(--cyan); letter-spacing: 0.1cqw; }
+    #sp small { display: block; font-size: 0.7cqw; color: var(--cyan); margin-top: 0.2cqw; font-family: 'Rajdhani'; }
+
+    /* KONTROL AUTO-HIDE */
+    #ctl { position: absolute; left: 2cqw; bottom: 4cqw; z-index: 10000; display: flex; gap: 0.5cqw; padding: 0.5cqw; background: rgba(0,0,0,0.8); border: 1px solid var(--border); border-radius: 0.4cqw; opacity: 0.1; transition: opacity 0.3s; }
     #ctl:hover { opacity: 1; }
-    #ctl .btn { height: 2.2cqw; padding: 0 1.2cqw; font-size: 0.85cqw; }
-    #ctl .btn.full-btn { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 900; margin-left: 0.5cqw; }
-    #ctl .btn.full-btn:hover { background: #fff; }
+    .btn { font-family: 'Orbitron'; font-weight: 700; font-size: 0.85cqw; color: var(--chrome); background: #111; border: 1px solid var(--border); padding: 0 1.2cqw; height: 2.5cqw; border-radius: 0.4cqw; cursor: pointer; transition: 0.2s; }
+    .btn:hover, .btn.on { background: var(--cyan); color: #000; border-color: var(--cyan); box-shadow: 0 0 1cqw var(--cyan); }
+    .btn.full-btn { background: var(--gold); color: #000; border-color: var(--gold); margin-left: 0.5cqw; }
 
-    /* CANVAS TRANSISI */
-    #transition-canvas { position: absolute; inset: 0; z-index: 9999; pointer-events: none; display: none; background: transparent; }
+    /* =========================================
+       START SCREEN & TRANSITION OVERLAY
+       ========================================= */
+    #start-screen { position: fixed; inset: 0; background: #000; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: opacity 0.5s; }
+    #start-screen h1 { font-family: 'Orbitron'; color: var(--cyan); font-size: 3rem; text-shadow: 0 0 20px var(--cyan); margin-bottom: 20px; }
+    #start-screen p { font-family: 'Rajdhani'; color: #fff; font-size: 1.5rem; letter-spacing: 2px; animation: pulse 1.5s infinite; }
+
+    /* TRANSISI LOGO POP + FLASH BLUR */
+    #trans-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); z-index: 9999; display: none; justify-content: center; align-items: center; overflow: hidden; }
+    #trans-logo { width: 25cqw; position: absolute; opacity: 0; transform: scale(0.5); filter: drop-shadow(0 0 4cqw var(--cyan)); }
+    #trans-flash { position: absolute; top: 50%; left: 50%; width: 10cqw; height: 10cqw; background: #fff; border-radius: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; filter: blur(2cqw); pointer-events: none; }
+
+    /* =========================================
+       KEYFRAMES (60FPS SMOOTH)
+       ========================================= */
+    @keyframes fadeInScale { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-5cqw); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes floatCard { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.5cqw); } }
+    @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    @keyframes pulseRed { 0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.4); } 50% { box-shadow: 0 0 2cqw 0.5cqw rgba(229,57,53,0); } }
+    @keyframes pulseCyan { 0%, 100% { box-shadow: 0 0 0.5cqw rgba(0,229,255,0.2); } 50% { box-shadow: 0 0 2cqw rgba(0,229,255,0.6); } }
+    @keyframes shimmer { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+    @keyframes scanline { 0% { background-position: 0 0; } 100% { background-position: 0 100vh; } }
+    @keyframes floatUp { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: 0.5; } 90% { opacity: 0.5; } 100% { transform: translateY(-110vh); opacity: 0; } }
+    @keyframes textGlow { from { text-shadow: 0 0 1cqw rgba(0,229,255,0.5); } to { text-shadow: 0 0 2.5cqw rgba(0,229,255,1); } }
+    @keyframes floatBox { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.5cqw); } }
+    @keyframes glitchIn { 0% { transform: translateX(0); opacity: 0; } 20% { transform: translateX(-2cqw); opacity: 1; } 40% { transform: translateX(1cqw); } 60% { transform: translateX(-0.5cqw); } 80% { transform: translateX(0.5cqw); } 100% { transform: translateX(0); } }
+    @keyframes logoPop { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    
+    /* CHAT SMOOTH ANIMATION */
+    @keyframes chatIn {
+        0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes chatOut {
+        0% { opacity: 1; transform: translateY(0) scale(1); max-height: 100px; margin-bottom: 0.4cqw; }
+        100% { opacity: 0; transform: translateY(-20px) scale(0.95); max-height: 0; margin-bottom: 0; padding: 0; border: none; }
+    }
 </style>
 </head>
 <body class="theme-default">
 
+<div id="start-screen" onclick="startDisplay()">
+    <h1>GH-T ARENA</h1>
+    <p>KLIK DI MANA SAJA UNTUK MASUK FULLSCREEN</p>
+</div>
+
 <div class="app-wrapper" id="app-wrapper">
+    <!-- TRANSISI OVERLAY -->
+    <div id="trans-overlay">
+        <img id="trans-logo" src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="Logo">
+        <div id="trans-flash"></div>
+    </div>
+
+    <div class="particles">
+        <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+        <div class="particle"></div><div class="particle"></div>
+    </div>
+
     <header>
         <div class="logo-area">
             <img id="h-logo" src="" alt="Logo" style="display:none;">
@@ -175,28 +289,24 @@
     </header>
 
     <main>
-        <!-- STANDBY -->
+        <!-- SCENE 1: STANDBY -->
         <div id="scene-standby" class="scene active">
             <img id="sb-logo" class="standby-logo" src="" alt="Logo" style="display:none;">
             <h1 class="standby-title">GH-T ARENA</h1>
-            <div class="standby-sub" id="standby-sub">MATCH WILL START IN</div>
+            <div class="standby-sub" id="standby-sub">WAITING FOR SCHEDULE</div>
             <div class="cd" id="cd"></div>
         </div>
 
-        <!-- BR LEADERBOARD -->
+        <!-- SCENE 2: BR LEADERBOARD -->
         <div id="scene-br" class="scene">
             <h2 class="page-title">KLASEMEN BATTLE ROYALE</h2>
             <div id="br-wrap">
                 <div class="panel" id="br-tbl">
                     <div class="ph">BATTLE ROYALE LEADERBOARD</div>
                     <div class="row h">
-                        <span style="text-align:left">TIM</span>
-                        <span>M1</span><span>M2</span><span>M3</span><span>M4</span><span>M5</span><span>M6</span>
-                        <span>TOTAL<br>KILL</span><span>TOTAL<br>POIN</span><span>RANK</span>
+                        <span style="text-align:left">TIM</span><span>M1</span><span>M2</span><span>M3</span><span>M4</span><span>M5</span><span>M6</span><span>TOTAL<br>KILL</span><span>TOTAL<br>POIN</span><span>RANK</span>
                     </div>
-                    <div id="br-list">
-                        <div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Memuat Data...</div>
-                    </div>
+                    <div id="br-list"><div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Memuat Data...</div></div>
                 </div>
                 <div class="panel" id="pred">
                     <div class="ph"><i class="fa-solid fa-skull"></i> PREDATOR</div>
@@ -205,47 +315,48 @@
             </div>
         </div>
 
-        <!-- CS BRACKET -->
+        <!-- SCENE 3: CS SCHEDULE -->
         <div id="scene-cs" class="scene">
-            <h2 class="page-title">BRACKET CLASH SQUAD</h2>
-            <div id="cs-wrap">
-                <div id="cs-modes">
-                    <button class="btn on" data-m="single">SINGLE</button>
-                    <button class="btn" data-m="double">DOUBLE</button>
-                    <button class="btn" data-m="bye">BYE</button>
-                </div>
-                <div id="cs-stage">
-                     <div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Memuat Bracket...</div>
-                </div>
+            <div class="schedule-list" id="cs-schedule-list">
+                <div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Memuat Jadwal...</div>
             </div>
         </div>
 
-        <!-- LIVE STREAM -->
+        <!-- SCENE 4: LIVE STREAM -->
         <div id="scene-live" class="scene">
             <div id="lv-wrap">
-                <div id="lv-v"><iframe id="lv-f" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
+                <div id="lv-v">
+                    <iframe id="lv-f" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+                    <button class="btn-vid-fs" onclick="toggleVideoFullscreen()"><i class="fa-solid fa-expand"></i> FULL VIDEO</button>
+                </div>
+                
+                <!-- Overlay Chat (Hanya Muncul saat Full Video) -->
+                <div id="chat-overlay"></div>
+
                 <div class="side">
                     <div class="panel" id="chat-p">
                         <div class="ph"><i class="fa-solid fa-comments"></i> LIVE CHAT</div>
-                        <div id="chat">
-                            <p style="text-align:center; color:var(--muted); margin-top:2cqw;">Belum ada chat</p>
-                        </div>
+                        <div id="chat"><p style="text-align:center; color:var(--muted); margin-top:2cqw;">Belum ada chat</p></div>
                     </div>
                     <div class="panel" id="map-p">
                         <div class="ph"><i class="fa-solid fa-map"></i> MAP POOL</div>
-                        <div id="maps">
-                            <div style="text-align:center; color:var(--muted); padding: 2cqw;">Memuat map...</div>
-                        </div>
+                        <div id="maps" class="map-list"><div style="text-align:center; color:var(--muted); padding: 2cqw;">Memuat map...</div></div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <div id="sp"></div>
+    <div id="sp">
+        <img id="sp-logo" src="" alt="" onerror="this.style.display='none'">
+        <div>
+            <span id="sp-name">Sponsor</span>
+            <small>OFFICIAL PARTNER</small>
+        </div>
+    </div>
+
     <footer><div class="running-text" id="mq-text">🔥 SELAMAT DATANG DI GH-T ARENA 🔥</div></footer>
 
-    <!-- UI Kontrol & Tombol Fullscreen -->
     <div id="ctl">
         <button class="btn" data-s="standby">STANDBY</button>
         <button class="btn" data-s="br">BR</button>
@@ -253,70 +364,52 @@
         <button class="btn" data-s="live">LIVE</button>
         <button class="btn full-btn" id="fv"><i class="fa-solid fa-expand"></i> FULL</button>
     </div>
-
-    <canvas id="transition-canvas"></canvas>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// 1. SETUP SUPABASE (OTOMATIS & OFFLINE ONLY)
+// 1. SETUP & START FULLSCREEN
 // ═══════════════════════════════════════════════════════════
 const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let TOURNAMENT_ID = new URLSearchParams(window.location.search).get('t') || null;
-
 let siteSettings = { logo: '', runningText: '', activeTheme: 'default' };
-let tournamentInfo = { name: '', status: '', schedule: '', streamUrl: '', bannerUrl: '' };
+let tournamentInfo = { name: '', status: '', schedule: '', streamUrl: '' };
 let brData = []; let predatorData = []; let mapData = []; let chatData = []; let sponsorData = []; 
-let csData = { single: [], double: [], bye: [] };
-let currentCsMode = 'single';
+let csData = [];
+
+function startDisplay() {
+    const el = document.getElementById('start-screen');
+    el.style.opacity = '0';
+    setTimeout(() => { el.style.display = 'none'; }, 500);
+    
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(e => console.log(e));
+    }
+    fetchData();
+}
 
 // ═══════════════════════════════════════════════════════════
-// 2. FUNGSI FETCH DATA (AUTO-DETECT OFFLINE)
+// 2. FETCH DATA SUPABASE
 // ═══════════════════════════════════════════════════════════
 async function fetchData() {
     try {
-        // Jika tidak ada ID turnamen di URL, cari otomatis dari database
         if (!TOURNAMENT_ID) {
-            console.log("Mencari turnamen OFFLINE yang aktif...");
-            
-            // HANYA CARI TURNAMEN OFFLINE
-            const { data: activeTour } = await sb.from('tournaments')
-                .select('id')
-                .eq('is_offline', true)
-                .in('status', ['berlangsung', 'pendaftaran_dibuka'])
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-            
-            if (activeTour) {
-                TOURNAMENT_ID = activeTour.id;
-            } else {
-                const { data: latestTour } = await sb.from('tournaments')
-                    .select('id')
-                    .eq('is_offline', true)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
-                if (latestTour) TOURNAMENT_ID = latestTour.id;
+            const { data: activeTour } = await sb.from('tournaments').select('id').eq('is_offline', true).in('status', ['berlangsung', 'pendaftaran_dibuka']).order('created_at', { ascending: false }).limit(1).maybeSingle();
+            if (activeTour) TOURNAMENT_ID = activeTour.id;
+            else {
+                const { data: latest } = await sb.from('tournaments').select('id').eq('is_offline', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
+                if (latest) TOURNAMENT_ID = latest.id;
             }
         }
 
-        if (!TOURNAMENT_ID) {
-            console.warn("Tidak ada turnamen OFFLINE yang ditemukan.");
-            renderAll(); 
-            return;
-        }
+        if (!TOURNAMENT_ID) { renderAll(); return; }
 
-        console.log("Memuat data untuk Turnamen OFFLINE ID:", TOURNAMENT_ID);
-
-        // 1. Fetch Turnamen
         const { data: tour } = await sb.from('v_tournaments_public').select('*').eq('id', TOURNAMENT_ID).single();
-        if(tour) tournamentInfo = { name: tour.name, status: tour.status, schedule: tour.schedule_at, streamUrl: tour.stream_url, bannerUrl: tour.banner_url };
+        if(tour) tournamentInfo = { name: tour.name, status: tour.status, schedule: tour.schedule_at, streamUrl: tour.stream_url };
 
-        // 2. Fetch Setting Web
         const { data: settings } = await sb.from('site_settings').select('key, value');
         if(settings) {
             settings.forEach(s => {
@@ -326,69 +419,40 @@ async function fetchData() {
             });
         }
 
-        // 3. Fetch Leaderboard BR
         const { data: br } = await sb.from('v_leaderboard_public').select('*').eq('tournament_id', TOURNAMENT_ID).order('rank_no');
-        if(br) {
-            brData = br.map(t => ({
-                id: t.registration_id, name: t.team_name, logo: t.logo_url, rank: t.rank_no,
-                totalKills: t.total_kills, totalPts: t.total_points,
-                matches: [] 
-            }));
-        }
+        if(br) brData = br.map(t => ({ id: t.registration_id, name: t.team_name, logo: t.logo_url, rank: t.rank_no, totalKills: t.total_kills, totalPts: t.total_points }));
 
-        // 4. Fetch Predator
         const { data: pred } = await sb.from('v_predator_live').select('*').eq('tournament_id', TOURNAMENT_ID);
         if(pred) predatorData = pred.map(p => ({ nickname: p.nickname, team: p.team_name, kills: p.total_kills }));
 
-        // 5. Fetch Map Pool
         const { data: maps } = await sb.from('br_matches').select('match_no, status, game_maps(name, image_url)').eq('tournament_id', TOURNAMENT_ID).order('match_no');
         if(maps) mapData = maps.map(m => ({ name: m.game_maps?.name || 'Map', image: m.game_maps?.image_url || '', status: m.status === 'selesai' ? 'selesai' : (m.status === 'berlangsung' ? 'live' : 'next') }));
 
-        // 6. Fetch Chat
         const { data: chat } = await sb.from('tournament_chats').select('username, message').eq('tournament_id', TOURNAMENT_ID).order('created_at', {ascending: false}).limit(20);
         if(chat) chatData = chat.reverse();
 
-        // 7. Fetch Sponsor
         const { data: sp } = await sb.from('sponsors').select('*').eq('is_active', true).order('sort_order');
         if(sp) sponsorData = sp.map(s => ({ name: s.name, logo: s.logo_url }));
 
-        // 8. Fetch Bracket CS
         const { data: cs } = await sb.from('v_cs_bracket_public').select('*').eq('tournament_id', TOURNAMENT_ID).order('round_no');
-        if(cs) {
-            csData.single = cs.filter(m => m.format === 'single' || !m.format).map(mapCsMatch);
-            csData.double = cs.filter(m => m.format === 'double').map(mapCsMatch);
-            csData.bye = cs.filter(m => m.format === 'bye').map(mapCsMatch);
-        }
+        if(cs) csData = cs;
 
         renderAll();
         setupRealtime();
 
-    } catch(err) { 
-        console.error("Error Fetch Data:", err); 
-        renderAll();
-    }
-}
-
-function mapCsMatch(m) {
-    return {
-        id: m.id, round: m.round_no, a: m.team_a_name, b: m.team_b_name,
-        sa: m.score_a, sb: m.score_b,
-        winner: m.winner_name === m.team_a_name ? 'A' : (m.winner_name === m.team_b_name ? 'B' : null),
-        next: m.next_win_match
-    };
+    } catch(err) { console.error("Error Fetch:", err); renderAll(); }
 }
 
 // ═══════════════════════════════════════════════════════════
-// 3. FUNGSI RENDER UI (Tanpa Dummy)
+// 3. RENDER UI
 // ═══════════════════════════════════════════════════════════
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
-const lg=(u,n)=>u?`<img class="lg" src="${esc(u)}" alt="" onerror="this.style.opacity=0">`:`<span class="lg">${esc((n||'?')[0])}</span>`;
 
 function renderAll() {
     document.body.className = 'theme-' + siteSettings.activeTheme;
     const L = siteSettings.logo;
-    ['#h-logo','#sb-logo'].forEach(q=>{ const el=$(q); if(L) { el.src=L; el.style.display='block'; } else { el.style.display='none'; } });
+    ['#h-logo','#sb-logo'].forEach(q=>{ const el=$(q); if(L) { el.src=L; el.style.display='block'; } });
     $('#h-name').textContent = tournamentInfo.name || 'GH-T ARENA';
     $('#mq-text').textContent = siteSettings.runningText || '🔥 SELAMAT DATANG DI GH-T ARENA 🔥';
     
@@ -402,7 +466,7 @@ function renderAll() {
     startSponsorLoop();
 }
 
-// COUNTDOWN
+// -- COUNTDOWN DINAMIS --
 let cdInterval;
 function startCountdown() {
     if(cdInterval) clearInterval(cdInterval);
@@ -413,8 +477,13 @@ function startCountdown() {
     
     const STR = $$('.strip'), CUR = [];
     cdInterval = setInterval(() => {
-        let target = new Date(tournamentInfo.schedule).getTime();
-        if(isNaN(target)) target = Date.now(); 
+        let target = tournamentInfo.schedule ? new Date(tournamentInfo.schedule).getTime() : NaN;
+        
+        if (isNaN(target)) {
+            $('#standby-sub').textContent = "WAITING FOR SCHEDULE";
+            return; 
+        }
+
         const t = Math.max(0, Math.floor((target - Date.now()) / 1000));
         
         if(t === 0) $('#standby-sub').textContent = "MATCH IS STARTING";
@@ -430,101 +499,98 @@ function startCountdown() {
     }, 1000);
 }
 
-// BR LEADERBOARD
+// -- BR LEADERBOARD --
 function renderBR() {
-    const L = $('#br-list'), old = {};
-    [...L.children].forEach(r => old[r.dataset.id] = r.getBoundingClientRect().top);
+    const L = $('#br-list'); L.innerHTML = '';
     const rows = [...brData].sort((a,b) => a.rank - b.rank);
-    
-    [...L.children].forEach(r => { if(!rows.some(t => t.id === r.dataset.id)) r.remove() });
-    
-    if(rows.length === 0) {
-        L.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Belum ada data Leaderboard</div>';
-        return;
-    }
-
+    if(rows.length === 0) { L.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted);">Belum ada data</div>'; return; }
     rows.forEach(t => {
-        let r = [...L.children].find(x => x.dataset.id === t.id);
-        if(!r) { r = document.createElement('div'); r.dataset.id = t.id; }
-        r.className = 'row' + (t.rank <= 3 ? ' r' + t.rank : '');
-        const mc = i => { const m = (t.matches||[]).find(x => x.m == i); return m ? `<span><b>#${m.pos}</b></span>` : '<span style="opacity:0.3">-</span>'; };
-        r.innerHTML = `
-            <div class="tm">${lg(t.logo,t.name)}${esc(t.name)}</div>
-            ${[1,2,3,4,5,6].map(mc).join('')}
-            <b>${t.totalKills}</b><b>${t.totalPts}</b><b class="rk">${t.rank}</b>`;
+        let logoTag = t.logo ? `<img class="lg" src="${esc(t.logo)}" onerror="this.style.opacity=0">` : `<span class="lg">${esc((t.name||'?')[0])}</span>`;
+        let r = document.createElement('div'); r.className = 'row' + (t.rank <= 3 ? ' r' + t.rank : '');
+        r.innerHTML = `<div class="tm">${logoTag}${esc(t.name)}</div>` + [1,2,3,4,5,6].map(()=>'<span style="opacity:0.3">-</span>').join('') + `<b>${t.totalKills}</b><b>${t.totalPts}</b><b class="rk">${t.rank}</b>`;
         L.appendChild(r);
     });
-    
-    [...L.children].forEach(r => {
-        const o = old[r.dataset.id];
-        if(o == null) return;
-        const d = o - r.getBoundingClientRect().top;
-        if(d) r.animate([{transform:`translateY(${d}px)`, backgroundColor: d>0 ? 'rgba(67,160,71,0.4)' : 'rgba(229,57,53,0.4)'}, {transform:'none', backgroundColor:'transparent'}], {duration:800, easing:'cubic-bezier(0.2, 0.8, 0.2, 1)'});
-    });
-    
     $('#pr-list').innerHTML = [...predatorData].sort((a,b)=>b.kills-a.kills).slice(0,5).map((p,i)=>`<div class="pi"><em>${i+1}</em><div>${esc(p.nickname)}<small>${esc(p.team)}</small></div><b>${p.kills}</b></div>`).join('') || '<div style="text-align:center; padding: 2cqw; color: var(--muted);">Belum ada data</div>';
 }
 
-// CS BRACKET
+// -- CS SCHEDULE --
 function renderCS() {
-    $$('#cs-modes .btn').forEach(b => b.classList.toggle('on', b.dataset.m === currentCsMode));
-    const d = csData[currentCsMode];
-    const stage = $('#cs-stage');
-    stage.innerHTML = '';
-    
-    if(!d || d.length === 0) {
-        stage.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Bracket belum tersedia</div>';
-        return;
-    }
+    const list = $('#cs-schedule-list'); list.innerHTML = '';
+    if(!csData || csData.length === 0) { list.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Jadwal Belum Tersedia</div>'; return; }
 
     const rounds = {};
-    d.forEach(m => { if(!rounds[m.round]) rounds[m.round] = []; rounds[m.round].push(m); });
-    const maxRound = Math.max(...Object.keys(rounds).map(Number));
-    
-    const nodes = [], edges = [];
-    const cw = 100 / (maxRound + 1);
-    const bw = cw * 0.8;
-
-    for(let r=1; r<=maxRound; r++) {
-        if(!rounds[r]) continue;
-        const ms = rounds[r];
-        ms.forEach((m, i) => {
-            nodes.push({ m, x: (r-1)*cw, y: 10 + (i+0.5) * (80/ms.length), id: m.id });
-        });
-    }
-
-    let svg = '', html = '';
-    for(let r=1; r<maxRound; r++) {
-        if(!rounds[r]) return;
-        rounds[r].forEach(m => {
-            if(!m.next) return;
-            const n1 = nodes.find(x => x.id === m.id);
-            const n2 = nodes.find(x => x.id === m.next);
-            if(n1 && n2) {
-                const x1 = n1.x + bw, x2 = n2.x;
-                const y1 = n1.y, y2 = n2.y;
-                const xm = (x1 + x2) / 2;
-                svg += `<path class="${m.winner ? 'w' : ''}" d="M${x1} ${y1} H${xm} V${y2} H${x2}"/>`;
-            }
-        });
-    }
-
-    nodes.forEach(n => {
-        const m = n.m;
-        const aW = m.winner === 'A', bW = m.winner === 'B';
-        const aC = aW ? 'w' : (bW ? 'l' : '');
-        const bC = bW ? 'w' : (aW ? 'l' : '');
-        
-        html += `<div class="mb" style="left:${n.x}%;top:${n.y}%;width:${bw}%">
-            <div class="mt ${aC}"><span>${esc(m.a||'TBD')}</span><b>${m.sa ?? ''}</b></div>
-            <div class="mt ${bC}"><span>${esc(m.b||'TBD')}</span><b>${m.sb ?? ''}</b></div>
-        </div>`;
+    csData.forEach(m => {
+        const rn = m.round_label || `Ronde ${m.round_no}`;
+        if(!rounds[rn]) rounds[rn] = [];
+        rounds[rn].push(m);
     });
 
-    stage.innerHTML = `<div class="plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none">${svg}</svg>${html}</div>`;
+    let currentNextFound = false;
+
+    Object.keys(rounds).forEach(roundName => {
+        const group = document.createElement('div'); group.className = 'round-group';
+        const hdr = document.createElement('div'); hdr.className = 'round-header';
+        hdr.innerHTML = `${esc(roundName)} <span class="bo-label">BO${rounds[roundName][0].bo || 1}</span>`;
+        group.appendChild(hdr);
+
+        rounds[roundName].forEach((m) => {
+            const isDone = m.winner_name !== null;
+            const isLive = m.public_status === 'berlangsung';
+            const isNext = !isDone && !isLive && !currentNextFound;
+            if(isNext) currentNextFound = true;
+
+            const card = document.createElement('div');
+            card.className = `match-card ${isLive ? 'is-live' : ''} ${isNext ? 'is-next' : ''}`;
+            
+            const tA_Class = (isDone && m.winner_name !== m.team_a_name) ? 'loser' : '';
+            const tB_Class = (isDone && m.winner_name !== m.team_b_name) ? 'loser' : '';
+            
+            let badge = '<div class="badge st-wait">BELUM MULAI</div>';
+            if(isLive) badge = '<div class="badge st-live">🔴 LIVE NOW</div>';
+            else if(isNext) badge = '<div class="badge st-next">⏭️ NEXT MATCH</div>';
+            else if(isDone) badge = '<div class="badge st-done">✓ SELESAI</div>';
+
+            const scA = m.score_a ?? (isDone ? (m.winner_name === m.team_a_name ? 2 : 1) : '-');
+            const scB = m.score_b ?? (isDone ? (m.winner_name === m.team_b_name ? 2 : 1) : '-');
+
+            const logoA = m.team_a_logo ? `<img src="${esc(m.team_a_logo)}" class="cs-logo" onerror="this.style.display='none'">` : '';
+            const logoB = m.team_b_logo ? `<img src="${esc(m.team_b_logo)}" class="cs-logo" onerror="this.style.display='none'">` : '';
+
+            card.innerHTML = `
+                <div class="match-info"><div class="match-no">MATCH ${m.match_no}</div></div>
+                <div class="teams-area">
+                    <div class="team team-a ${tA_Class}">
+                        <div class="cs-team-wrap">${esc(m.team_a_name || 'TBD')} ${logoA}</div>
+                    </div>
+                    <div class="score-box">${isDone || isLive ? scA+' - '+scB : 'VS'}</div>
+                    <div class="team team-b ${tB_Class}">
+                        <div class="cs-team-wrap">${logoB} ${esc(m.team_b_name || 'TBD')}</div>
+                    </div>
+                </div>
+                <div class="status-area">${badge}</div>
+            `;
+            group.appendChild(card);
+        });
+        list.appendChild(group);
+    });
 }
 
-// LIVE STREAM
+// -- LIVE STREAM & FULLSCREEN VIDEO --
+let isFullVideo = false;
+function toggleVideoFullscreen() {
+    const wrap = document.getElementById('lv-wrap');
+    const btn = document.querySelector('.btn-vid-fs');
+    isFullVideo = !isFullVideo;
+    
+    if (isFullVideo) {
+        wrap.classList.add('full-video');
+        btn.innerHTML = '<i class="fa-solid fa-compress"></i> EXIT FULL';
+    } else {
+        wrap.classList.remove('full-video');
+        btn.innerHTML = '<i class="fa-solid fa-expand"></i> FULL VIDEO';
+    }
+}
+
 function renderLive() {
     const f = $('#lv-f');
     if(tournamentInfo.streamUrl) {
@@ -532,181 +598,190 @@ function renderLive() {
         if(f.getAttribute('src') !== embedUrl) f.src = embedUrl;
     }
     
+    // Render Sidebar Chat (Normal)
     const c = $('#chat');
-    if(chatData.length === 0) {
-        c.innerHTML = '<p style="text-align:center; color:var(--muted); margin-top:2cqw;">Belum ada chat</p>';
-    } else {
+    if(chatData.length > 0) {
         c.innerHTML = chatData.map(x => `<p><b>${esc(x.username)}</b> ${esc(x.message)}</p>`).join('');
         c.scrollTop = c.scrollHeight;
     }
-
+    
+    // Render Map Pool
     $('#maps').innerHTML = mapData.map(m => `
         <div class="mp">
             <img src="${esc(m.image)}" onerror="this.src='https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg'">
-            <span>${esc(m.name)}</span>
+            <div class="mp-info">
+                <div class="mp-name">${esc(m.name)}</div>
+                <div class="mp-match">Match ${m.match_no}</div>
+            </div>
             <em class="${esc(m.status)}">${esc(m.status.toUpperCase())}</em>
         </div>
-    `).join('') || '<div style="text-align:center; color:var(--muted); padding: 2cqw;">Belum ada Map</div>';
+    `).join('');
+    
+    // Isi Overlay Chat awal dengan chat terakhir
+    const ov = $('#chat-overlay'); ov.innerHTML = '';
+    const lastMsgs = chatData.slice(-6);
+    lastMsgs.forEach(msg => addOverlayChat(msg.username, msg.message, false));
 }
 
-// SPONSOR
+// LOGIKA CHAT OVERLAY (YOUTUBE STYLE - MAX 6)
+function addOverlayChat(name, text, animate = true) {
+    const box = document.getElementById('chat-overlay');
+    
+    const el = document.createElement('div');
+    el.className = 'ov-msg';
+    
+    const initial = name.charAt(0).toUpperCase();
+    const isVip = name.toLowerCase().includes('vip') || name.toLowerCase().includes('boss'); // Dummy logic
+    const color = isVip ? '#ffd700' : '#00e5ff';
+    const bg = 'rgba(255,255,255,0.1)';
+    const crown = isVip ? `<i class="fa-solid fa-crown ov-vip"></i>` : '';
+    
+    el.innerHTML = `
+        <div class="ov-avatar" style="border-color:${color}; color:${color}; background:${bg};">${initial}</div>
+        <div class="ov-content">
+            <div class="ov-name" style="color:${color};">${name} ${crown}</div>
+            <div class="ov-text">${text}</div>
+        </div>
+    `;
+    
+    // Animasi In Smooth
+    if(animate) {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px) scale(0.95)';
+        box.appendChild(el);
+        void el.offsetWidth; // Reflow
+        el.style.transition = 'all 0.4s cubic-bezier(0.2, 0.9, 0.3, 1)';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0) scale(1)';
+    } else {
+        box.appendChild(el);
+    }
+
+    // Batasi max 6 chat
+    if (box.children.length > 6) {
+        const first = box.firstElementChild;
+        first.style.transition = 'all 0.3s ease-in';
+        first.style.opacity = '0';
+        first.style.transform = 'translateY(-20px) scale(0.95)';
+        first.style.maxHeight = '0';
+        first.style.marginBottom = '0';
+        first.style.padding = '0';
+        setTimeout(() => first.remove(), 300);
+    }
+}
+
+// -- SPONSOR MEWAH --
 let spI = 0, spTimeout;
 function startSponsorLoop() {
     if(spTimeout) clearTimeout(spTimeout);
     if(!sponsorData.length) return;
-    
     const s = sponsorData[spI++ % sponsorData.length], e = $('#sp');
-    e.innerHTML = `<img src="${s.logo || ''}" alt="" onerror="this.remove()"><span>${s.name}</span>`;
+    
+    $('#sp-logo').src = s.logo || '';
+    $('#sp-name').innerText = s.name;
+    
+    e.classList.remove('in');
+    void e.offsetWidth; 
+    
     e.classList.add('in');
-    
-    spTimeout = setTimeout(() => {
+    spTimeout = setTimeout(() => { 
         e.classList.remove('in'); 
-        spTimeout = setTimeout(startSponsorLoop, 9000);
-    }, 5000);
+        spTimeout = setTimeout(startSponsorLoop, 9000); 
+    }, 6000);
 }
 
-// ═══════════════════════════════════════════════════════════
-// 4. REALTIME LISTENER
-// ═══════════════════════════════════════════════════════════
+// REALTIME LISTENER (AUTO UPDATE TANPA REFRESH)
 function setupRealtime() {
-    sb.channel('rt_chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tournament_chats', filter: `tournament_id=eq.${TOURNAMENT_ID}` }, payload => {
-        chatData.push(payload.new); if(chatData.length > 50) chatData.shift();
-        if(document.getElementById('scene-live').classList.contains('active')) renderLive();
-    }).subscribe();
-
-    sb.channel('rt_update').on('postgres_changes', { event: '*', schema: 'public', table: 'registrations', filter: `tournament_id=eq.${TOURNAMENT_ID}` }, payload => {
-        fetchData(); 
+    sb.channel('rt_display').on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_chats' }, payload => {
+        if(payload.new.tournament_id === TOURNAMENT_ID) {
+            // Masukin ke array data
+            chatData.push(payload.new); if(chatData.length > 50) chatData.shift();
+            
+            // Render ke Sidebar Chat
+            if(document.getElementById('scene-live').classList.contains('active')) {
+                renderLive(); 
+                // Tambahin ke Overlay Chat juga
+                addOverlayChat(payload.new.username, payload.new.message);
+            }
+        }
+    }).on('postgres_changes', { event: '*', schema: 'public', table: 'cs_matches' }, payload => {
+        fetchData();
+    }).on('postgres_changes', { event: '*', schema: 'public', table: 'br_matches' }, payload => {
+        fetchData();
+    }).on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, payload => {
+        fetchData();
+    }).on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, payload => {
+        fetchData();
     }).subscribe();
 }
 
 // ═══════════════════════════════════════════════════════════
-// 5. TRANSISI G & H (DURASI 3.5 DETIK)
+// 4. NAVIGASI & TRANSISI (SMOOTH 60FPS)
 // ═══════════════════════════════════════════════════════════
-const tcv = document.getElementById('transition-canvas');
-const tctx = tcv.getContext('2d');
-const appWrapper = document.getElementById('app-wrapper');
-let tW, tH;
-function resizeT() { tW = tcv.width = appWrapper.clientWidth; tH = tcv.height = appWrapper.clientHeight; }
-window.addEventListener('resize', resizeT);
-
-let transitioning = false, flashAmt = 0, startT = 0;
-let particles = [];
-const rnd = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-const lerp = (a, b, p) => a + (b - a) * p;
-
-function limb(x1, y1, x2, y2, w) { tctx.lineCap = 'round'; tctx.strokeStyle = '#0a0a0a'; tctx.lineWidth = w + 5; tctx.beginPath(); tctx.moveTo(x1, y1); tctx.lineTo(x2, y2); tctx.stroke(); tctx.strokeStyle = '#e2e8f0'; tctx.lineWidth = w; tctx.stroke(); }
-function eye(x, y, r, px, py, pr) { tctx.fillStyle = '#fff'; tctx.strokeStyle = '#000'; tctx.lineWidth = 3; tctx.beginPath(); tctx.arc(x, y, r, 0, 7); tctx.fill(); tctx.stroke(); tctx.fillStyle = '#000'; tctx.beginPath(); tctx.arc(x + px * (r - pr - 1), y + py * (r - pr - 1), pr, 0, 7); tctx.fill(); }
-const CHROME = ['#ffffff', '#e2e8f0', '#7c8797', '#cbd5e1'];
-const grad = (y, s, c) => { const g = tctx.createLinearGradient(0, y - s * .5, 0, y + s * .5); c.forEach((v, i) => g.addColorStop(i / (c.length - 1), v)); return g; };
-function person(ch, x, y, o) {
-    tctx.save(); tctx.translate(x, y); tctx.scale(o.sc, o.sc);
-    const sw = Math.sin(o.walk) * 20 * o.amp;
-    limb(-24, 56, -24 + sw, 100, 11); limb(24, 56, 24 - sw, 100, 11);
-    tctx.fillStyle = '#0b0b0b'; tctx.strokeStyle = '#e2e8f0'; tctx.lineWidth = 2;
-    [-24 + sw, 24 - sw].forEach(fx => { tctx.beginPath(); tctx.ellipse(fx + 6, 102, 17, 7, 0, 0, 7); tctx.fill(); tctx.stroke(); });
-    const h = o.hands; limb(-56, 8, h[0], h[1], 10); limb(56, 8, h[2], h[3], 10);
-    tctx.font = '900 160px Orbitron, sans-serif'; tctx.textAlign = 'center'; tctx.textBaseline = 'middle';
-    for (let i = 13; i > 0; i--) { tctx.fillStyle = `rgb(${34 + i * 3},${42 + i * 3},${54 + i * 3})`; tctx.fillText(ch, i * .8, i * .9); }
-    tctx.lineWidth = 6; tctx.strokeStyle = '#0a0a0a'; tctx.strokeText(ch, 0, 0);
-    tctx.shadowColor = 'rgba(0,229,255,.45)'; tctx.shadowBlur = 18;
-    tctx.fillStyle = grad(0, 150, CHROME); tctx.fillText(ch, 0, 0); tctx.shadowBlur = 0;
-    const s = o.sur, er = lerp(13, 17, s), pr = lerp(6, 3.2, s);
-    eye(-19, -26, er, o.lx, o.ly, pr); eye(19, -26, er, o.lx, o.ly, pr);
-    tctx.restore();
-}
-function gun(x, y, ang, rc, s) {
-    tctx.save(); tctx.translate(x + 80 * s, y + 25 * s); tctx.scale(s, s); tctx.rotate(ang); tctx.translate(-rc, 0);
-    const r = (c, a, b, w, h) => { tctx.fillStyle = c; tctx.fillRect(a, b, w, h) };
-    r('#1b2330', -34, -5, 36, 16); r('#94a3b8', 0, -9, 52, 18); r('#e2e8f0', 0, -9, 52, 4); r('#334155', 52, -6, 66, 12); r('#64748b', 30, 8, 30, 9); r('#0b0f14', 118, -8, 7, 16);
-    tctx.shadowColor = '#00e5ff'; tctx.shadowBlur = 10; r('#00e5ff', 8, -1, 106, 3); tctx.restore();
-}
-function burst(n, x, y) {
-    for (let i = 0; i < n; i++) {
-        const a = rnd(0, 6.283), v = rnd(10, 40);
-        particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, color: Math.random() > 0.5 ? '#00e5ff' : '#fff', size: rnd(2,6) });
-    }
-}
-
-function playSFX(type) {
-    try {
-        const AC = new (window.AudioContext || window.webkitAudioContext)();
-        if(type === 'boom') {
-            const o = AC.createOscillator(), g = AC.createGain();
-            o.type = 'sine'; o.frequency.setValueAtTime(150, AC.currentTime);
-            o.frequency.exponentialRampToValueAtTime(30, AC.currentTime + 0.5);
-            g.gain.setValueAtTime(1, AC.currentTime); g.gain.exponentialRampToValueAtTime(0.01, AC.currentTime + 0.5);
-            o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime + 0.5);
-        }
-    } catch(e) {}
-}
-
-function drawTransition() {
-    tctx.clearRect(0, 0, tW, tH);
-    const elapsed = (performance.now() - startT) / 1000;
-    
-    if (elapsed < 2.5) {
-        if (!window._boom && elapsed > 1.5) { 
-            window._boom = true; flashAmt = 1; burst(200, tW/2, tH/2); playSFX('boom');
-        }
-        if (elapsed < 1.5) {
-            const cx = tW/2, cy = tH/2;
-            const pMasuk = Math.min(1, elapsed / 1.2);
-            person('G', lerp(-200, tW*0.25, pMasuk), cy+40, { lx:1, ly:0, sur:0.2, walk: elapsed*15, amp: pMasuk<1?1:0, hands:[-72,50,80,25], sc:1 });
-            gun(lerp(-200, tW*0.25, pMasuk), cy+40, 0, 0, 1);
-            person('H', lerp(tW+200, tW*0.75, pMasuk), cy+40, { lx:-1, ly:0, sur:0.5, walk: elapsed*15, amp: pMasuk<1?1:0, hands:[-80,-68,80,-68], sc:1 });
-        }
-        if (elapsed > 1.5) {
-            particles.forEach(pt => {
-                pt.x += pt.vx; pt.y += pt.vy; pt.life -= 0.02;
-                if (pt.life > 0) { tctx.fillStyle = pt.color; tctx.globalAlpha = pt.life; tctx.beginPath(); tctx.arc(pt.x, pt.y, pt.size, 0, 7); tctx.fill(); }
-            });
-            particles = particles.filter(pt => pt.life > 0);
-            if (flashAmt > 0) { tctx.fillStyle = `rgba(255,255,255,${flashAmt})`; tctx.fillRect(0, 0, tW, tH); flashAmt -= 0.04; }
-        }
-    } else if (elapsed > 2.5 && elapsed < 3.5) {
-        const fade = (elapsed - 2.5) / 1.0;
-        tctx.fillStyle = `rgba(3,3,3,${1 - fade})`; tctx.fillRect(0, 0, tW, tH);
-    } else {
-        tcv.style.display = 'none'; transitioning = false; window.isTransitioning = false; return;
-    }
-    requestAnimationFrame(drawTransition);
-}
-
 window.nav = function(targetScene) {
     if (window.isTransitioning) return;
     const currentEl = document.querySelector('.scene.active');
-    const currentId = currentEl ? currentEl.id.replace('scene-', '') : null;
-    if (currentId === targetScene) return;
-    
-    window.isTransitioning = true; transitioning = true;
-    tcv.style.display = 'block'; resizeT();
-    flashAmt = 0; particles = []; window._boom = false; startT = performance.now();
-    drawTransition();
-    
+    if (currentEl && currentEl.id === 'scene-' + targetScene) return;
+
+    window.isTransitioning = true;
+    const overlay = document.getElementById('trans-overlay');
+    const logo = document.getElementById('trans-logo');
+    const flash = document.getElementById('trans-flash');
+
+    overlay.style.display = 'flex';
+    overlay.style.opacity = '1';
+    logo.style.animation = 'none';
+    flash.style.transition = 'none';
+    flash.style.transform = 'translate(-50%, -50%) scale(0)';
+    flash.style.opacity = '0';
+    flash.style.filter = 'blur(2cqw)';
+    void logo.offsetWidth; 
+
+    // 1. Logo Pop In (0.6s)
+    logo.style.animation = 'logoPop 0.6s ease-out forwards';
+
+    // 2. Flash (Mulai setelah 0.6s)
     setTimeout(() => {
-        if (currentEl) currentEl.classList.remove('active');
-        const newEl = document.getElementById('scene-' + targetScene);
-        if (newEl) newEl.classList.add('active');
-        if (targetScene === 'cs') renderCS();
-    }, 1200);
+        flash.style.transition = 'transform 0.8s ease-in, opacity 0.5s ease-in, filter 0.5s ease-in';
+        flash.style.transform = 'translate(-50%, -50%) scale(50)'; 
+        flash.style.opacity = '1'; 
+        flash.style.filter = 'blur(0px)'; 
+
+        // 3. Ganti Scene pas Flash Penuh
+        setTimeout(() => {
+            if (currentEl) currentEl.classList.remove('active');
+            const newEl = document.getElementById('scene-' + targetScene);
+            if (newEl) newEl.classList.add('active');
+
+            if (targetScene === 'cs') renderCS(); 
+            if (targetScene === 'br') renderBR(); 
+            if (targetScene === 'live') renderLive();
+
+            // 4. Flash Pudar
+            setTimeout(() => {
+                flash.style.transition = 'opacity 0.6s ease-out';
+                flash.style.opacity = '0'; 
+                
+                overlay.style.transition = 'opacity 0.6s ease-out';
+                overlay.style.opacity = '0'; 
+
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    window.isTransitioning = false;
+                }, 600); 
+
+            }, 200); 
+        }, 800); 
+    }, 600); 
 };
 
-// ═══════════════════════════════════════════════════════════
-// 6. KONTROL & INIT
-// ═══════════════════════════════════════════════════════════
 $$('#ctl .btn[data-s]').forEach(b => b.onclick = () => nav(b.dataset.s));
-$$('#cs-modes .btn').forEach(b => b.onclick = () => { currentCsMode = b.dataset.m; renderCS(); });
-
 $('#fv').onclick = () => {
-    const f = $('#scene-live').classList.toggle('full');
-    $('#fv').innerHTML = f ? '<i class="fa-solid fa-compress"></i> EXIT' : '<i class="fa-solid fa-expand"></i> FULL';
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
 };
 
 setInterval(() => { $('#clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false }); }, 1000);
-
-// MULAI OTOMATIS
-fetchData();
 </script>
 </body>
 </html>
