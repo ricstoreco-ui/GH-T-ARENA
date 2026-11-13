@@ -42,6 +42,7 @@ const CAT_TOUR = { inline_keyboard: [
 ]};
 const CAT_TRX = { inline_keyboard: [
   [b('✅ Verifikasi Pembayaran', 'm:vp'), b('💳 Verifikasi DANA', 'm:dc')],
+  [b('💰 Verifikasi Top Up', 'm:tp')], // <-- TAMBAHAN BARU
   [b('💸 Pencairan Hadiah', 'm:po'), b('↩️ Pengajuan Mundur', 'm:wd')],
   [b('⏳ Waiting List', 'm:wl'), b('🎟️ Cek-in Tiket Offline', 'm:ticket')],
   [b('⬅️ Kembali', 'm:main')]
