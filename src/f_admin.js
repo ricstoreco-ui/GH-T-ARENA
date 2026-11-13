@@ -1,6 +1,6 @@
 // GH-T ARENA Bot — f_admin.js: Admin Tools, Scrim, E-Ticket, Sponsor, VIP, Backup, dll.
 import {
-  esc, wib, rp, UUID, rpc, sb, count, getState, setState, clearState, b, BACK, kbRows, show, getT, audit, notify, sbHeaders,
+  esc, wib, rp, UUID, rpc, sb, count, getState, setState, clearState, b, BACK, kbRows, show, getT, audit, notify, sbHeaders, tg,
   MAXIMG, EXT, downloadTg, storageUpload, publicUrl
 } from './core.js';
 
@@ -104,6 +104,87 @@ H.adm = async (env, chat, mid, p) => {
     const tid = p[3];
     return show(env, chat, mid, '✅ Perintah hentikan BGM terkirim.', { inline_keyboard: [[b('⬅️ Kembali', 'm:adm:q_t:'+tid)]] });
   }
+  
+  if (a === 'csv') {
+    const ts = (await sb(env, 'GET', 'tournaments?select=id,name,status&order=created_at.desc&limit=10')) || [];
+    const kb = ts.map(t => [b(`${t.name} (${t.status})`, 'm:adm:csv:t:' + t.id)]);
+    kb.push([b('⬅️ Kembali', 'm:adm')]);
+    return show(env, chat, mid, '<b>📊 Export CSV</b>\nPilih turnamen:', { inline_keyboard: kb });
+  }
+  if (a === 'csv' && p[3] === 't') {
+    const tid = p[4], t = await getT(env, tid);
+    const regs = (await sb(env, 'GET', `registrations?tournament_id=eq.${tid}&select=id,team_name,status,fee_amount,created_at&order=created_at.asc`)) || [];
+    if (!regs.length) return show(env, chat, mid, '❌ Belum ada pendaftar.', { inline_keyboard: [[b('⬅️ Kembali', 'm:adm:csv')]] });
+    let csv = 'No,Team Name,Status,Fee,Tanggal Daftar\n';
+    regs.forEach((r, i) => { csv += `${i + 1},"${r.team_name}","${r.status}",${r.fee_amount},"${wib(r.created_at)}"\n`; });
+    try {
+      const blob = new Blob([csv], { type: 'text/csv' }), formData = new FormData();
+      formData.append('chat_id', chat); formData.append('caption', `Data Peserta: ${t.name}`);
+      formData.append('document', blob, `Peserta_${t.name.replace(/[^a-z0-9]/gi, '_')}.csv`);
+      await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendDocument`, { method: 'POST', body: formData });
+      return show(env, chat, mid, '✅ File CSV terkirim.', { inline_keyboard: [[b('⬅️ Kembali', 'm:adm')]] });
+    } catch (e) { return show(env, chat, mid, '❌ Gagal kirim CSV: ' + e.message, { inline_keyboard: [[b('⬅️ Kembali', 'm:adm')]] }); }
+  }
+
+  if (a === 'ban') { await setState(env, chat, 'adm_ban_find', {}); return show(env, chat, mid, '<b>🚫 Ban Player</b>\nKetik nama tim:', { inline_keyboard: [[b('✖️ Batal', 'm:adm')]] }); }
+  if (a === 'ban_t') {
+    const tid = p[3], t = (await sb(env, 'GET', `teams?id=eq.${tid}&select=*`))?.[0];
+    const players = (await sb(env, 'GET', `team_players?team_id=eq.${tid}&select=id,nickname,game_uid,status&order=sort_order.asc`)) || [];
+    const kb = players.map(pl => [b(`${pl.status === 'banned' ? '⛔' : '✅'} ${pl.nickname} (${pl.game_uid})`, 'm:adm:ban_v:' + pl.id)]);
+    kb.push([b('⬅️ Kembali', 'm:adm:ban')]);
+    return show(env, chat, mid, `<b>🚫 Roster: ${esc(t.name)}</b>\nPilih pemain untuk Ban/Unban:`, { inline_keyboard: kb });
+  }
+  if (a === 'ban_v') {
+    const pid = p[3], pl = (await sb(env, 'GET', `team_players?id=eq.${pid}&select=*`))?.[0];
+    const newStat = pl.status === 'banned' ? 'aktif' : 'banned';
+    await sb(env, 'PATCH', `team_players?id=eq.${pid}`, { status: newStat }, 'return=minimal');
+    await sb(env, 'POST', 'global_blacklist', { game_uid: pl.game_uid, nickname: pl.nickname, reason: newStat === 'banned' ? 'Cheat via Bot' : 'Unban' }, 'resolution=merge-duplicates,return=minimal').catch(() => null);
+    await audit(env, newStat === 'banned' ? 'ban_player' : 'unban_player', 'team_players', pl.nickname, pid);
+    return show(env, chat, mid, `✅ Pemain <b>${esc(pl.nickname)}</b> di-${newStat === 'banned' ? 'BANNED' : 'AKTIFKAN'}.`, { inline_keyboard: [[b('⬅️ Kembali', 'm:adm:ban_t:' + pl.team_id)]] });
+  }
+
+  if (a === 'tmpl') {
+    const rows = (await sb(env, 'GET', 'announcement_templates?select=id,title&order=created_at.desc')) || [];
+    const kb = rows.map(r => [b(r.title, 'm:adm:tmpl_v:' + r.id)]);
+    kb.push([b('➕ Tambah Template', 'm:adm:tmpl_add')], [b('⬅️ Kembali', 'm:adm')]);
+    return show(env, chat, mid, '<b>📝 Template Pengumuman</b>\nPilih:', { inline_keyboard: kb });
+  }
+  if (a === 'tmpl_add') { await setState(env, chat, 'adm_tmpl_t', {}); return show(env, chat, mid, 'Ketik <b>judul</b> template:', { inline_keyboard: [[b('✖️ Batal', 'm:adm:tmpl')]] }); }
+  if (a === 'tmpl_v') {
+    const t = (await sb(env, 'GET', `announcement_templates?id=eq.${p[3]}&select=*`))?.[0];
+    return show(env, chat, mid, `<b>📝 ${esc(t.title)}</b>\n\n${esc(t.body)}`, { inline_keyboard: [[b('🗑 Hapus', 'm:adm:tmpl_del:' + p[3])], [b('⬅️ Kembali', 'm:adm:tmpl')]] });
+  }
+  if (a === 'tmpl_del') { await sb(env, 'DELETE', `announcement_templates?id=eq.${p[3]}`); return show(env, chat, mid, '✅ Template dihapus.', { inline_keyboard: [[b('⬅️ Kembali', 'm:adm:tmpl')]] }); }
+
+  if (a === 'stream') {
+    const ts = (await sb(env, 'GET', 'tournaments?select=id,name,status&order=created_at.desc&limit=10')) || [];
+    const kb = ts.map(t => [b(`${t.name} (${t.status})`, 'm:adm:stream_t:' + t.id)]);
+    kb.push([b('⬅️ Kembali', 'm:adm')]);
+    return show(env, chat, mid, '<b>🔴 Atur Live Stream</b>\nPilih turnamen:', { inline_keyboard: kb });
+  }
+  if (a === 'stream_t') {
+    const t = await getT(env, p[3]);
+    await setState(env, chat, 'adm_stream_u', { tid: t.id });
+    return show(env, chat, mid, `<b>🔴 Live Stream: ${esc(t.name)}</b>\nLink saat ini: ${esc(t.stream_url || 'Belum diatur')}\n\nKetik link YouTube. Ketik - untuk hapus.`, { inline_keyboard: [[b('✖️ Batal', 'm:adm:stream')]] });
+  }
+
+  if (a === 'test') { await setState(env, chat, 'adm_test_n', {}); return show(env, chat, mid, '<b>🧪 Tes Notifikasi</b>\nKetik <b>username Captain</b> target:', { inline_keyboard: [[b('✖️ Batal', 'm:adm')]] }); }
+
+  if (a === 'logs') {
+    const logs = (await sb(env, 'GET', 'error_logs?select=*&order=created_at.desc&limit=5')) || [];
+    let text = '<b>📉 Log Error Bot (5 Terakhir)</b>\n\n';
+    if (!logs.length) text += '✅ Tidak ada error.';
+    else text += logs.map(l => `🔴 <b>${wib(l.created_at).slice(0, 16)}</b>\n${esc(l.error_message).slice(0, 100)}\n`).join('\n');
+    return show(env, chat, mid, text, { inline_keyboard: [[b('🔄 Segarkan', 'm:adm:logs')], [b('⬅️ Kembali', 'm:adm')]] });
+  }
+
+  if (a === 'stats') {
+    const [brT, csT, brR, csR] = await Promise.all([
+      count(env, 'tournaments?format=eq.BR&select=id'), count(env, 'tournaments?format=eq.CS&select=id'),
+      count(env, 'registrations?tournaments.format=eq.BR&status=eq.resmi_terdaftar&select=id'), count(env, 'registrations?tournaments.format=eq.CS&status=eq.resmi_terdaftar&select=id')
+    ]);
+    return show(env, chat, mid, `<b>📈 Statistik Game</b>\n\n🎯 <b>BR</b>\nTotal Turnamen: ${brT}\nTim Terdaftar: ${brR}\n\n⚔️ <b>CS</b>\nTotal Turnamen: ${csT}\nTim Terdaftar: ${csR}`, { inline_keyboard: [[b('🔄 Segarkan', 'm:adm:stats')], [b('⬅️ Kembali', 'm:adm')]] });
+  }
 };
 
 async function cleanMenu(env, chat, mid) {
@@ -147,7 +228,6 @@ H.scrim = async (env, chat, mid, p) => {
     const kb = [];
     if (s.status === 'siap_main' && !s.room_id) kb.push([b('🔑 Buat Room ID', 'm:scrim:room:' + s.id)]);
     
-    // FIX: Tombol Menang A / Menang B
     if (s.status === 'berlangsung' && s.opponent_id) {
       kb.push([b(`✅ ${String(s.challenger?.username).slice(0,10)} Menang`, `m:scrim:win:${s.id}:a`)]);
       kb.push([b(`✅ ${String(s.opponent?.username).slice(0,10)} Menang`, `m:scrim:win:${s.id}:b`)]);
@@ -238,10 +318,7 @@ T.tp_rej = async (env, chat, st, text) => {
     return show(env, chat, null, '✅ Top up ditolak.', { inline_keyboard: [[b('⬅️ Kembali', 'm:tp')]] });
 };
 
-// ================= SISA FITUR BAWAAN (TIDAK DIUBAH) =================
-// (Sponsor, VIP, E-Ticket, Broadcast, Ban, CSV, Stream, Test, Logs, Stats, Backup)
-// ... (Kode lama tetap dipertahankan di bawah ini) ...
-
+// ================= SPONSOR =================
 H.sponsor = async (env, chat, mid, p) => {
   const a = p[2];
   if (!a) {
@@ -258,10 +335,48 @@ H.sponsor = async (env, chat, mid, p) => {
   if (a === 'del') { await sb(env, 'DELETE', `sponsors?id=eq.${p[3]}`); return show(env, chat, mid, '✅ Sponsor dihapus.', { inline_keyboard: [[b('⬅️ Kembali', 'm:sponsor')]] }); }
 };
 
+// ================= VIP =================
 H.vip = async (env, chat, mid, p) => {
   if (!p[2]) { await setState(env, chat, 'vip_find', {}); return show(env, chat, mid, '<b>👑 Kelola VIP</b>\nKetik username Captain:', { inline_keyboard: [[b('✖️ Batal', 'm:main')]] }); }
 };
 
+// ================= BACKUP PROJECT =================
+H.backup = async (env, chat, mid, p) => {
+  if (!p[2]) {
+    return show(env, chat, mid, '<b>📦 Backup Project</b>\nProses ini akan menarik semua file dari GitHub & Skema Database.\n\nLanjut?', { inline_keyboard: [[b('✅ Mulai Backup', 'm:backup:go')], [b('✖️ Batal', 'm:main')]] });
+  }
+  if (p[2] === 'go') {
+    await show(env, chat, mid, '⏳ <b>Sedang memproses backup...</b>\nMengambil data dari GitHub dan Supabase. Mohon tunggu.');
+    try {
+      const schema = await rpc(env, 'sys_dump_schema');
+      let githubFiles = '--- GITHUB FILES ---\n';
+      const ghRes = await fetch(`https://api.github.com/repos/${env.GH_REPO}/git/trees/main?recursive=1`, { headers: { Authorization: `Bearer ${env.GH_TOKEN}`, 'User-Agent': 'gh-t-arena' } });
+      const tree = await ghRes.json();
+      if (tree.tree) {
+        const files = tree.tree.filter(t => t.type === 'blob' && (t.path.endsWith('.js') || t.path.endsWith('.html') || t.path.endsWith('.toml') || t.path.endsWith('.yml') || t.path.endsWith('.json') || t.path.endsWith('.sql') || t.path.endsWith('.txt')));
+        for (const file of files) {
+          if (file.size > 500000) continue;
+          const rawRes = await fetch(`https://raw.githubusercontent.com/${env.GH_REPO}/main/${file.path}`);
+          const content = await rawRes.text();
+          githubFiles += `\n\n// ==========================================\n// FILE: ${file.path}\n// ==========================================\n\n${content}`;
+        }
+      }
+      
+      const settings = (await sb(env, 'GET', 'site_settings?select=key,value')) || [];
+      let config = '--- SITE SETTINGS ---\n';
+      settings.forEach(s => { config += `${s.key} = ${JSON.stringify(s.value)}\n`; });
+
+      const fullBackup = `=== MASTER CHECKPOINT & BACKUP GH-T ARENA ===\nTanggal: ${new Date().toISOString()}\n\n\n${schema}\n\n\n${config}\n\n\n${githubFiles}`;
+      const blob = new Blob([fullBackup], { type: 'text/plain' }), formData = new FormData();
+      formData.append('chat_id', chat); formData.append('caption', '📦 Backup Project (Kode + DB Schema + Config). Simpan file ini baik-baik!');
+      formData.append('document', blob, `BACKUP_GHT_${Date.now()}.txt`);
+      await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendDocument`, { method: 'POST', body: formData });
+      return show(env, chat, mid, '✅ Backup berhasil dikirim!', { inline_keyboard: [[b('⬅️ Kembali', 'm:main')]] });
+    } catch (e) { return show(env, chat, mid, '❌ Gagal Backup: ' + e.message, { inline_keyboard: [[b('⬅️ Kembali', 'm:main')]] }); }
+  }
+};
+
+// ================= E-TICKET SCANNER =================
 H.ticket = async (env, chat, mid, p) => {
   if (p[2] === 'scan') { await setState(env, chat, 'ticket_scan', {}); return show(env, chat, mid, '<b>🎟️ Scan E-Ticket</b>\nKetik <b>6-digit Kode Unik</b>:', { inline_keyboard: [[b('✖️ Batal', 'm:main')]] }); }
   return show(env, chat, mid, '<b>🎟️ Cek-in Tiket Offline</b>', { inline_keyboard: [[b('📷 Mulai Scan Kode', 'm:ticket:scan')], [b('⬅️ Kembali', 'm:main')]] });
@@ -277,7 +392,7 @@ T.ticket_scan = async (env, chat, st, text) => {
   return show(env, chat, null, `✅ <b>CHECK-IN BERHASIL</b>\n\nTim: <b>${esc(t.registrations?.team_name)}</b>\nKode: ${t.ticket_code}`, { inline_keyboard: [[b('🔄 Scan Lagi', 'm:ticket:scan'), b('🏠 Menu', 'm:main')]] });
 };
 
-// STATE HANDLERS (Broadcast, Ban, Template, Stream, Test, dll)
+// ================= STATE HANDLERS =================
 T.adm_bc = async (env, chat, st, text) => {
   if (text.length < 3 || text.length > 1000) return show(env, chat, null, '❌ Pesan 3-1000 karakter.', { inline_keyboard: [[b('✖️ Batal', 'm:adm')]] });
   const users = (await sb(env, 'GET', 'profiles?select=id')) || [];
@@ -355,41 +470,4 @@ T.vip_find = async (env, chat, st, text) => {
   const newStat = !prof.is_vip;
   await sb(env, 'PATCH', `profiles?id=eq.${prof.id}`, { is_vip: newStat, vip_expired_at: newStat ? new Date(Date.now() + 30*864e5).toISOString() : null }, 'return=minimal');
   return show(env, chat, null, `✅ Status VIP <b>${esc(prof.username)}</b>: ${newStat ? 'AKTIF (30 Hari)' : 'DICABUT'}.`, { inline_keyboard: [[b('⬅️ Kembali', 'm:main')]] });
-};
-
-// BACKUP
-H.backup = async (env, chat, mid, p) => {
-  if (!p[2]) {
-    return show(env, chat, mid, '<b>📦 Backup Project</b>\nProses ini akan menarik semua file dari GitHub & Skema Database.\n\nLanjut?', { inline_keyboard: [[b('✅ Mulai Backup', 'm:backup:go')], [b('✖️ Batal', 'm:main')]] });
-  }
-  if (p[2] === 'go') {
-    await show(env, chat, mid, '⏳ <b>Sedang memproses backup...</b>\nMengambil data dari GitHub dan Supabase. Mohon tunggu.');
-    try {
-      const schema = await rpc(env, 'sys_dump_schema');
-      let githubFiles = '--- GITHUB FILES ---\n';
-      const ghRes = await fetch(`https://api.github.com/repos/${env.GH_REPO}/git/trees/main?recursive=1`, { headers: { Authorization: `Bearer ${env.GH_TOKEN}`, 'User-Agent': 'gh-t-arena' } });
-      const tree = await ghRes.json();
-      if (tree.tree) {
-        const files = tree.tree.filter(t => t.type === 'blob' && (t.path.endsWith('.js') || t.path.endsWith('.html') || t.path.endsWith('.toml') || t.path.endsWith('.yml') || t.path.endsWith('.json') || t.path.endsWith('.sql') || t.path.endsWith('.txt')));
-        for (const file of files) {
-          if (file.size > 500000) continue;
-          const rawRes = await fetch(`https://raw.githubusercontent.com/${env.GH_REPO}/main/${file.path}`);
-          const content = await rawRes.text();
-          githubFiles += `\n\n// ==========================================\n// FILE: ${file.path}\n// ==========================================\n\n${content}`;
-        }
-      }
-      
-      // Tambahin Data Site Settings
-      const settings = (await sb(env, 'GET', 'site_settings?select=key,value')) || [];
-      let config = '--- SITE SETTINGS ---\n';
-      settings.forEach(s => { config += `${s.key} = ${JSON.stringify(s.value)}\n`; });
-
-      const fullBackup = `=== MASTER CHECKPOINT & BACKUP GH-T ARENA ===\nTanggal: ${new Date().toISOString()}\n\n\n${schema}\n\n\n${config}\n\n\n${githubFiles}`;
-      const blob = new Blob([fullBackup], { type: 'text/plain' }), formData = new FormData();
-      formData.append('chat_id', chat); formData.append('caption', '📦 Backup Project (Kode + DB Schema + Config). Simpan file ini baik-baik!');
-      formData.append('document', blob, `BACKUP_GHT_${Date.now()}.txt`);
-      await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendDocument`, { method: 'POST', body: formData });
-      return show(env, chat, mid, '✅ Backup berhasil dikirim!', { inline_keyboard: [[b('⬅️ Kembali', 'm:main')]] });
-    } catch (e) { return show(env, chat, mid, '❌ Gagal Backup: ' + e.message, { inline_keyboard: [[b('⬅️ Kembali', 'm:main')]] }); }
-  }
 };
