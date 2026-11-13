@@ -16,13 +16,16 @@
 body{background-color:var(--bg);color:var(--text);overflow-x:hidden;padding-bottom:90px;background-image:linear-gradient(rgba(226,232,240,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(226,232,240,.03) 1px,transparent 1px);background-size:40px 40px;background-position:center top;transition:.5s}
 h1,h2,h3{font-family:'Orbitron',sans-serif}.hidden{display:none!important}
 body.theme-lebaran{--chrome:#00e676;--glow:rgba(0,230,118,.5)}body.theme-natal{--chrome:#e53935;--glow:rgba(229,57,53,.5)}body.theme-halloween{--chrome:#ff9800;--glow:rgba(255,152,0,.5)}body.theme-agustus{--chrome:#f44336;--glow:rgba(244,67,54,.5)}body.theme-ocean{--chrome:#00bcd4;--glow:rgba(0,188,212,.5)}
-@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes pulseRed{0%{box-shadow:0 0 0 0 rgba(229,57,53,.7)}70%{box-shadow:0 0 0 10px rgba(229,57,53,0)}100%{box-shadow:0 0 0 0 rgba(229,57,53,0)}}@keyframes breathe{0%,100%{opacity:.8;filter:drop-shadow(0 0 5px var(--glow))}50%{opacity:1;filter:drop-shadow(0 0 15px var(--chrome))}}@keyframes slideInBottom{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes slideInTop{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes click{0%{transform:scale(1)}50%{transform:scale(.92)}100%{transform:scale(1)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes zoom{0%{opacity:0;transform:scale(.5) translateY(50px)}100%{opacity:1;transform:scale(1) translateY(0)}}@keyframes glitch{0%{text-shadow:2px 0 var(--cyan),-2px 0 red;transform:translate(0)}20%{text-shadow:-2px 0 var(--cyan),2px 0 red;transform:translate(-2px,2px)}40%{text-shadow:2px 0 var(--cyan),-2px 0 red;transform:translate(2px,-2px)}60%{text-shadow:-2px 0 var(--cyan),2px 0 red;transform:translate(-2px,-2px)}80%{text-shadow:2px 0 var(--cyan),-2px 0 red;transform:translate(2px,2px)}100%{text-shadow:none;transform:translate(0)}}
+
+/* INTRO G & H */
+#gh-intro { position: fixed; inset: 0; z-index: 9999; background: #030303; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+#intro-canvas { width: 100vw; height: 100vh; object-fit: contain; }
+#skip-intro { position: absolute; bottom: 30px; right: 30px; background: rgba(226,232,240,.1); border: 1px solid #e2e8f0; color: #e2e8f0; padding: 10px 24px; border-radius: 30px; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 0.75rem; z-index: 10000; transition: 0.3s; opacity: 0; pointer-events: none; }
+#skip-intro.show { opacity: 1; pointer-events: auto; }
+#skip-intro:hover { background: #e2e8f0; color: #030303; }
+
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes pulseRed{0%{box-shadow:0 0 0 0 rgba(229,57,53,.7)}70%{box-shadow:0 0 0 10px rgba(229,57,53,0)}100%{box-shadow:0 0 0 0 rgba(229,57,53,0)}}@keyframes breathe{0%,100%{opacity:.8;filter:drop-shadow(0 0 5px var(--glow))}50%{opacity:1;filter:drop-shadow(0 0 15px var(--chrome))}}@keyframes slideInBottom{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes slideInTop{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes click{0%{transform:scale(1)}50%{transform:scale(.92)}100%{transform:scale(1)}}@keyframes spin{to{transform:rotate(360deg)}}
 .view{animation:fadeInUp .4s ease-out}
-#intro-screen{position:fixed;inset:0;background:#030303;z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:opacity .8s ease,visibility .8s;font-family:'Rajdhani',monospace;overflow:hidden}#intro-screen.hidden{opacity:0;visibility:hidden}#intro-screen::before{content:'';position:absolute;width:min(75vw,340px);aspect-ratio:1;border:1px solid rgba(226,232,240,.12);border-radius:50%;box-shadow:0 0 60px rgba(226,232,240,.08),inset 0 0 40px rgba(226,232,240,.03);animation:spin 8s linear infinite;z-index:1}#intro-screen::after{content:'';position:absolute;width:min(90vw,400px);aspect-ratio:1;border:1px dashed rgba(226,232,240,.15);border-radius:50%;animation:spin 15s linear infinite reverse;z-index:1}
-.stars{position:absolute;inset:0;overflow:hidden;z-index:0}.star{position:absolute;background:var(--chrome);border-radius:50%;animation:breathe 2s infinite alternate}
-.intro-box{text-align:center;display:flex;flex-direction:column;align-items:center;padding:20px;z-index:2}.intro-logo{width:120px;margin-bottom:20px;filter:drop-shadow(0 0 25px var(--glow));animation:zoom 1.5s cubic-bezier(.16,1,.3,1) both}.intro-title{font-size:2.2rem;color:var(--chrome);letter-spacing:8px;margin-bottom:10px;animation:glitch .5s infinite}.intro-sub{font-size:.8rem;color:var(--silver);letter-spacing:5px;margin-bottom:30px}
-.terminal{font-family:'Rajdhani',monospace;color:var(--success);font-size:.75rem;text-align:left;width:min(300px,80vw);margin-bottom:20px;height:60px}.terminal p{margin:2px 0;opacity:0;animation:fadeInUp .2s forwards}
-.loader{font-size:2rem;color:var(--chrome);animation:spin 1.5s infinite linear;margin-top:20px;text-shadow:0 0 10px var(--chrome)}#skip-btn{position:absolute;bottom:40px;background:rgba(226,232,240,.05);color:var(--silver);border:1px solid rgba(226,232,240,.2);padding:8px 24px;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:.75rem;opacity:0;pointer-events:none;transition:.3s;z-index:10}#skip-btn.show{opacity:1;pointer-events:auto}
 .running{background:#0a0a0a;color:var(--chrome);font-size:.65rem;padding:6px 0;white-space:nowrap;overflow:hidden;border-bottom:1px solid #222;display:flex;font-family:'Rajdhani',sans-serif;font-weight:700}.running span{display:inline-block;padding-left:100%;animation:marquee 20s linear infinite}
 nav{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:rgba(3,3,3,.95);border-bottom:1px solid #222;position:sticky;top:0;z-index:100;height:60px;backdrop-filter:blur(10px)}.brand{display:flex;align-items:center;gap:8px;cursor:pointer}.brand img{height:30px;animation:breathe 3s infinite}.brand span{font-family:'Orbitron',sans-serif;font-weight:800;font-size:1rem;color:var(--chrome);text-shadow:0 0 10px var(--glow)}.nav-act{display:flex;align-items:center;gap:15px}.nav-btn{background:transparent;border:none;color:var(--silver);font-size:1.2rem;cursor:pointer;position:relative;transition:.3s;display:flex;align-items:center}.nav-btn:hover{color:var(--chrome);text-shadow:0 0 10px var(--chrome)}.badge{position:absolute;top:-5px;right:-8px;background:var(--danger);color:#fff;font-size:.55rem;padding:2px 5px;border-radius:10px;font-weight:bold}.clock{font-family:'Orbitron',sans-serif;font-size:.65rem;color:var(--cyan)}
 .server{display:flex;justify-content:center;gap:15px;font-size:.6rem;color:var(--muted);background:#080808;padding:4px 0;border-bottom:1px solid #111;font-family:'Rajdhani',sans-serif;font-weight:600}.server span{display:flex;align-items:center;gap:4px}.dot{width:6px;height:6px;background:var(--success);border-radius:50%;box-shadow:0 0 5px var(--success)}
@@ -47,406 +50,551 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
 .btn{width:100%;padding:14px;background:linear-gradient(135deg,#94a3b8,#e2e8f0,#fff);color:#000;border:none;border-radius:8px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:.85rem;cursor:pointer;text-transform:uppercase;letter-spacing:1px;position:relative;overflow:hidden;display:flex;justify-content:center;align-items:center;gap:8px;box-shadow:0 4px 15px rgba(226,232,240,.2)}.btn:active{animation:click .3s}.btn:disabled{background:#333;color:#777;cursor:not-allowed;box-shadow:none}.btn-sec{background:transparent;border:1px solid #555;color:var(--silver);box-shadow:none}.btn-danger{background:rgba(229,57,53,.1);border:1px solid var(--danger);color:var(--danger);box-shadow:none}.btn-sm{width:auto;padding:8px 15px;font-size:.7rem}
 .tabs{display:flex;gap:10px;margin-bottom:15px;background:#111;padding:5px;border-radius:10px;border:1px solid #222;overflow-x:auto}.tab{padding:10px 15px;background:transparent;border:none;color:var(--muted);border-radius:8px;font-family:'Rajdhani',sans-serif;cursor:pointer;font-size:.8rem;font-weight:700;white-space:nowrap;transition:.3s}.tab.active{background:var(--chrome);color:#000;box-shadow:0 0 10px var(--glow)}details{background:#111;border:1px solid #222;border-radius:8px;padding:12px;margin-bottom:10px;font-size:.8rem;transition:.3s}details[open]{border-color:var(--chrome);box-shadow:0 0 10px var(--glow)}summary{cursor:pointer;color:var(--chrome);font-weight:600;outline:none;display:flex;justify-content:space-between;font-family:'Rajdhani',sans-serif;font-size:.9rem}details p{margin-top:10px;color:var(--silver);line-height:1.6}
 .ticket-wrap{background:linear-gradient(135deg,#121212,#030303);border-radius:20px;border:1px solid var(--chrome);box-shadow:0 20px 50px rgba(0,0,0,.8),0 0 20px var(--glow);display:flex;position:relative;overflow:hidden;margin-bottom:20px}.t-left{flex:1;padding:20px;border-right:2px dashed #333;position:relative;z-index:2}.t-right{width:120px;padding:20px 10px;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;z-index:2;background:rgba(226,232,240,.05)}.t-hole{position:absolute;width:20px;height:20px;background:#030303;border-radius:50%;border:1px solid var(--chrome)}.t-hole.top{top:-10px;left:-10px}.t-hole.bottom{bottom:-10px;left:-10px}.t-code-lbl{font-size:.6rem;color:var(--muted);text-transform:uppercase;margin-bottom:5px}.t-code{font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:var(--chrome);letter-spacing:3px;text-shadow:0 0 10px var(--glow)}.t-qr{width:80px;height:80px;background:#fff;border-radius:8px;padding:4px;margin-bottom:10px}.t-qr img{width:100%;height:100%}
+
+/* TOP UP & QRIS */
+.qris-box { position: relative; text-align: center; margin-top: 15px; padding: 10px; background: #111; border: 1px dashed #444; border-radius: 8px; }
+.qris-box img { width: 180px; border-radius: 8px; border: 2px solid var(--chrome); margin-bottom: 10px; }
+.download-btn { display: inline-flex; align-items: center; gap: 5px; background: var(--chrome); color: #000; padding: 8px 15px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; border: none; text-decoration: none; }
+.download-btn:hover { background: #fff; }
+
 @media(max-width:480px){.grid{grid-template-columns:1fr}.meta-grid{grid-template-columns:1fr}.part-list{grid-template-columns:1fr}.ros-grid{grid-template-columns:1fr}.ticket-wrap{flex-direction:column}.t-left{border-right:none;border-bottom:2px dashed #333}.t-right{width:100%}.t-hole.top{left:45%}.t-hole.bottom{left:45%}}
 </style>
 </head>
 <body>
 
-<!-- INTRO SCREEN -->
-<div id="intro-screen">
-  <div class="stars" id="stars"></div>
-  <div class="intro-box">
-    <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" class="intro-logo" onerror="this.style.display='none'">
-    <h1 class="intro-title">GH-T ARENA</h1>
-    <p class="intro-sub">GAMING HOUSE TOUR ARENA</p>
-    <div class="terminal" id="term"></div>
-    <i class="fa-solid fa-crosshairs loader"></i>
-  </div>
-  <button id="skip-btn" onclick="skipIntro()">LEWATI INTRO ↗</button>
+<div id="gh-intro">
+    <canvas id="intro-canvas"></canvas>
+    <button id="skip-intro" onclick="finishIntro()">SKIP INTRO ➔</button>
 </div>
 
-<div class="running"><span>🔥 SELAMAT DATANG DI GH-T ARENA 🔥 DAFTARKAN TIM MU SEKARANG DAN RAIH HADIAH JUTAAN RUPIAH! 🔥</span></div>
+<div id="main-content" style="display:none;">
 
-<!-- NAVBAR -->
-<nav id="nav" class="hidden">
-  <div class="brand" onclick="nav('home')">
-    <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" onerror="this.style.display='none'">
-    <span>GH-T ARENA</span>
-  </div>
-  <div class="nav-act">
-    <span class="clock" id="clock">00:00:00</span>
-    <button class="nav-btn" onclick="nav('notif')"><i class="fa-solid fa-bell"></i><span class="badge hidden" id="notif-badge">0</span></button>
-    <button class="nav-btn" onclick="handleAuth()"><i class="fa-solid fa-right-to-bracket" id="auth-ic"></i><span id="auth-tx" style="font-size:0.6rem;margin-left:3px;">Login</span></button>
-  </div>
-</nav>
+    <div class="running"><span>🔥 SELAMAT DATANG DI GH-T ARENA 🔥 DAFTARKAN TIM MU SEKARANG DAN RAIH HADIAH JUTAAN RUPIAH! 🔥</span></div>
 
-<div class="server hidden" id="server">
-  <span><div class="dot"></div> Server: Online</span><span>Ping: 15ms</span><span>Region: ID</span>
-</div>
+    <nav id="nav" class="hidden">
+    <div class="brand" onclick="nav('home')">
+        <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" onerror="this.style.display='none'">
+        <span>GH-T ARENA</span>
+    </div>
+    <div class="nav-act">
+        <span class="clock" id="clock">00:00:00</span>
+        <button class="nav-btn" onclick="nav('notif')"><i class="fa-solid fa-bell"></i><span class="badge hidden" id="notif-badge">0</span></button>
+        <button class="nav-btn" onclick="handleAuth()"><i class="fa-solid fa-right-to-bracket" id="auth-ic"></i><span id="auth-tx" style="font-size:0.6rem;margin-left:3px;">Login</span></button>
+    </div>
+    </nav>
 
-<div id="notif-container"></div>
+    <div class="server hidden" id="server">
+    <span><div class="dot"></div> Server: Online</span><span>Ping: 15ms</span><span>Region: ID</span>
+    </div>
 
-<div class="container" id="content">
+    <div id="notif-container"></div>
 
-<!-- VIEW: HOME -->
-<div id="v-home" class="view hidden">
-  <div style="text-align: center; margin-bottom: 15px;">
-    <h2 style="font-family: 'Orbitron'; color: var(--chrome); text-shadow: 0 0 15px var(--glow); font-size: 2rem; letter-spacing:2px;">GH-T ARENA</h2>
-    <p style="color: var(--silver); letter-spacing: 3px; font-size: 0.85rem; text-transform: uppercase; margin-top:5px;">Gaming House Tour Arena</p>
-  </div>
-  <div class="hero" id="hero" style="height: 200px;"></div>
-  <div class="sponsor" id="sponsor" onclick="triggerRipple(event)">
-    <div class="sponsor-txt">
-      <div class="sp-txt active">⚡ Butuh Diamond Murah?<br><span style="font-size:.65rem;color:var(--silver);font-weight:normal;">Proses Otomatis 1 Menit!</span><br><button class="sp-btn">TOP UP SEKARANG</button></div>
-      <div class="sp-txt">🚀 Proses Cepat 24 Jam<br><span style="font-size:.65rem;color:var(--silver);font-weight:normal;">Tanpa Ribet, Langsung Masuk!</span><br><button class="sp-btn">TOP UP SEKARANG</button></div>
-    </div>
-    <div class="diamond">💎</div>
-    <img src="https://i.ibb.co.com/WW9NXHjZ/1000367499-removebg-preview.png" onerror="this.style.display='none'">
-  </div>
-  <h2 class="title">Turnamen Tersedia</h2>
-  <div class="grid" id="tour-grid"></div>
-  <div class="glass" style="margin-top:20px">
-    <h3 class="title" style="font-size:.9rem;text-align:center;justify-content:center;border:none">👑 HALL OF FAME 👑</h3>
-    <div class="podium" style="height: 80px; min-height: auto;">
-      <div class="p-box p-2"><div class="medal">🥈</div><div class="p-name">-</div><div class="p-prize">-</div></div>
-      <div class="p-box p-1"><div class="medal">🥇</div><div class="p-name">-</div><div class="p-prize">-</div></div>
-      <div class="p-box p-3"><div class="medal">🥉</div><div class="p-name">-</div><div class="p-prize">-</div></div>
-    </div>
-  </div>
-  <div class="glass" style="margin-top:20px">
-    <h3 class="title"><i class="fa-solid fa-book"></i> Panduan & FAQ</h3>
-    <div class="tabs">
-      <button class="tab active" onclick="switchFaq('umum')">Umum</button>
-      <button class="tab" onclick="switchFaq('bayar')">Pembayaran</button>
-    </div>
-    <div id="faq-umum">
-      <details><summary>Bagaimana cara daftar turnamen? <i class="fa-solid fa-chevron-down"></i></summary><p>Login/Register -> Buka menu Dash -> Buat Tim & Isi Roster -> Kembali ke Home -> Pilih Turnamen -> Daftar -> Pilih Tim -> Bayar via QRIS.</p></details>
-      <details><summary>Apakah bisa ganti pemain? <i class="fa-solid fa-chevron-down"></i></summary><p>Bisa, edit roster di Dashboard sebelum 1 jam jadwal turnamen dimulai.</p></details>
-      <details><summary>Turnamen Offline itu apa? <i class="fa-solid fa-chevron-down"></i></summary><p>Turnamen yang diadakan secara fisik (kopdar). Setelah daftar, kamu akan mendapatkan E-Ticket untuk di-scan panitia di lokasi.</p></details>
-    </div>
-    <div id="faq-bayar" class="hidden">
-      <details><summary>Metode pembayaran apa saja? <i class="fa-solid fa-chevron-down"></i></summary><p>Pendaftaran hanya via QRIS. Pencairan hadiah via DANA.</p></details>
-      <details><summary>Bagaimana jika turnamen batal? <i class="fa-solid fa-chevron-down"></i></summary><p>Dana akan dikembalikan 100% ke Saldo akun kamu (bisa ditarik ke DANA).</p></details>
-    </div>
-  </div>
-</div>
+    <div class="container" id="content">
 
-<!-- VIEW: DETAIL TURNAMEN -->
-<div id="v-detail" class="view hidden">
-  <button class="btn btn-sec btn-sm" style="width:auto;margin-bottom:15px" onclick="nav('home')"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
-  <div class="glass">
-    <img src="" class="detail-img" id="det-img" onerror="this.src='https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg'">
-    <h1 class="detail-title" id="det-title">-</h1>
-    <span class="status st-open" style="margin-bottom:15px" id="det-status">-</span>
-    <div id="det-offline" class="hidden" style="background:rgba(226,232,240,.1); border:1px solid var(--chrome); padding:10px; border-radius:8px; margin-bottom:15px;">
-      <p style="font-size:.8rem;color:var(--chrome);font-weight:bold;margin-bottom:5px;">📍 INFO LOKASI (OFFLINE)</p>
-      <p style="font-size:.8rem;color:#fff;" id="det-loc-name">-</p>
-      <p style="font-size:.75rem;color:var(--silver);margin-bottom:8px;" id="det-loc-addr">-</p>
-      <a href="#" id="det-loc-maps" target="_blank" class="btn btn-sm" style="background:#333;color:#fff;text-decoration:none;display:inline-block;"><i class="fa-solid fa-map-location-dot"></i> Buka Google Maps</a>
+    <!-- VIEW: HOME -->
+    <div id="v-home" class="view hidden">
+    <div style="text-align: center; margin-bottom: 15px;">
+        <h2 style="font-family: 'Orbitron'; color: var(--chrome); text-shadow: 0 0 15px var(--glow); font-size: 2rem; letter-spacing:2px;">GH-T ARENA</h2>
+        <p style="color: var(--silver); letter-spacing: 3px; font-size: 0.85rem; text-transform: uppercase; margin-top:5px;">Gaming House Tour Arena</p>
     </div>
-    <div class="meta-grid">
-      <div class="meta-box"><span>Total Hadiah</span><strong id="det-prize">-</strong></div>
-      <div class="meta-box"><span>Biaya Masuk</span><strong id="det-fee">-</strong></div>
-      <div class="meta-box"><span>Slot Tersedia</span><strong id="det-slots">-</strong></div>
-      <div class="meta-box"><span>Jadwal Mulai</span><strong id="det-date">-</strong></div>
+    <div class="hero" id="hero" style="height: 200px;"></div>
+    <div class="sponsor" id="sponsor" onclick="triggerRipple(event)">
+        <div class="sponsor-txt">
+        <div class="sp-txt active">⚡ Butuh Diamond Murah?<br><span style="font-size:.65rem;color:var(--silver);font-weight:normal;">Proses Otomatis 1 Menit!</span><br><button class="sp-btn">TOP UP SEKARANG</button></div>
+        <div class="sp-txt">🚀 Proses Cepat 24 Jam<br><span style="font-size:.65rem;color:var(--silver);font-weight:normal;">Tanpa Ribet, Langsung Masuk!</span><br><button class="sp-btn">TOP UP SEKARANG</button></div>
+        </div>
+        <div class="diamond">💎</div>
+        <img src="https://i.ibb.co.com/WW9NXHjZ/1000367499-removebg-preview.png" onerror="this.style.display='none'">
     </div>
-    <div id="det-br">
-      <h3 class="title">Map Pool BR</h3>
-      <div class="map-pool" id="map-pool"></div>
+    <h2 class="title">Turnamen Tersedia</h2>
+    <div class="grid" id="tour-grid"></div>
+    <div class="glass" style="margin-top:20px">
+        <h3 class="title" style="font-size:.9rem;text-align:center;justify-content:center;border:none">👑 HALL OF FAME 👑</h3>
+        <div class="podium" style="height: 80px; min-height: auto;">
+        <div class="p-box p-2"><div class="medal">🥈</div><div class="p-name">-</div><div class="p-prize">-</div></div>
+        <div class="p-box p-1"><div class="medal">🥇</div><div class="p-name">-</div><div class="p-prize">-</div></div>
+        <div class="p-box p-3"><div class="medal">🥉</div><div class="p-name">-</div><div class="p-prize">-</div></div>
+        </div>
     </div>
-    <h3 class="title" style="margin-top:20px">Distribusi Hadiah</h3>
-    <div class="podium" id="podium-container" style="flex-wrap: wrap; height: auto; min-height: 150px; align-items: flex-end;"></div>
-    <h3 class="title">Peserta</h3>
-    <div class="part-list" id="part-list"></div>
-    <h3 class="title" style="margin-top:20px"><i class="fa-solid fa-comments"></i> Live Chat Turnamen</h3>
-    <div class="chat-box" id="chat-tour"><p style="text-align:center;color:var(--muted);font-size:.8rem">Memuat chat...</p></div>
-    <div class="chat-input">
-      <input type="text" id="chat-tour-in" placeholder="Ketik pesan..." onkeypress="if(event.key==='Enter')sendTourChat()">
-      <button class="stk-btn" onclick="toggleSticker('tour')"><i class="fa-solid fa-face-smile"></i></button>
-      <button class="chat-btn" onclick="sendTourChat()"><i class="fa-solid fa-paper-plane"></i></button>
+    <div class="glass" style="margin-top:20px">
+        <h3 class="title"><i class="fa-solid fa-book"></i> Panduan & FAQ</h3>
+        <div class="tabs">
+        <button class="tab active" onclick="switchFaq('umum')">Umum</button>
+        <button class="tab" onclick="switchFaq('bayar')">Pembayaran</button>
+        </div>
+        <div id="faq-umum">
+        <details><summary>Bagaimana cara daftar turnamen? <i class="fa-solid fa-chevron-down"></i></summary><p>Login/Register -> Buka menu Dash -> Buat Tim & Isi Roster -> Kembali ke Home -> Pilih Turnamen -> Daftar -> Pilih Tim -> Bayar via QRIS.</p></details>
+        <details><summary>Apakah bisa ganti pemain? <i class="fa-solid fa-chevron-down"></i></summary><p>Bisa, edit roster di Dashboard sebelum 1 jam jadwal turnamen dimulai.</p></details>
+        <details><summary>Turnamen Offline itu apa? <i class="fa-solid fa-chevron-down"></i></summary><p>Turnamen yang diadakan secara fisik (kopdar). Setelah daftar, kamu akan mendapatkan E-Ticket untuk di-scan panitia di lokasi.</p></details>
+        </div>
+        <div id="faq-bayar" class="hidden">
+        <details><summary>Metode pembayaran apa saja? <i class="fa-solid fa-chevron-down"></i></summary><p>Pendaftaran hanya via QRIS. Pencairan hadiah via DANA.</p></details>
+        <details><summary>Bagaimana jika turnamen batal? <i class="fa-solid fa-chevron-down"></i></summary><p>Dana akan dikembalikan 100% ke Saldo akun kamu (bisa ditarik ke DANA).</p></details>
+        </div>
     </div>
-    <div class="sticker-grid hidden" id="stk-tour"></div>
-    <div class="live-box" id="stream-box" style="display:none; margin-top:20px; background:#111; border:1px solid #333; border-radius:12px; padding:20px; text-align:center;">
-      <div class="live-icon" style="font-size:2rem;color:var(--danger);margin-bottom:10px;animation:pulseRed 2s infinite;"><i class="fa-brands fa-youtube"></i></div>
-      <div class="live-text" style="font-family:'Orbitron',sans-serif;font-size:.8rem;color:#fff;font-weight:bold;">🔴 LIVE STREAMING</div>
-      <button class="btn btn-danger btn-sm" style="margin-top:15px;width:auto" onclick="openStream()">Tonton Live</button>
     </div>
-    <button class="btn" style="margin-top:20px" id="btn-reg" onclick="openRegister()">Daftar Sekarang</button>
-    <button class="btn btn-sec hidden" style="margin-top:10px" id="btn-wait" onclick="joinWaitlist()">Masuk Waiting List</button>
-  </div>
-</div>
 
-<!-- VIEW: MY TOURNAMENTS -->
-<div id="v-my-tour" class="view hidden">
-  <h2 class="title">Turnamen Saya</h2>
-  <div id="my-tour-list"></div>
-</div>
-
-<!-- VIEW: DASHBOARD -->
-<div id="v-dash" class="view hidden">
-  <h2 class="title">Dashboard Captain</h2>
-  <div class="id-card" id="tilt-card">
-    <div class="id-head">
-      <div class="av-wrap"><div class="av-ring"></div><div class="av"><i class="fa-solid fa-user-ninja"></i></div></div>
-      <div class="id-info">
-        <h3 id="dash-user">Memuat... <span class="tier">🥇 Gold</span></h3>
-        <p id="dash-email">...</p>
-      </div>
+    <!-- VIEW: DETAIL TURNAMEN -->
+    <div id="v-detail" class="view hidden">
+    <button class="btn btn-sec btn-sm" style="width:auto;margin-bottom:15px" onclick="nav('home')"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+    <div class="glass">
+        <img src="" class="detail-img" id="det-img" onerror="this.src='https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg'">
+        <h1 class="detail-title" id="det-title">-</h1>
+        <span class="status st-open" style="margin-bottom:15px" id="det-status">-</span>
+        <div id="det-offline" class="hidden" style="background:rgba(226,232,240,.1); border:1px solid var(--chrome); padding:10px; border-radius:8px; margin-bottom:15px;">
+        <p style="font-size:.8rem;color:var(--chrome);font-weight:bold;margin-bottom:5px;">📍 INFO LOKASI (OFFLINE)</p>
+        <p style="font-size:.8rem;color:#fff;" id="det-loc-name">-</p>
+        <p style="font-size:.75rem;color:var(--silver);margin-bottom:8px;" id="det-loc-addr">-</p>
+        <a href="#" id="det-loc-maps" target="_blank" class="btn btn-sm" style="background:#333;color:#fff;text-decoration:none;display:inline-block;"><i class="fa-solid fa-map-location-dot"></i> Buka Google Maps</a>
+        </div>
+        <div class="meta-grid">
+        <div class="meta-box"><span>Total Hadiah</span><strong id="det-prize">-</strong></div>
+        <div class="meta-box"><span>Biaya Masuk</span><strong id="det-fee">-</strong></div>
+        <div class="meta-box"><span>Slot Tersedia</span><strong id="det-slots">-</strong></div>
+        <div class="meta-box"><span>Jadwal Mulai</span><strong id="det-date">-</strong></div>
+        </div>
+        <div id="det-br">
+        <h3 class="title">Map Pool BR</h3>
+        <div class="map-pool" id="map-pool"></div>
+        </div>
+        <h3 class="title" style="margin-top:20px">Distribusi Hadiah</h3>
+        <div class="podium" id="podium-container" style="flex-wrap: wrap; height: auto; min-height: 150px; align-items: flex-end;"></div>
+        <h3 class="title">Peserta</h3>
+        <div class="part-list" id="part-list"></div>
+        <h3 class="title" style="margin-top:20px"><i class="fa-solid fa-comments"></i> Live Chat Turnamen</h3>
+        <div class="chat-box" id="chat-tour"><p style="text-align:center;color:var(--muted);font-size:.8rem">Memuat chat...</p></div>
+        <div class="chat-input">
+        <input type="text" id="chat-tour-in" placeholder="Ketik pesan..." onkeypress="if(event.key==='Enter')sendTourChat()">
+        <button class="stk-btn" onclick="toggleSticker('tour')"><i class="fa-solid fa-face-smile"></i></button>
+        <button class="chat-btn" onclick="sendTourChat()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+        <div class="sticker-grid hidden" id="stk-tour"></div>
+        <div class="live-box" id="stream-box" style="display:none; margin-top:20px; background:#111; border:1px solid #333; border-radius:12px; padding:20px; text-align:center;">
+        <div class="live-icon" style="font-size:2rem;color:var(--danger);margin-bottom:10px;animation:pulseRed 2s infinite;"><i class="fa-brands fa-youtube"></i></div>
+        <div class="live-text" style="font-family:'Orbitron',sans-serif;font-size:.8rem;color:#fff;font-weight:bold;">🔴 LIVE STREAMING</div>
+        <button class="btn btn-danger btn-sm" style="margin-top:15px;width:auto" onclick="openStream()">Tonton Live</button>
+        </div>
+        <button class="btn" style="margin-top:20px" id="btn-reg" onclick="openRegister()">Daftar Sekarang</button>
+        <button class="btn btn-sec hidden" style="margin-top:10px" id="btn-wait" onclick="joinWaitlist()">Masuk Waiting List</button>
     </div>
-    <div class="id-body">
-      <div class="id-stat">
-        <span>Saldo</span>
-        <strong id="dash-saldo">Rp 0</strong>
-        <button class="btn btn-sm" style="width:auto;padding:4px 8px;font-size:.6rem;margin-top:5px" onclick="openWdSaldo()">Tarik Saldo</button>
-      </div>
-      <div class="id-stat"><span>Total Tim</span><strong id="dash-teams">0 Tim</strong></div>
-      <div class="id-stat"><span>DANA</span><strong id="dash-dana">Belum diisi</strong></div>
-      <div class="id-stat"><span>Status</span><strong style="color:var(--success)">Aktif</strong></div>
     </div>
-  </div>
 
-  <div class="glass" style="padding:15px">
-    <h3 class="title" style="font-size:.95rem"><i class="fa-solid fa-plus"></i> Buat Tim Baru</h3>
-    <div class="f-group"><input type="text" id="new-team-name" placeholder="Nama Tim (Wajib)"></div>
-    <div class="f-group"><input type="text" id="new-team-desc" placeholder="Deskripsi (Opsional)"></div>
-    <div class="f-group"><label>Upload Logo Tim</label><input type="file" id="new-team-logo" accept="image/*"></div>
-    <button class="btn btn-sm" onclick="createTeam(this)">Simpan Tim</button>
-  </div>
+    <!-- VIEW: MY TOURNAMENTS -->
+    <div id="v-my-tour" class="view hidden">
+    <h2 class="title">Turnamen Saya</h2>
+    <div id="my-tour-list"></div>
+    </div>
 
-  <div class="glass">
-    <h3 class="title" style="font-size:.95rem"><i class="fa-solid fa-shield-halved"></i> Tim Saya</h3>
-    <ul id="team-list" style="list-style:none"></ul>
-  </div>
+    <!-- VIEW: DASHBOARD -->
+    <div id="v-dash" class="view hidden">
+    <h2 class="title">Dashboard Captain</h2>
+    <div class="id-card" id="tilt-card">
+        <div class="id-head">
+        <div class="av-wrap"><div class="av-ring"></div><div class="av"><i class="fa-solid fa-user-ninja"></i></div></div>
+        <div class="id-info">
+            <h3 id="dash-user">Memuat... <span class="tier">🥇 Gold</span></h3>
+            <p id="dash-email">...</p>
+        </div>
+        </div>
+        <div class="id-body">
+        <div class="id-stat">
+            <span>Saldo</span>
+            <strong id="dash-saldo">Rp 0</strong>
+            <div style="display:flex; gap:5px; margin-top:5px;">
+            <button class="btn btn-sm" style="width:auto;padding:4px 8px;font-size:.6rem;" onclick="openWdSaldo()">Tarik</button>
+            <button class="btn btn-sm" style="width:auto;padding:4px 8px;font-size:.6rem; background:var(--success); color:#fff; border:none;" onclick="openTopUp()">Isi Saldo</button>
+            </div>
+        </div>
+        <div class="id-stat"><span>Total Tim</span><strong id="dash-teams">0 Tim</strong></div>
+        <div class="id-stat"><span>DANA</span><strong id="dash-dana">Belum diisi</strong></div>
+        <div class="id-stat"><span>Status</span><strong style="color:var(--success)">Aktif</strong></div>
+        </div>
+    </div>
 
-  <div class="glass hidden" id="sec-roster">
+    <div class="glass" style="padding:15px">
+        <h3 class="title" style="font-size:.95rem"><i class="fa-solid fa-plus"></i> Buat Tim Baru</h3>
+        <div class="f-group"><input type="text" id="new-team-name" placeholder="Nama Tim (Wajib)"></div>
+        <div class="f-group"><input type="text" id="new-team-desc" placeholder="Deskripsi (Opsional)"></div>
+        <div class="f-group"><label>Upload Logo Tim</label><input type="file" id="new-team-logo" accept="image/*"></div>
+        <button class="btn btn-sm" onclick="createTeam(this)">Simpan Tim</button>
+    </div>
+
+    <div class="glass">
+        <h3 class="title" style="font-size:.95rem"><i class="fa-solid fa-shield-halved"></i> Tim Saya</h3>
+        <ul id="team-list" style="list-style:none"></ul>
+    </div>
+
+    <div class="glass hidden" id="sec-roster">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+        <h3 class="title" style="margin:0;border:none;font-size:.95rem"><i class="fa-solid fa-users"></i> <span id="ros-team">Roster</span></h3>
+        <button class="btn btn-sm btn-danger" onclick="closeRos()">Tutup</button>
+        </div>
+        <div style="background:#111;padding:10px;border-radius:8px;margin-bottom:15px;border:1px solid #333">
+        <div class="f-group"><input type="text" id="new-pl-nick" placeholder="Nickname FF"></div>
+        <div class="f-group"><input type="text" id="new-pl-uid" placeholder="UID FF"></div>
+        <div class="f-group"><select id="new-pl-role"><option value="main">Main (Max 4)</option><option value="sub">Cadangan (Max 2)</option></select></div>
+        <button class="btn btn-sm" style="background:var(--success);color:#fff" onclick="addPlayer(this)">Tambah Pemain</button>
+        </div>
+        <div class="ros-grid" id="pl-list"></div>
+    </div>
+
+    <div class="glass" style="padding:15px">
+        <h3 class="title" style="font-size:.95rem"><i class="fa-solid fa-wallet"></i> Saldo & DANA</h3>
+        <div class="f-group"><label>Nomor DANA</label><input type="text" id="dash-dana-num" placeholder="08xxxxxxxxxx"></div>
+        <div class="f-group"><label>Nama Pemilik DANA</label><input type="text" id="dash-dana-name" placeholder="Sesuai akun DANA"></div>
+        <button class="btn btn-sm" onclick="saveDana(this)">Simpan DANA</button>
+        <button class="btn btn-sm btn-sec" style="margin-top:10px" onclick="openLedger()">Riwayat Transaksi</button>
+        <button class="btn btn-sm btn-sec" style="margin-top:10px" onclick="openPayouts()">Riwayat Hadiah</button>
+    </div>
+    </div>
+
+    <!-- VIEW: SCRIM MATCH (MONEY MATCH) -->
+    <div id="v-scrim" class="view hidden">
+    <h2 class="title">🎯 Scrim / Money Match</h2>
+    
+    <div class="glass">
+        <h3 class="title" style="font-size:.95rem">Buat Tantangan</h3>
+        <div class="f-group">
+        <label>Format Game</label>
+        <select id="scrim-format">
+            <option value="BR">Battle Royale (BR)</option>
+            <option value="CS">Clash Squad (CS)</option>
+        </select>
+        </div>
+        <div class="f-group">
+        <label>Taruhan (Rp / Tim)</label>
+        <input type="number" id="scrim-bet" placeholder="Contoh: 20000">
+        </div>
+        <button class="btn" onclick="createScrim(this)">Buat Tantangan</button>
+    </div>
+
+    <div class="glass">
+        <h3 class="title" style="font-size:.95rem">Cari Lawan Tanding</h3>
+        <div id="scrim-list">
+        <p style="text-align:center; color:var(--muted); font-size:.8rem;">Memuat data...</p>
+        </div>
+    </div>
+    </div>
+
+    <!-- VIEW: REGISTER WIZARD -->
+    <div id="v-reg" class="view hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
-      <h3 class="title" style="margin:0;border:none;font-size:.95rem"><i class="fa-solid fa-users"></i> <span id="ros-team">Roster</span></h3>
-      <button class="btn btn-sm btn-danger" onclick="closeRos()">Tutup</button>
+        <h2 class="title" style="margin:0;border:none">Pendaftaran</h2>
+        <button class="btn btn-sm btn-danger" onclick="nav('home')">Batal</button>
     </div>
-    <div style="background:#111;padding:10px;border-radius:8px;margin-bottom:15px;border:1px solid #333">
-      <div class="f-group"><input type="text" id="new-pl-nick" placeholder="Nickname FF"></div>
-      <div class="f-group"><input type="text" id="new-pl-uid" placeholder="UID FF"></div>
-      <div class="f-group"><select id="new-pl-role"><option value="main">Main (Max 4)</option><option value="sub">Cadangan (Max 2)</option></select></div>
-      <button class="btn btn-sm" style="background:var(--success);color:#fff" onclick="addPlayer(this)">Tambah Pemain</button>
+    <div class="stepper">
+        <div class="step active" id="s1">1</div><div class="step" id="s2">2</div><div class="step" id="s3">3</div><div class="step" id="s4">4</div>
     </div>
-    <div class="ros-grid" id="pl-list"></div>
-  </div>
-
-  <div class="glass" style="padding:15px">
-    <h3 class="title" style="font-size:.95rem"><i class="fa-solid fa-wallet"></i> Saldo & DANA</h3>
-    <div class="f-group"><label>Nomor DANA</label><input type="text" id="dash-dana-num" placeholder="08xxxxxxxxxx"></div>
-    <div class="f-group"><label>Nama Pemilik DANA</label><input type="text" id="dash-dana-name" placeholder="Sesuai akun DANA"></div>
-    <button class="btn btn-sm" onclick="saveDana(this)">Simpan DANA</button>
-    <button class="btn btn-sm btn-sec" style="margin-top:10px" onclick="openLedger()">Riwayat Transaksi</button>
-    <button class="btn btn-sm btn-sec" style="margin-top:10px" onclick="openPayouts()">Riwayat Hadiah</button>
-    <button class="btn btn-sm" style="margin-top:10px; background:#333; color:var(--chrome);" onclick="nav('scrim')">🎯 Cari Lawan (Scrim)</button>
-  </div>
-</div>
-
-<!-- VIEW: SCRIM MATCH (MONEY MATCH) -->
-<div id="v-scrim" class="view hidden">
-  <h2 class="title">🎯 Scrim / Money Match</h2>
-  
-  <div class="glass">
-    <h3 class="title" style="font-size:.95rem">Buat Tantangan</h3>
-    <div class="f-group">
-      <label>Format Game</label>
-      <select id="scrim-format">
-        <option value="BR">Battle Royale (BR)</option>
-        <option value="CS">Clash Squad (CS)</option>
-      </select>
+    <div class="glass">
+        <div id="rs1">
+        <h3 style="color:var(--chrome);margin-bottom:15px;font-family:'Rajdhani',sans-serif">1. Data DANA</h3>
+        <div class="f-group"><label>Nomor DANA</label><input type="text" id="reg-dana-num" placeholder="08xxxxxxxxxx"></div>
+        <div class="f-group"><label>Nama Pemilik</label><input type="text" id="reg-dana-name" placeholder="Nama Sesuai Akun DANA"></div>
+        <p style="font-size:0.7rem;color:var(--muted);margin-bottom:15px">*Data diambil otomatis dari profil. Bisa diedit di sini jika belum ada.</p>
+        <button class="btn" onclick="stepReg(2)">Lanjut <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+        <div id="rs2" class="hidden">
+        <h3 style="color:var(--chrome);margin-bottom:15px;font-family:'Rajdhani',sans-serif">2. Pilih Tim</h3>
+        <div id="reg-team-list"></div>
+        <div id="reg-team-empty" class="hidden" style="text-align:center;padding:20px">
+            <p style="color:var(--danger);margin-bottom:10px">Kamu belum punya tim.</p>
+            <button class="btn btn-sm" onclick="nav('dash')">Buat Tim Dulu</button>
+        </div>
+        <button class="btn hidden" id="rs2-next" style="margin-top:15px" onclick="stepReg(3)">Lanjut <i class="fa-solid fa-arrow-right"></i></button>
+        <button class="btn btn-sec" style="margin-top:10px" onclick="stepReg(1)">Kembali</button>
+        </div>
+        <div id="rs3" class="hidden">
+        <h3 style="color:var(--chrome);margin-bottom:15px;font-family:'Rajdhani',sans-serif">3. Konfirmasi Roster</h3>
+        <div id="reg-ros-fields"></div>
+        <button class="btn" style="margin-top:15px" onclick="stepReg(4)">Lanjut Bayar <i class="fa-solid fa-arrow-right"></i></button>
+        <button class="btn btn-sec" style="margin-top:10px" onclick="stepReg(2)">Kembali</button>
+        </div>
+        <div id="rs4" class="hidden">
+        <h3 style="color:var(--chrome);margin-bottom:15px;font-family:'Rajdhani',sans-serif">4. Pembayaran</h3>
+        <div class="receipt" id="reg-receipt"></div>
+        <div class="timer" id="qr-timer">05:00</div>
+        <div id="qr-img" style="text-align:center;margin-bottom:15px"></div>
+        <div class="f-group"><label>Upload Bukti Transfer</label><input type="file" id="reg-proof" accept="image/*"></div>
+        <button class="btn" id="btn-pay" onclick="finishReg(this)">Konfirmasi Bayar</button>
+        <button class="btn btn-sec" style="margin-top:10px" onclick="stepReg(3)">Kembali</button>
+        </div>
     </div>
-    <div class="f-group">
-      <label>Taruhan (Rp / Tim)</label>
-      <input type="number" id="scrim-bet" placeholder="Contoh: 20000">
     </div>
-    <button class="btn" onclick="createScrim(this)">Buat Tantangan</button>
-  </div>
 
-  <div class="glass">
-    <h3 class="title" style="font-size:.95rem">Cari Lawan Tanding</h3>
-    <div id="scrim-list">
-      <p style="text-align:center; color:var(--muted); font-size:.8rem;">Memuat data...</p>
+    <!-- VIEW: NOTIFICATIONS -->
+    <div id="v-notif" class="view hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+        <h2 class="title" style="margin:0;border:none">Notifikasi</h2>
+        <button class="btn btn-sm btn-sec" onclick="markAllRead()">Tandai Dibaca</button>
     </div>
-  </div>
-</div>
-
-<!-- VIEW: REGISTER WIZARD -->
-<div id="v-reg" class="view hidden">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
-    <h2 class="title" style="margin:0;border:none">Pendaftaran</h2>
-    <button class="btn btn-sm btn-danger" onclick="nav('home')">Batal</button>
-  </div>
-  <div class="stepper">
-    <div class="step active" id="s1">1</div><div class="step" id="s2">2</div><div class="step" id="s3">3</div><div class="step" id="s4">4</div>
-  </div>
-  <div class="glass">
-    <div id="rs1">
-      <h3 style="color:var(--chrome);margin-bottom:15px;font-family:'Rajdhani',sans-serif">1. Data DANA</h3>
-      <div class="f-group"><label>Nomor DANA</label><input type="text" id="reg-dana-num" placeholder="08xxxxxxxxxx"></div>
-      <div class="f-group"><label>Nama Pemilik</label><input type="text" id="reg-dana-name" placeholder="Nama Sesuai Akun DANA"></div>
-      <p style="font-size:0.7rem;color:var(--muted);margin-bottom:15px">*Data diambil otomatis dari profil. Bisa diedit di sini jika belum ada.</p>
-      <button class="btn" onclick="stepReg(2)">Lanjut <i class="fa-solid fa-arrow-right"></i></button>
+    <div class="glass" style="padding:0" id="notif-list"></div>
     </div>
-    <div id="rs2" class="hidden">
-      <h3 style="color:var(--chrome);margin-bottom:15px;font-family:'Rajdhani',sans-serif">2. Pilih Tim</h3>
-      <div id="reg-team-list"></div>
-      <div id="reg-team-empty" class="hidden" style="text-align:center;padding:20px">
-        <p style="color:var(--danger);margin-bottom:10px">Kamu belum punya tim.</p>
-        <button class="btn btn-sm" onclick="nav('dash')">Buat Tim Dulu</button>
-      </div>
-      <button class="btn hidden" id="rs2-next" style="margin-top:15px" onclick="stepReg(3)">Lanjut <i class="fa-solid fa-arrow-right"></i></button>
-      <button class="btn btn-sec" style="margin-top:10px" onclick="stepReg(1)">Kembali</button>
+
+    <!-- VIEW: AUTH -->
+    <div id="v-auth" class="view hidden">
+    <div style="text-align:center;margin:20px 0">
+        <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" style="width:80px;margin-bottom:10px" onerror="this.style.display='none'">
+        <h2 class="title" style="justify-content:center;border:none">CAPTAIN ACCESS</h2>
     </div>
-    <div id="rs3" class="hidden">
-      <h3 style="color:var(--chrome);margin-bottom:15px;font-family:'Rajdhani',sans-serif">3. Konfirmasi Roster</h3>
-      <div id="reg-ros-fields"></div>
-      <button class="btn" style="margin-top:15px" onclick="stepReg(4)">Lanjut Bayar <i class="fa-solid fa-arrow-right"></i></button>
-      <button class="btn btn-sec" style="margin-top:10px" onclick="stepReg(2)">Kembali</button>
+    <div class="glass" style="max-width:400px;margin:0 auto">
+        <div class="tabs" style="margin-bottom:15px">
+        <button class="tab active" id="tab-log" onclick="switchAuth('login')">Login</button>
+        <button class="tab" id="tab-reg" onclick="switchAuth('register')">Register</button>
+        </div>
+        <div id="auth-login">
+        <div class="f-group"><label>Email</label><input type="email" id="log-email" placeholder="email@example.com"></div>
+        <div class="f-group"><label>Password</label><input type="password" id="log-pass" placeholder="********"></div>
+        <button class="btn" onclick="doLogin(this)">Masuk</button>
+        <button class="btn btn-sec" style="margin-top:10px" onclick="forgotPass()">Lupa Password?</button>
+        </div>
+        <div id="auth-reg" class="hidden">
+        <div class="f-group"><label>Username</label><input type="text" id="reg-user" placeholder="Username"></div>
+        <div class="f-group"><label>Email</label><input type="email" id="reg-email" placeholder="email@example.com"></div>
+        <div class="f-group"><label>Password (Min 6)</label><input type="password" id="reg-pass" placeholder="********"></div>
+        <button class="btn" onclick="doRegister(this)">Daftar Akun</button>
+        </div>
     </div>
-    <div id="rs4" class="hidden">
-      <h3 style="color:var(--chrome);margin-bottom:15px;font-family:'Rajdhani',sans-serif">4. Pembayaran</h3>
-      <div class="receipt" id="reg-receipt"></div>
-      <div class="timer" id="qr-timer">05:00</div>
-      <div id="qr-img" style="text-align:center;margin-bottom:15px"></div>
-      <div class="f-group"><label>Upload Bukti Transfer</label><input type="file" id="reg-proof" accept="image/*"></div>
-      <button class="btn" id="btn-pay" onclick="finishReg(this)">Konfirmasi Bayar</button>
-      <button class="btn btn-sec" style="margin-top:10px" onclick="stepReg(3)">Kembali</button>
     </div>
-  </div>
-</div>
 
-<!-- VIEW: NOTIFICATIONS -->
-<div id="v-notif" class="view hidden">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
-    <h2 class="title" style="margin:0;border:none">Notifikasi</h2>
-    <button class="btn btn-sm btn-sec" onclick="markAllRead()">Tandai Dibaca</button>
-  </div>
-  <div class="glass" style="padding:0" id="notif-list"></div>
-</div>
-
-<!-- VIEW: AUTH -->
-<div id="v-auth" class="view hidden">
-  <div style="text-align:center;margin:20px 0">
-    <img src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" style="width:80px;margin-bottom:10px" onerror="this.style.display='none'">
-    <h2 class="title" style="justify-content:center;border:none">CAPTAIN ACCESS</h2>
-  </div>
-  <div class="glass" style="max-width:400px;margin:0 auto">
-    <div class="tabs" style="margin-bottom:15px">
-      <button class="tab active" id="tab-log" onclick="switchAuth('login')">Login</button>
-      <button class="tab" id="tab-reg" onclick="switchAuth('register')">Register</button>
+    <!-- VIEW: 404 -->
+    <div id="v-404" class="view hidden">
+    <h1 style="font-family:'Orbitron';font-size:6rem;color:var(--danger);text-align:center;padding-top:50px">404</h1>
+    <h2 style="color:#fff;text-align:center;font-family:'Orbitron',sans-serif">AREA RESTRICTED</h2>
+    <div style="text-align:center;margin-top:20px"><button class="btn btn-danger btn-sm" onclick="nav('home')">Kembali</button></div>
     </div>
-    <div id="auth-login">
-      <div class="f-group"><label>Email</label><input type="email" id="log-email" placeholder="email@example.com"></div>
-      <div class="f-group"><label>Password</label><input type="password" id="log-pass" placeholder="********"></div>
-      <button class="btn" onclick="doLogin(this)">Masuk</button>
-      <button class="btn btn-sec" style="margin-top:10px" onclick="forgotPass()">Lupa Password?</button>
+
+    </div><!-- /container -->
+
+    <!-- BOTTOM NAV -->
+    <div class="btm-nav hidden" id="btm-nav">
+    <button class="active" data-v="home" onclick="nav('home')"><i class="fa-solid fa-house"></i>Home</button>
+    <button data-v="my-tour" onclick="nav('my-tour')"><i class="fa-solid fa-list-check"></i>Turnamen</button>
+    <button data-v="scrim" onclick="nav('scrim')"><i class="fa-solid fa-crosshairs"></i>Scrim</button>
+    <button data-v="notif" onclick="nav('notif')"><i class="fa-solid fa-bell"></i>Notif</button>
+    <button data-v="dash" onclick="nav('dash')"><i class="fa-solid fa-circle-user"></i>Profil</button>
     </div>
-    <div id="auth-reg" class="hidden">
-      <div class="f-group"><label>Username</label><input type="text" id="reg-user" placeholder="Username"></div>
-      <div class="f-group"><label>Email</label><input type="email" id="reg-email" placeholder="email@example.com"></div>
-      <div class="f-group"><label>Password (Min 6)</label><input type="password" id="reg-pass" placeholder="********"></div>
-      <button class="btn" onclick="doRegister(this)">Daftar Akun</button>
+
+    <!-- FLOATING -->
+    <a href="https://wa.me/6283848591646" target="_blank" class="wa-float"><i class="fa-brands fa-whatsapp"></i></a>
+    <div class="chat-float" onclick="openGlobalChat()"><i class="fa-solid fa-comments"></i></div>
+
+    <!-- MODAL: GLOBAL CHAT -->
+    <div id="m-chat" class="modal" onclick="if(event.target===this)closeGlobalChat()">
+    <div class="m-box" style="height:85vh;display:flex;flex-direction:column">
+        <i class="fa-solid fa-xmark m-close" onclick="closeGlobalChat()"></i>
+        <h3><i class="fa-solid fa-globe"></i> Chat Global</h3>
+        <div class="chat-box" id="global-chat" style="flex:1;height:auto;margin-bottom:10px"></div>
+        <div class="chat-input">
+        <input type="text" id="global-in" placeholder="Ketik pesan..." onkeypress="if(event.key==='Enter')sendGlobalChat()">
+        <button class="stk-btn" onclick="toggleSticker('global')"><i class="fa-solid fa-face-smile"></i></button>
+        <button class="chat-btn" onclick="sendGlobalChat()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+        <div class="sticker-grid hidden" id="stk-global"></div>
     </div>
-  </div>
-</div>
-
-<!-- VIEW: 404 -->
-<div id="v-404" class="view hidden">
-  <h1 style="font-family:'Orbitron';font-size:6rem;color:var(--danger);text-align:center;padding-top:50px">404</h1>
-  <h2 style="color:#fff;text-align:center;font-family:'Orbitron',sans-serif">AREA RESTRICTED</h2>
-  <div style="text-align:center;margin-top:20px"><button class="btn btn-danger btn-sm" onclick="nav('home')">Kembali</button></div>
-</div>
-
-</div><!-- /container -->
-
-<!-- BOTTOM NAV -->
-<div class="btm-nav hidden" id="btm-nav">
-  <button class="active" data-v="home" onclick="nav('home')"><i class="fa-solid fa-house"></i>Home</button>
-  <button data-v="my-tour" onclick="nav('my-tour')"><i class="fa-solid fa-list-check"></i>Turnamen</button>
-  <button data-v="notif" onclick="nav('notif')"><i class="fa-solid fa-bell"></i>Notif</button>
-  <button data-v="dash" onclick="nav('dash')"><i class="fa-solid fa-circle-user"></i>Profil</button>
-</div>
-
-<!-- FLOATING -->
-<a href="https://wa.me/6283848591646" target="_blank" class="wa-float"><i class="fa-brands fa-whatsapp"></i></a>
-<div class="chat-float" onclick="openGlobalChat()"><i class="fa-solid fa-comments"></i></div>
-
-<!-- MODAL: GLOBAL CHAT -->
-<div id="m-chat" class="modal" onclick="if(event.target===this)closeGlobalChat()">
-  <div class="m-box" style="height:85vh;display:flex;flex-direction:column">
-    <i class="fa-solid fa-xmark m-close" onclick="closeGlobalChat()"></i>
-    <h3><i class="fa-solid fa-globe"></i> Chat Global</h3>
-    <div class="chat-box" id="global-chat" style="flex:1;height:auto;margin-bottom:10px"></div>
-    <div class="chat-input">
-      <input type="text" id="global-in" placeholder="Ketik pesan..." onkeypress="if(event.key==='Enter')sendGlobalChat()">
-      <button class="stk-btn" onclick="toggleSticker('global')"><i class="fa-solid fa-face-smile"></i></button>
-      <button class="chat-btn" onclick="sendGlobalChat()"><i class="fa-solid fa-paper-plane"></i></button>
     </div>
-    <div class="sticker-grid hidden" id="stk-global"></div>
-  </div>
-</div>
 
-<!-- MODAL: WITHDRAW SALDO -->
-<div id="m-wd" class="modal" onclick="if(event.target===this)closeModal('m-wd')">
-  <div class="m-box">
-    <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-wd')"></i>
-    <h3><i class="fa-solid fa-money-bill-transfer"></i> Tarik Saldo</h3>
-    <div class="f-group"><label>Nominal (Rp)</label><input type="number" id="wd-amt" placeholder="Min 10.000"></div>
-    <div class="f-group"><label>Nomor DANA</label><input type="text" id="wd-dana-num" readonly></div>
-    <button class="btn" onclick="submitWdSaldo()">Ajukan Penarikan</button>
-    <button class="btn btn-sec" style="margin-top:10px;background:#25D366;color:#fff;border:none" onclick="openWAWd()"><i class="fa-brands fa-whatsapp"></i> WA Admin</button>
-  </div>
-</div>
+    <!-- MODAL: WITHDRAW SALDO -->
+    <div id="m-wd" class="modal" onclick="if(event.target===this)closeModal('m-wd')">
+    <div class="m-box">
+        <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-wd')"></i>
+        <h3><i class="fa-solid fa-money-bill-transfer"></i> Tarik Saldo</h3>
+        <div class="f-group"><label>Nominal (Rp)</label><input type="number" id="wd-amt" placeholder="Min 10.000"></div>
+        <div class="f-group"><label>Nomor DANA</label><input type="text" id="wd-dana-num" readonly></div>
+        <button class="btn" onclick="submitWdSaldo()">Ajukan Penarikan</button>
+        <button class="btn btn-sec" style="margin-top:10px;background:#25D366;color:#fff;border:none" onclick="openWAWd()"><i class="fa-brands fa-whatsapp"></i> WA Admin</button>
+    </div>
+    </div>
 
-<!-- MODAL: EDIT PLAYER -->
-<div id="m-edit" class="modal" onclick="if(event.target===this)closeModal('m-edit')">
-  <div class="m-box">
-    <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-edit')"></i>
-    <h3><i class="fa-solid fa-user-pen"></i> Edit Pemain</h3>
-    <input type="hidden" id="ed-id">
-    <div class="f-group"><label>Nickname</label><input type="text" id="ed-nick"></div>
-    <div class="f-group"><label>UID</label><input type="text" id="ed-uid"></div>
-    <div class="f-group"><label>Role</label><select id="ed-role"><option value="main">Main</option><option value="sub">Cadangan</option></select></div>
-    <button class="btn" onclick="saveEditPlayer(this)">Simpan Perubahan</button>
-    <button class="btn btn-danger" style="margin-top:10px" onclick="delPlayer(this)">Hapus Pemain</button>
-  </div>
-</div>
+    <!-- MODAL: TOP UP SALDO -->
+    <div id="m-topup" class="modal" onclick="if(event.target===this)closeModal('m-topup')">
+    <div class="m-box">
+        <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-topup')"></i>
+        <h3><i class="fa-solid fa-wallet"></i> Isi Saldo</h3>
+        <div class="f-group"><label>Nominal (Min Rp 10.000)</label><input type="number" id="tu-amt" placeholder="Contoh: 50000" oninput="document.getElementById('tu-qr-container').style.display = this.value >= 10000 ? 'block' : 'none'"></div>
+        
+        <div class="qris-box" id="tu-qr-container" style="display:none">
+            <p style="font-size:0.75rem;color:var(--muted);margin-bottom:5px">Scan QRIS di bawah ini:</p>
+            <img src="" id="tu-qr-img">
+            <br>
+            <a id="tu-dl-btn" class="download-btn" download="QRIS-GHT.png"><i class="fa-solid fa-download"></i> Download QR</a>
+        </div>
+        
+        <div class="f-group" style="margin-top:15px"><label>Upload Bukti Transfer</label><input type="file" id="tu-proof" accept="image/*"></div>
+        <button class="btn" onclick="submitTopup(this)">Ajukan Isi Saldo</button>
+    </div>
+    </div>
 
-<!-- MODAL: WITHDRAW TURNAMEN -->
-<div id="m-wd-tour" class="modal" onclick="if(event.target===this)closeModal('m-wd-tour')">
-  <div class="m-box">
-    <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-wd-tour')"></i>
-    <h3><i class="fa-solid fa-right-from-bracket"></i> Mundur Turnamen</h3>
-    <div class="f-group"><label>Alasan</label><textarea id="wd-reason" rows="3"></textarea></div>
-    <button class="btn btn-danger" onclick="submitWdTour(this)">Ajukan Mundur</button>
-  </div>
-</div>
+    <!-- MODAL: EDIT PLAYER -->
+    <div id="m-edit" class="modal" onclick="if(event.target===this)closeModal('m-edit')">
+    <div class="m-box">
+        <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-edit')"></i>
+        <h3><i class="fa-solid fa-user-pen"></i> Edit Pemain</h3>
+        <input type="hidden" id="ed-id">
+        <div class="f-group"><label>Nickname</label><input type="text" id="ed-nick"></div>
+        <div class="f-group"><label>UID</label><input type="text" id="ed-uid"></div>
+        <div class="f-group"><label>Role</label><select id="ed-role"><option value="main">Main</option><option value="sub">Cadangan</option></select></div>
+        <button class="btn" onclick="saveEditPlayer(this)">Simpan Perubahan</button>
+        <button class="btn btn-danger" style="margin-top:10px" onclick="delPlayer(this)">Hapus Pemain</button>
+    </div>
+    </div>
 
-<!-- MODAL: E-TICKET -->
-<div id="m-ticket" class="modal" onclick="if(event.target===this)closeModal('m-ticket')">
-  <div class="m-box">
-    <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-ticket')"></i>
-    <h3><i class="fa-solid fa-ticket"></i> E-Ticket</h3>
-    <div id="ticket-content"></div>
-    <button class="btn" style="margin-top:15px" onclick="closeModal('m-ticket')">Tutup</button>
-  </div>
-</div>
+    <!-- MODAL: WITHDRAW TURNAMEN -->
+    <div id="m-wd-tour" class="modal" onclick="if(event.target===this)closeModal('m-wd-tour')">
+    <div class="m-box">
+        <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-wd-tour')"></i>
+        <h3><i class="fa-solid fa-right-from-bracket"></i> Mundur Turnamen</h3>
+        <div class="f-group"><label>Alasan</label><textarea id="wd-reason" rows="3"></textarea></div>
+        <button class="btn btn-danger" onclick="submitWdTour(this)">Ajukan Mundur</button>
+    </div>
+    </div>
 
-<!-- MODAL: LEDGER & PAYOUTS -->
-<div id="m-ledger" class="modal" onclick="if(event.target===this)closeModal('m-ledger')">
-  <div class="m-box"><i class="fa-solid fa-xmark m-close" onclick="closeModal('m-ledger')"></i><h3>Riwayat Saldo</h3><div id="ledger-list"></div></div>
-</div>
-<div id="m-payout" class="modal" onclick="if(event.target===this)closeModal('m-payout')">
-  <div class="m-box"><i class="fa-solid fa-xmark m-close" onclick="closeModal('m-payout')"></i><h3>Riwayat Hadiah</h3><div id="payout-list"></div></div>
-</div>
+    <!-- MODAL: E-TICKET -->
+    <div id="m-ticket" class="modal" onclick="if(event.target===this)closeModal('m-ticket')">
+    <div class="m-box">
+        <i class="fa-solid fa-xmark m-close" onclick="closeModal('m-ticket')"></i>
+        <h3><i class="fa-solid fa-ticket"></i> E-Ticket</h3>
+        <div id="ticket-content"></div>
+        <button class="btn" style="margin-top:15px" onclick="closeModal('m-ticket')">Tutup</button>
+    </div>
+    </div>
+
+    <!-- MODAL: LEDGER & PAYOUTS -->
+    <div id="m-ledger" class="modal" onclick="if(event.target===this)closeModal('m-ledger')">
+    <div class="m-box"><i class="fa-solid fa-xmark m-close" onclick="closeModal('m-ledger')"></i><h3>Riwayat Saldo</h3><div id="ledger-list"></div></div>
+    </div>
+    <div id="m-payout" class="modal" onclick="if(event.target===this)closeModal('m-payout')">
+    <div class="m-box"><i class="fa-solid fa-xmark m-close" onclick="closeModal('m-payout')"></i><h3>Riwayat Hadiah</h3><div id="payout-list"></div></div>
+    </div>
+
+</div> <!-- End of main-content -->
 
 <script>
+  // =========================================================
+// 1. INTRO G & H (SINGKAT & CEPAT)
+// =========================================================
+const introCanvas = document.getElementById('intro-canvas');
+const introCtx = introCanvas.getContext('2d');
+let introW, introH;
+function resizeIntro() { introW = introCanvas.width = window.innerWidth; introH = introCanvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeIntro); resizeIntro();
+
+let introT = 0, introRaf = 0;
+let introStart = performance.now();
+const INTRO_DURATION = 6.5; 
+
+const lerp = (a, b, p) => a + (b - a) * p;
+
+function introLimb(x1, y1, x2, y2, w) { introCtx.lineCap = 'round'; introCtx.strokeStyle = '#0a0a0a'; introCtx.lineWidth = w + 5; introCtx.beginPath(); introCtx.moveTo(x1, y1); introCtx.lineTo(x2, y2); introCtx.stroke(); introCtx.strokeStyle = '#e2e8f0'; introCtx.lineWidth = w; introCtx.stroke(); }
+function introEye(x, y, r, px, py, pr) { introCtx.fillStyle = '#fff'; introCtx.strokeStyle = '#000'; introCtx.lineWidth = 3; introCtx.beginPath(); introCtx.arc(x, y, r, 0, 7); introCtx.fill(); introCtx.stroke(); introCtx.fillStyle = '#000'; introCtx.beginPath(); introCtx.arc(x + px * (r - pr - 1), y + py * (r - pr - 1), pr, 0, 7); introCtx.fill(); }
+const CHROME = ['#ffffff', '#e2e8f0', '#7c8797', '#cbd5e1'];
+const grad = (y, s, c) => { const g = introCtx.createLinearGradient(0, y - s * .5, 0, y + s * .5); c.forEach((v, i) => g.addColorStop(i / (c.length - 1), v)); return g; };
+
+function introPerson(ch, x, y, o) {
+    introCtx.save(); introCtx.translate(x, y); introCtx.scale(o.sc, o.sc);
+    const sw = Math.sin(o.walk) * 20 * o.amp;
+    introLimb(-24, 56, -24 + sw, 100, 11); introLimb(24, 56, 24 - sw, 100, 11);
+    introCtx.fillStyle = '#0b0b0b'; introCtx.strokeStyle = '#e2e8f0'; introCtx.lineWidth = 2;
+    [-24 + sw, 24 - sw].forEach(fx => { introCtx.beginPath(); introCtx.ellipse(fx + 6, 102, 17, 7, 0, 0, 7); introCtx.fill(); introCtx.stroke(); });
+    const h = o.hands; introLimb(-56, 8, h[0], h[1], 10); introLimb(56, 8, h[2], h[3], 10);
+    introCtx.font = '900 160px Orbitron, sans-serif'; introCtx.textAlign = 'center'; introCtx.textBaseline = 'middle';
+    for (let i = 13; i > 0; i--) { introCtx.fillStyle = `rgb(${34 + i * 3},${42 + i * 3},${54 + i * 3})`; introCtx.fillText(ch, i * .8, i * .9); }
+    introCtx.lineWidth = 6; introCtx.strokeStyle = '#0a0a0a'; introCtx.strokeText(ch, 0, 0);
+    introCtx.shadowColor = 'rgba(0,229,255,.45)'; introCtx.shadowBlur = 18;
+    introCtx.fillStyle = grad(0, 150, CHROME); introCtx.fillText(ch, 0, 0); introCtx.shadowBlur = 0;
+    const s = o.sur, er = lerp(13, 17, s), pr = lerp(6, 3.2, s);
+    introEye(-19, -26, er, o.lx, o.ly, pr); introEye(19, -26, er, o.lx, o.ly, pr);
+    introCtx.restore();
+}
+function introGun(x, y, ang, rc, s) {
+    introCtx.save(); introCtx.translate(x + 80 * s, y + 25 * s); introCtx.scale(s, s); introCtx.rotate(ang); introCtx.translate(-rc, 0);
+    const r = (c, a, b, w, h) => { introCtx.fillStyle = c; introCtx.fillRect(a, b, w, h) };
+    r('#1b2330', -34, -5, 36, 16); r('#94a3b8', 0, -9, 52, 18); r('#e2e8f0', 0, -9, 52, 4); r('#334155', 52, -6, 66, 12); r('#64748b', 30, 8, 30, 9); r('#0b0f14', 118, -8, 7, 16);
+    introCtx.shadowColor = '#00e5ff'; introCtx.shadowBlur = 10; r('#00e5ff', 8, -1, 106, 3); introCtx.restore();
+}
+
+const logoImg = new Image();
+logoImg.src = 'https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png';
+
+function drawIntro() {
+    introCtx.clearRect(0, 0, introW, introH);
+    introT = (performance.now() - introStart) / 1000;
+
+    const cx = introW / 2, cy = introH / 2;
+
+    if (introT < 2.5) {
+        const pMasuk = Math.min(1, introT / 1.0);
+        introPerson('G', lerp(-200, introW*0.25, pMasuk), cy+40, { lx:1, ly:0, sur:0.2, walk: introT*15, amp: pMasuk<1?1:0, hands:[-72,50,80,25], sc:1 });
+        introGun(lerp(-200, introW*0.25, pMasuk), cy+40, 0, 0, 1);
+        introPerson('H', lerp(introW+200, introW*0.75, pMasuk), cy+40, { lx:-1, ly:0, sur:0.5, walk: introT*15, amp: pMasuk<1?1:0, hands:[-80,-68,80,-68], sc:1 });
+        
+        if (introT > 1.2 && introT < 1.8) {
+            const p = (introT - 1.2) / 0.6;
+            const beamGrad = introCtx.createLinearGradient(introW*0.25, cy+40, introW*0.75, cy+40);
+            beamGrad.addColorStop(0, 'rgba(255,90,0,0)');
+            beamGrad.addColorStop(0.5, 'rgba(255,255,255,1)');
+            beamGrad.addColorStop(1, 'rgba(255,90,0,0)');
+            introCtx.save(); introCtx.globalCompositeOperation = 'lighter';
+            introCtx.strokeStyle = beamGrad; introCtx.lineWidth = 30 * Math.sin(p * Math.PI);
+            introCtx.beginPath(); introCtx.moveTo(introW*0.25, cy+40); introCtx.lineTo(introW*0.75, cy+40); introCtx.stroke(); introCtx.restore();
+        }
+    } else if (introT >= 2.5 && introT < 5.0) {
+        const p = Math.min(1, (introT - 2.5) / 1.0);
+        const sc = 1 + Math.sin(p * Math.PI) * 0.1; 
+        const alpha = p;
+        
+        introCtx.save();
+        introCtx.globalAlpha = alpha;
+        introCtx.translate(cx, cy);
+        introCtx.scale(sc, sc);
+        introCtx.shadowColor = '#00e5ff';
+        introCtx.shadowBlur = 50;
+        
+        if (logoImg.complete) {
+            const size = Math.min(introW, introH) * 0.4;
+            introCtx.drawImage(logoImg, -size/2, -size/2, size, size);
+        }
+        introCtx.restore();
+    } else if (introT >= 5.0 && introT < INTRO_DURATION) {
+        const p = Math.min(1, (introT - 5.0) / 0.8);
+        introCtx.save();
+        introCtx.globalAlpha = p;
+        introCtx.font = `bold ${Math.min(introW, introH) * 0.08}px Orbitron, sans-serif`;
+        introCtx.textAlign = 'center'; introCtx.textBaseline = 'middle';
+        introCtx.fillStyle = '#e2e8f0'; introCtx.shadowColor = '#e2e8f0'; introCtx.shadowBlur = 30;
+        introCtx.fillText('GH-T ARENA', cx, cy + Math.min(introW, introH) * 0.25);
+        introCtx.restore();
+    }
+
+    if (introT >= INTRO_DURATION) {
+        finishIntro();
+        return;
+    }
+    introRaf = requestAnimationFrame(drawIntro);
+}
+
+function finishIntro() {
+    cancelAnimationFrame(introRaf);
+    document.getElementById('gh-intro').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+    document.getElementById('nav').classList.remove('hidden');
+    document.getElementById('server').classList.remove('hidden');
+    document.getElementById('btm-nav').classList.remove('hidden');
+    
+    startClock(); 
+    initAuth();
+}
+
+setTimeout(() => { document.getElementById('skip-intro').classList.add('show'); }, 1500);
+introRaf = requestAnimationFrame(drawIntro);
+
+// =========================================================
+// 2. WEB UTAMA (LOGIC LAMA)
+// =========================================================
 const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let user = null, profile = null, teams = [], settings = {}, activeTeam = null, curTour = null, curTourMode = 'BR', selTeam = null, introSkip = false;
+let user = null, profile = null, teams = [], settings = {}, activeTeam = null, curTour = null, curTourMode = 'BR', selTeam = null;
 let chatSub = null, tourChatSub = null, profileSub = null, regSub = null, notifSub = null, tourSub = null, bannerSub = null, scrimSub = null;
 let wdRegId = null, curTourData = null, editPlId = null, qrTimer = null;
 
@@ -483,17 +631,6 @@ function censorText(text) {
   let clean = text;
   BAD_WORDS.forEach(w => { clean = clean.replace(new RegExp(w, 'gi'), '*'.repeat(w.length)); });
   return clean;
-}
-function generateStars() {
-  const c = $('stars');
-  for(let i=0; i<60; i++) {
-    const s = document.createElement('div'); s.className = 'star';
-    const sz = Math.random() * 3 + 1;
-    s.style.width = sz + 'px'; s.style.height = sz + 'px';
-    s.style.left = Math.random() * 100 + '%'; s.style.top = Math.random() * 100 + '%';
-    s.style.animationDelay = Math.random() * 2 + 's';
-    c.appendChild(s);
-  }
 }
 function triggerRipple(e) {
   const b = $('sponsor'), rect = b.getBoundingClientRect();
@@ -581,7 +718,6 @@ function setupRealtime() {
     toast('Status pendaftaran diperbarui!', 'info'); if (!$('v-my-tour').classList.contains('hidden')) loadMyTour();
   }).subscribe();
 
-  // Listener Turnamen & Banner (Biar web auto update tanpa refresh)
   if (tourSub) sb.removeChannel(tourSub);
   tourSub = sb.channel('rt_tour').on('postgres_changes', { event: '*', schema: 'public', table: 'tournaments' }, () => {
     if (!$('v-home').classList.contains('hidden')) loadTournaments();
@@ -1190,6 +1326,55 @@ function openWAWd() {
   window.open(`https://wa.me/6283848591646?text=${msg}`, '_blank');
 }
 
+// ================= FITUR ISI SALDO (TOP UP) =================
+function openTopUp() {
+    $('tu-amt').value = '';
+    $('tu-proof').value = '';
+    $('tu-qr-container').style.display = 'none';
+    
+    const qrUrl = settings.qris_qr_image || 'https://i.ibb.co.com/Cs6B5Hwn/20261025-190253.png';
+    $('tu-qr-img').src = qrUrl;
+    $('tu-dl-btn').href = qrUrl;
+    
+    openModal('m-topup');
+}
+
+async function submitTopup(btn) {
+    if (!user) return toast('Login dulu!', 'danger');
+    
+    const amt = parseInt($('tu-amt').value);
+    const file = $('tu-proof').files[0];
+    
+    if (!amt || amt < 10000) return toast('Minimal Rp 10.000', 'warning');
+    if (!file) return toast('Upload bukti transfer dulu!', 'warning');
+    
+    btn.disabled = true; btn.innerText = 'Memproses...';
+    
+    try {
+        const ext = file.name.split('.').pop();
+        const path = `topup-${user.id}-${Date.now()}.${ext}`;
+        const { error: upErr } = await sb.storage.from('payment-proofs').upload(path, file);
+        if (upErr) throw upErr;
+        
+        const { error: dbErr } = await sb.from('topup_requests').insert({
+            user_id: user.id, 
+            amount: amt, 
+            proof_path: path, 
+            status: 'menunggu_verifikasi'
+        });
+        
+        if (dbErr) throw dbErr;
+        
+        toast('Pengajuan Isi Saldo berhasil! Tunggu verifikasi admin.', 'success');
+        closeModal('m-topup');
+    } catch (e) {
+        toast(translateError(e.message), 'danger');
+    } finally {
+        btn.disabled = false; btn.innerText = 'Ajukan Isi Saldo';
+    }
+}
+// ================= END TOP UP =================
+
 async function openLedger() {
   openModal('m-ledger'); const box = $('ledger-list'); box.innerHTML = '<p style="text-align:center;color:var(--muted);font-size:.8rem">Memuat...</p>';
   const { data, error } = await sb.from('wallet_ledger').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
@@ -1336,18 +1521,6 @@ function switchFaq(tab) { $('faq-umum').classList.toggle('hidden', tab !== 'umum
 const tc = $('tilt-card');
 if (tc) { tc.addEventListener('mousemove', e => { const r = tc.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, rx = ((y - r.height / 2) / (r.height / 2)) * -10, ry = ((x - r.width / 2) / (r.width / 2)) * 10; tc.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`; }); tc.addEventListener('mouseleave', () => { tc.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)'; }); }
 
-function typeTerm() {
-  const l = ['> Initializing GH-T Arena...', '> Loading Data...', '> Connecting...', '> Welcome, Captain.'], c = $('term'); let i = 0;
-  (function next() { if (i >= l.length) { $('skip-btn').classList.add('show'); return; } const p = document.createElement('p'); p.textContent = l[i]; c.appendChild(p); i++; setTimeout(next, 400); })();
-}
-generateStars(); typeTerm(); setTimeout(skipIntro, 3800);
-
-function skipIntro() {
-  if (introSkip) return; introSkip = true;
-  $('intro-screen').classList.add('hidden'); $('nav').classList.remove('hidden'); $('server').classList.remove('hidden'); $('btm-nav').classList.remove('hidden');
-  startClock(); initAuth();
-}
-
 async function initAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
@@ -1370,4 +1543,4 @@ function nav(v) {
 }
 </script>
 </body>
-   </html>
+</html>
