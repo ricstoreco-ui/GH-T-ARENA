@@ -15,14 +15,7 @@
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--chrome-dark);border-radius:10px}
 body{background-color:var(--bg);color:var(--text);overflow-x:hidden;padding-bottom:90px;background-image:linear-gradient(rgba(226,232,240,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(226,232,240,.03) 1px,transparent 1px);background-size:40px 40px;background-position:center top;transition:.5s}
 h1,h2,h3{font-family:'Orbitron',sans-serif}.hidden{display:none!important}
-body.theme-lebaran{--chrome:#00e676;--glow:rgba(0,230,118,.5)}body.theme-natal{--chrome:#e53935;--glow:rgba(229,57,53,.5)}body.theme-halloween{--chrome:#ff9800;--glow:rgba(255,152,0,.5)}body.theme-agustus{--chrome:#f44336;--glow:rgba(244,67,54,.5)}body.theme-ocean{--chrome:#00bcd4;--glow:rgba(0,188,212,.5)}
-
-/* INTRO G & H */
-#gh-intro { position: fixed; inset: 0; z-index: 9999; background: #030303; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-#intro-canvas { width: 100vw; height: 100vh; object-fit: contain; }
-#skip-intro { position: absolute; bottom: 30px; right: 30px; background: rgba(226,232,240,.1); border: 1px solid #e2e8f0; color: #e2e8f0; padding: 10px 24px; border-radius: 30px; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 0.75rem; z-index: 10000; transition: 0.3s; opacity: 0; pointer-events: none; }
-#skip-intro.show { opacity: 1; pointer-events: auto; }
-#skip-intro:hover { background: #e2e8f0; color: #030303; }
+body.theme-lebaran{--chrome:#00e676;--glow:rgba(0,230,118,.5)}body.theme-natal{--chrome:#e53935;--glow:rgba(229,57,53,.5)}body.theme-halloween{--chrome:#ff9800;--glow:rgba(255,152,0,.5)}body.theme-agustus{--chrome:#f44336;--glow:rgba(244,67,54,.5)}body.theme-ocean{--chrome:#00bcd4;--glow:rgba(0,188,212,.5)}body.theme-cyberpunk{--chrome:#b388ff;--glow:rgba(179,136,255,.5)}
 
 @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes pulseRed{0%{box-shadow:0 0 0 0 rgba(229,57,53,.7)}70%{box-shadow:0 0 0 10px rgba(229,57,53,0)}100%{box-shadow:0 0 0 0 rgba(229,57,53,0)}}@keyframes breathe{0%,100%{opacity:.8;filter:drop-shadow(0 0 5px var(--glow))}50%{opacity:1;filter:drop-shadow(0 0 15px var(--chrome))}}@keyframes slideInBottom{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes slideInTop{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes click{0%{transform:scale(1)}50%{transform:scale(.92)}100%{transform:scale(1)}}@keyframes spin{to{transform:rotate(360deg)}}
 .view{animation:fadeInUp .4s ease-out}
@@ -50,25 +43,16 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
 .btn{width:100%;padding:14px;background:linear-gradient(135deg,#94a3b8,#e2e8f0,#fff);color:#000;border:none;border-radius:8px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:.85rem;cursor:pointer;text-transform:uppercase;letter-spacing:1px;position:relative;overflow:hidden;display:flex;justify-content:center;align-items:center;gap:8px;box-shadow:0 4px 15px rgba(226,232,240,.2)}.btn:active{animation:click .3s}.btn:disabled{background:#333;color:#777;cursor:not-allowed;box-shadow:none}.btn-sec{background:transparent;border:1px solid #555;color:var(--silver);box-shadow:none}.btn-danger{background:rgba(229,57,53,.1);border:1px solid var(--danger);color:var(--danger);box-shadow:none}.btn-sm{width:auto;padding:8px 15px;font-size:.7rem}
 .tabs{display:flex;gap:10px;margin-bottom:15px;background:#111;padding:5px;border-radius:10px;border:1px solid #222;overflow-x:auto}.tab{padding:10px 15px;background:transparent;border:none;color:var(--muted);border-radius:8px;font-family:'Rajdhani',sans-serif;cursor:pointer;font-size:.8rem;font-weight:700;white-space:nowrap;transition:.3s}.tab.active{background:var(--chrome);color:#000;box-shadow:0 0 10px var(--glow)}details{background:#111;border:1px solid #222;border-radius:8px;padding:12px;margin-bottom:10px;font-size:.8rem;transition:.3s}details[open]{border-color:var(--chrome);box-shadow:0 0 10px var(--glow)}summary{cursor:pointer;color:var(--chrome);font-weight:600;outline:none;display:flex;justify-content:space-between;font-family:'Rajdhani',sans-serif;font-size:.9rem}details p{margin-top:10px;color:var(--silver);line-height:1.6}
 .ticket-wrap{background:linear-gradient(135deg,#121212,#030303);border-radius:20px;border:1px solid var(--chrome);box-shadow:0 20px 50px rgba(0,0,0,.8),0 0 20px var(--glow);display:flex;position:relative;overflow:hidden;margin-bottom:20px}.t-left{flex:1;padding:20px;border-right:2px dashed #333;position:relative;z-index:2}.t-right{width:120px;padding:20px 10px;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;z-index:2;background:rgba(226,232,240,.05)}.t-hole{position:absolute;width:20px;height:20px;background:#030303;border-radius:50%;border:1px solid var(--chrome)}.t-hole.top{top:-10px;left:-10px}.t-hole.bottom{bottom:-10px;left:-10px}.t-code-lbl{font-size:.6rem;color:var(--muted);text-transform:uppercase;margin-bottom:5px}.t-code{font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:var(--chrome);letter-spacing:3px;text-shadow:0 0 10px var(--glow)}.t-qr{width:80px;height:80px;background:#fff;border-radius:8px;padding:4px;margin-bottom:10px}.t-qr img{width:100%;height:100%}
-
-/* TOP UP & QRIS */
 .qris-box { position: relative; text-align: center; margin-top: 15px; padding: 10px; background: #111; border: 1px dashed #444; border-radius: 8px; }
 .qris-box img { width: 180px; border-radius: 8px; border: 2px solid var(--chrome); margin-bottom: 10px; }
 .download-btn { display: inline-flex; align-items: center; gap: 5px; background: var(--chrome); color: #000; padding: 8px 15px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; border: none; text-decoration: none; }
 .download-btn:hover { background: #fff; }
-
 @media(max-width:480px){.grid{grid-template-columns:1fr}.meta-grid{grid-template-columns:1fr}.part-list{grid-template-columns:1fr}.ros-grid{grid-template-columns:1fr}.ticket-wrap{flex-direction:column}.t-left{border-right:none;border-bottom:2px dashed #333}.t-right{width:100%}.t-hole.top{left:45%}.t-hole.bottom{left:45%}}
 </style>
 </head>
 <body>
 
-<div id="gh-intro">
-    <canvas id="intro-canvas"></canvas>
-    <button id="skip-intro" onclick="finishIntro()">SKIP INTRO ➔</button>
-</div>
-
 <div id="main-content" style="display:none;">
-
     <div class="running"><span>🔥 SELAMAT DATANG DI GH-T ARENA 🔥 DAFTARKAN TIM MU SEKARANG DAN RAIH HADIAH JUTAAN RUPIAH! 🔥</span></div>
 
     <nav id="nav" class="hidden">
@@ -106,8 +90,25 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
         <div class="diamond">💎</div>
         <img src="https://i.ibb.co.com/WW9NXHjZ/1000367499-removebg-preview.png" onerror="this.style.display='none'">
     </div>
-    <h2 class="title">Turnamen Tersedia</h2>
-    <div class="grid" id="tour-grid"></div>
+    
+    <!-- Menu Tab Turnamen / Global Leaderboard -->
+    <div class="tabs">
+        <button class="tab active" onclick="switchHomeTab('turnamen')">Turnamen</button>
+        <button class="tab" onclick="switchHomeTab('global-lb')">Global Leaderboard</button>
+    </div>
+
+    <div id="home-turnamen">
+        <h2 class="title">Turnamen Tersedia</h2>
+        <div class="grid" id="tour-grid"></div>
+    </div>
+
+    <div id="home-global-lb" class="hidden">
+        <h2 class="title">Top 10 Player Global</h2>
+        <div class="glass" style="padding: 0" id="global-lb-list">
+            <div style="text-align:center; padding: 20px; color: var(--muted);">Memuat data...</div>
+        </div>
+    </div>
+
     <div class="glass" style="margin-top:20px">
         <h3 class="title" style="font-size:.9rem;text-align:center;justify-content:center;border:none">👑 HALL OF FAME 👑</h3>
         <div class="podium" style="height: 80px; min-height: auto;">
@@ -251,28 +252,15 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
     <!-- VIEW: SCRIM MATCH (MONEY MATCH) -->
     <div id="v-scrim" class="view hidden">
     <h2 class="title">🎯 Scrim / Money Match</h2>
-    
     <div class="glass">
         <h3 class="title" style="font-size:.95rem">Buat Tantangan</h3>
-        <div class="f-group">
-        <label>Format Game</label>
-        <select id="scrim-format">
-            <option value="BR">Battle Royale (BR)</option>
-            <option value="CS">Clash Squad (CS)</option>
-        </select>
-        </div>
-        <div class="f-group">
-        <label>Taruhan (Rp / Tim)</label>
-        <input type="number" id="scrim-bet" placeholder="Contoh: 20000">
-        </div>
+        <div class="f-group"><label>Format Game</label><select id="scrim-format"><option value="BR">Battle Royale (BR)</option><option value="CS">Clash Squad (CS)</option></select></div>
+        <div class="f-group"><label>Taruhan (Rp / Tim)</label><input type="number" id="scrim-bet" placeholder="Contoh: 20000"></div>
         <button class="btn" onclick="createScrim(this)">Buat Tantangan</button>
     </div>
-
     <div class="glass">
         <h3 class="title" style="font-size:.95rem">Cari Lawan Tanding</h3>
-        <div id="scrim-list">
-        <p style="text-align:center; color:var(--muted); font-size:.8rem;">Memuat data...</p>
-        </div>
+        <div id="scrim-list"><p style="text-align:center; color:var(--muted); font-size:.8rem;">Memuat data...</p></div>
     </div>
     </div>
 
@@ -282,9 +270,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
         <h2 class="title" style="margin:0;border:none">Pendaftaran</h2>
         <button class="btn btn-sm btn-danger" onclick="nav('home')">Batal</button>
     </div>
-    <div class="stepper">
-        <div class="step active" id="s1">1</div><div class="step" id="s2">2</div><div class="step" id="s3">3</div><div class="step" id="s4">4</div>
-    </div>
+    <div class="stepper"><div class="step active" id="s1">1</div><div class="step" id="s2">2</div><div class="step" id="s3">3</div><div class="step" id="s4">4</div></div>
     <div class="glass">
         <div id="rs1">
         <h3 style="color:var(--chrome);margin-bottom:15px;font-family:'Rajdhani',sans-serif">1. Data DANA</h3>
@@ -469,130 +455,19 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
 </div> <!-- End of main-content -->
 
 <script>
-  // =========================================================
-// 1. INTRO G & H (SINGKAT & CEPAT)
 // =========================================================
-const introCanvas = document.getElementById('intro-canvas');
-const introCtx = introCanvas.getContext('2d');
-let introW, introH;
-function resizeIntro() { introW = introCanvas.width = window.innerWidth; introH = introCanvas.height = window.innerHeight; }
-window.addEventListener('resize', resizeIntro); resizeIntro();
-
-let introT = 0, introRaf = 0;
-let introStart = performance.now();
-const INTRO_DURATION = 6.5; 
-
-const lerp = (a, b, p) => a + (b - a) * p;
-
-function introLimb(x1, y1, x2, y2, w) { introCtx.lineCap = 'round'; introCtx.strokeStyle = '#0a0a0a'; introCtx.lineWidth = w + 5; introCtx.beginPath(); introCtx.moveTo(x1, y1); introCtx.lineTo(x2, y2); introCtx.stroke(); introCtx.strokeStyle = '#e2e8f0'; introCtx.lineWidth = w; introCtx.stroke(); }
-function introEye(x, y, r, px, py, pr) { introCtx.fillStyle = '#fff'; introCtx.strokeStyle = '#000'; introCtx.lineWidth = 3; introCtx.beginPath(); introCtx.arc(x, y, r, 0, 7); introCtx.fill(); introCtx.stroke(); introCtx.fillStyle = '#000'; introCtx.beginPath(); introCtx.arc(x + px * (r - pr - 1), y + py * (r - pr - 1), pr, 0, 7); introCtx.fill(); }
-const CHROME = ['#ffffff', '#e2e8f0', '#7c8797', '#cbd5e1'];
-const grad = (y, s, c) => { const g = introCtx.createLinearGradient(0, y - s * .5, 0, y + s * .5); c.forEach((v, i) => g.addColorStop(i / (c.length - 1), v)); return g; };
-
-function introPerson(ch, x, y, o) {
-    introCtx.save(); introCtx.translate(x, y); introCtx.scale(o.sc, o.sc);
-    const sw = Math.sin(o.walk) * 20 * o.amp;
-    introLimb(-24, 56, -24 + sw, 100, 11); introLimb(24, 56, 24 - sw, 100, 11);
-    introCtx.fillStyle = '#0b0b0b'; introCtx.strokeStyle = '#e2e8f0'; introCtx.lineWidth = 2;
-    [-24 + sw, 24 - sw].forEach(fx => { introCtx.beginPath(); introCtx.ellipse(fx + 6, 102, 17, 7, 0, 0, 7); introCtx.fill(); introCtx.stroke(); });
-    const h = o.hands; introLimb(-56, 8, h[0], h[1], 10); introLimb(56, 8, h[2], h[3], 10);
-    introCtx.font = '900 160px Orbitron, sans-serif'; introCtx.textAlign = 'center'; introCtx.textBaseline = 'middle';
-    for (let i = 13; i > 0; i--) { introCtx.fillStyle = `rgb(${34 + i * 3},${42 + i * 3},${54 + i * 3})`; introCtx.fillText(ch, i * .8, i * .9); }
-    introCtx.lineWidth = 6; introCtx.strokeStyle = '#0a0a0a'; introCtx.strokeText(ch, 0, 0);
-    introCtx.shadowColor = 'rgba(0,229,255,.45)'; introCtx.shadowBlur = 18;
-    introCtx.fillStyle = grad(0, 150, CHROME); introCtx.fillText(ch, 0, 0); introCtx.shadowBlur = 0;
-    const s = o.sur, er = lerp(13, 17, s), pr = lerp(6, 3.2, s);
-    introEye(-19, -26, er, o.lx, o.ly, pr); introEye(19, -26, er, o.lx, o.ly, pr);
-    introCtx.restore();
-}
-function introGun(x, y, ang, rc, s) {
-    introCtx.save(); introCtx.translate(x + 80 * s, y + 25 * s); introCtx.scale(s, s); introCtx.rotate(ang); introCtx.translate(-rc, 0);
-    const r = (c, a, b, w, h) => { introCtx.fillStyle = c; introCtx.fillRect(a, b, w, h) };
-    r('#1b2330', -34, -5, 36, 16); r('#94a3b8', 0, -9, 52, 18); r('#e2e8f0', 0, -9, 52, 4); r('#334155', 52, -6, 66, 12); r('#64748b', 30, 8, 30, 9); r('#0b0f14', 118, -8, 7, 16);
-    introCtx.shadowColor = '#00e5ff'; introCtx.shadowBlur = 10; r('#00e5ff', 8, -1, 106, 3); introCtx.restore();
-}
-
-const logoImg = new Image();
-logoImg.src = 'https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png';
-
-function drawIntro() {
-    introCtx.clearRect(0, 0, introW, introH);
-    introT = (performance.now() - introStart) / 1000;
-
-    const cx = introW / 2, cy = introH / 2;
-
-    if (introT < 2.5) {
-        const pMasuk = Math.min(1, introT / 1.0);
-        introPerson('G', lerp(-200, introW*0.25, pMasuk), cy+40, { lx:1, ly:0, sur:0.2, walk: introT*15, amp: pMasuk<1?1:0, hands:[-72,50,80,25], sc:1 });
-        introGun(lerp(-200, introW*0.25, pMasuk), cy+40, 0, 0, 1);
-        introPerson('H', lerp(introW+200, introW*0.75, pMasuk), cy+40, { lx:-1, ly:0, sur:0.5, walk: introT*15, amp: pMasuk<1?1:0, hands:[-80,-68,80,-68], sc:1 });
-        
-        if (introT > 1.2 && introT < 1.8) {
-            const p = (introT - 1.2) / 0.6;
-            const beamGrad = introCtx.createLinearGradient(introW*0.25, cy+40, introW*0.75, cy+40);
-            beamGrad.addColorStop(0, 'rgba(255,90,0,0)');
-            beamGrad.addColorStop(0.5, 'rgba(255,255,255,1)');
-            beamGrad.addColorStop(1, 'rgba(255,90,0,0)');
-            introCtx.save(); introCtx.globalCompositeOperation = 'lighter';
-            introCtx.strokeStyle = beamGrad; introCtx.lineWidth = 30 * Math.sin(p * Math.PI);
-            introCtx.beginPath(); introCtx.moveTo(introW*0.25, cy+40); introCtx.lineTo(introW*0.75, cy+40); introCtx.stroke(); introCtx.restore();
-        }
-    } else if (introT >= 2.5 && introT < 5.0) {
-        const p = Math.min(1, (introT - 2.5) / 1.0);
-        const sc = 1 + Math.sin(p * Math.PI) * 0.1; 
-        const alpha = p;
-        
-        introCtx.save();
-        introCtx.globalAlpha = alpha;
-        introCtx.translate(cx, cy);
-        introCtx.scale(sc, sc);
-        introCtx.shadowColor = '#00e5ff';
-        introCtx.shadowBlur = 50;
-        
-        if (logoImg.complete) {
-            const size = Math.min(introW, introH) * 0.4;
-            introCtx.drawImage(logoImg, -size/2, -size/2, size, size);
-        }
-        introCtx.restore();
-    } else if (introT >= 5.0 && introT < INTRO_DURATION) {
-        const p = Math.min(1, (introT - 5.0) / 0.8);
-        introCtx.save();
-        introCtx.globalAlpha = p;
-        introCtx.font = `bold ${Math.min(introW, introH) * 0.08}px Orbitron, sans-serif`;
-        introCtx.textAlign = 'center'; introCtx.textBaseline = 'middle';
-        introCtx.fillStyle = '#e2e8f0'; introCtx.shadowColor = '#e2e8f0'; introCtx.shadowBlur = 30;
-        introCtx.fillText('GH-T ARENA', cx, cy + Math.min(introW, introH) * 0.25);
-        introCtx.restore();
-    }
-
-    if (introT >= INTRO_DURATION) {
-        finishIntro();
-        return;
-    }
-    introRaf = requestAnimationFrame(drawIntro);
-}
-
-function finishIntro() {
-    cancelAnimationFrame(introRaf);
-    document.getElementById('gh-intro').style.display = 'none';
-    document.getElementById('main-content').style.display = 'block';
-    document.getElementById('nav').classList.remove('hidden');
-    document.getElementById('server').classList.remove('hidden');
-    document.getElementById('btm-nav').classList.remove('hidden');
-    
-    startClock(); 
-    initAuth();
-}
-
-setTimeout(() => { document.getElementById('skip-intro').classList.add('show'); }, 1500);
-introRaf = requestAnimationFrame(drawIntro);
-
-// =========================================================
-// 2. WEB UTAMA (LOGIC LAMA)
+// 1. SETUP & PWA (NOTIFIKASI)
 // =========================================================
 const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+        console.log('SW Registered');
+    }).catch(err => console.log('SW Error', err));
+}
 
 let user = null, profile = null, teams = [], settings = {}, activeTeam = null, curTour = null, curTourMode = 'BR', selTeam = null;
 let chatSub = null, tourChatSub = null, profileSub = null, regSub = null, notifSub = null, tourSub = null, bannerSub = null, scrimSub = null;
@@ -702,7 +577,6 @@ async function initProfile() {
 
 function setupRealtime() {
   if (!user) return;
-  
   if (profileSub) sb.removeChannel(profileSub);
   profileSub = sb.channel('rt_profile').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, payload => {
     profile = payload.new; updateDashUI(); toast('Saldo/Profil diperbarui!', 'success');
@@ -812,6 +686,36 @@ async function loadTournaments() {
   `).join('');
 }
 
+async function loadGlobalLeaderboard() {
+    const list = $('global-lb-list');
+    list.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--muted);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat...</div>';
+    const { data, error } = await sb.from('v_global_player_leaderboard').select('*').order('total_kills', { ascending: false }).limit(10);
+    if (error || !data || data.length === 0) {
+        list.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--muted);">Belum ada data.</div>';
+        return;
+    }
+    list.innerHTML = data.map((p, i) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px; border-bottom:1px solid #222; ${i===0?'background:rgba(255,215,0,0.1);':''}">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-family:'Orbitron'; font-size:1.2rem; color:${i===0?'var(--gold)':'var(--chrome)'}; width:20px;">${i+1}</span>
+                <span style="font-weight:700; color:#fff;">${p.nickname}</span>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-family:'Orbitron'; font-size:1rem; color:var(--chrome);">${p.total_kills} Kill</div>
+                <div style="font-size:0.7rem; color:var(--muted);">${p.total_matches} Match</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function switchHomeTab(tab) {
+    $('home-turnamen').classList.toggle('hidden', tab !== 'turnamen');
+    $('home-global-lb').classList.toggle('hidden', tab !== 'global-lb');
+    document.querySelectorAll('.tabs .tab').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    if (tab === 'global-lb') loadGlobalLeaderboard();
+}
+
 function openDetailHero() { if (curTourData) openDetail(curTourData.format, curTourData.id); }
 
 async function openDetail(mode, id) {
@@ -844,7 +748,6 @@ async function openDetail(mode, id) {
   }
 
   renderPodium(Number(data.prize_pool), data.winner_positions, data.prizes_config);
-
   $('det-br').classList.toggle('hidden', mode !== 'BR');
   
   if (mode === 'BR') loadMaps(id);
@@ -1341,7 +1244,6 @@ function openTopUp() {
 
 async function submitTopup(btn) {
     if (!user) return toast('Login dulu!', 'danger');
-    
     const amt = parseInt($('tu-amt').value);
     const file = $('tu-proof').files[0];
     
@@ -1349,20 +1251,13 @@ async function submitTopup(btn) {
     if (!file) return toast('Upload bukti transfer dulu!', 'warning');
     
     btn.disabled = true; btn.innerText = 'Memproses...';
-    
     try {
         const ext = file.name.split('.').pop();
         const path = `topup-${user.id}-${Date.now()}.${ext}`;
         const { error: upErr } = await sb.storage.from('payment-proofs').upload(path, file);
         if (upErr) throw upErr;
         
-        const { error: dbErr } = await sb.from('topup_requests').insert({
-            user_id: user.id, 
-            amount: amt, 
-            proof_path: path, 
-            status: 'menunggu_verifikasi'
-        });
-        
+        const { error: dbErr } = await sb.from('topup_requests').insert({ user_id: user.id, amount: amt, proof_path: path, status: 'menunggu_verifikasi' });
         if (dbErr) throw dbErr;
         
         toast('Pengajuan Isi Saldo berhasil! Tunggu verifikasi admin.', 'success');
@@ -1541,6 +1436,10 @@ function nav(v) {
   if (v === 'scrim') loadScrims();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// START
+startClock();
+setTimeout(() => { $('main-content').style.display = 'block'; $('nav').classList.remove('hidden'); $('server').classList.remove('hidden'); $('btm-nav').classList.remove('hidden'); initAuth(); }, 100);
 </script>
 </body>
-</html>
+    </html>
