@@ -1,4 +1,4 @@
-// GH-T ARENA Bot — f_misc.js: Banner, QRIS & Aset, Konfigurasi, Tema, Waiting List, Pengajuan Mundur, Captain & Saldo, upload gambar.
+// GH-T ARENA Bot — f_misc.js: Banner, QRIS, Konfigurasi, Tema, Captain, Cari Tim, dll.
 import {
   esc, wib, rp, UUID, rpc, sb, count, setSetting, getSetting, audit, notify,
   getState, setState, clearState, b, BACK, show, stLabel, getT, patchT, checkVals,
@@ -23,6 +23,7 @@ H.thm = async (env, chat, mid, p) => {
         [b('Default (Dark Chrome)', 'm:thm:s:default'), b('🌙 Lebaran', 'm:thm:s:lebaran')],
         [b('🎄 Natal', 'm:thm:s:natal'), b('🎃 Halloween', 'm:thm:s:halloween')],
         [b('🇮🇩 17 Agustus', 'm:thm:s:agustus'), b('🌊 Ocean', 'm:thm:s:ocean')],
+        [b('🔮 Cyberpunk', 'm:thm:s:cyberpunk')],
         [b('⬅️ Pengaturan', 'm:set')]
       ]
     });
@@ -32,6 +33,34 @@ H.thm = async (env, chat, mid, p) => {
     await audit(env, 'ubah_tema', 'site_settings', v);
     return show(env, chat, mid, `✅ Tema berhasil diubah ke: <b>${esc(v)}</b>.\nWebsite akan otomatis update dalam beberapa detik.`, { inline_keyboard: [[b('⬅️ Kembali', 'm:thm')]] });
   }
+};
+
+// ================= CARI TIM (BUG FIX) =================
+H.tm = async (env, chat, mid, p) => {
+  if (!p[2]) {
+    await setState(env, chat, 'tm_find', {});
+    return show(env, chat, mid, '<b>🛡️ Cari Tim</b>\nKetik <b>nama tim</b> (atau sebagian) yang dicari:', { inline_keyboard: BACK });
+  }
+  if (p[2] === 'v') {
+    const id = p[3];
+    const t = (await sb(env, 'GET', `teams?id=eq.${id}&select=*, profiles!teams_owner_id_fkey(username, whatsapp)`))?.[0];
+    if (!t) throw new Error('Tim tidak ditemukan');
+    const players = (await sb(env, 'GET', `team_players?team_id=eq.${id}&select=nickname,game_uid,role&order=sort_order.asc`)) || [];
+    
+    let text = `<b>🛡️ ${esc(t.name)}</b>\nOwner: ${esc(t.profiles?.username || '-')} (WA: ${esc(t.profiles?.whatsapp || '-')})\n\n<b>Roster:</b>\n`;
+    players.forEach((pl, i) => {
+      text += `${i + 1}. ${esc(pl.nickname)} (${esc(pl.role)}) - ${esc(pl.game_uid)}\n`;
+    });
+    return show(env, chat, mid, text, { inline_keyboard: [[b('⬅️ Kembali', 'm:tm')]] });
+  }
+};
+T.tm_find = async (env, chat, st, text) => {
+  const term = text.replace(/[^\w.\- ]/g, '').trim();
+  if (term.length < 2) return show(env, chat, null, '❌ Ketik minimal 2 karakter.', { inline_keyboard: BACK });
+  const rows = (await sb(env, 'GET', `teams?name=ilike.*${encodeURIComponent(term)}*&select=id,name&limit=10`)) || [];
+  await clearState(env, chat);
+  if (!rows.length) return show(env, chat, null, 'Tidak ada tim dengan nama itu.', { inline_keyboard: [[b('🔎 Cari Lagi', 'm:tm')], ...BACK] });
+  return show(env, chat, null, '<b>Hasil Pencarian</b>', { inline_keyboard: [...rows.map((r) => [b(String(r.name).slice(0, 40), 'm:tm:v:' + r.id)]), [b('🔎 Cari Lagi', 'm:tm')], ...BACK] });
 };
 
 // ================= BANNER =================
@@ -140,7 +169,7 @@ H.as = async (env, chat, mid, p) => {
   }
 };
 
-// ================= PROSES UPLOAD (banner, aset, banner turnamen) =================
+// ================= PROSES UPLOAD =================
 async function onUpload(env, chat, st, img) {
   if (img.bad) return show(env, chat, null, '❌ Kirim sebagai foto, atau file gambar JPG / PNG / WEBP.');
   if (img.size > MAXIMG) return show(env, chat, null, '❌ Ukuran file maksimal 10 MB.');
@@ -176,21 +205,6 @@ async function onUpload(env, chat, st, img) {
     return bnShow(env, chat, row.id, '✅ Banner ditambahkan (judul dari caption foto, kalau ada).' + (okReg ? '' : '\n⚠️ Gagal mencatat ke file_registry.'));
   }
 
-  if (st.state === 'tb_up') {
-    const t = await getT(env, d.tid);
-    const path = `t-${d.tid}-${stamp}.${ext}`;
-    await storageUpload(env, 'banners', path, bytes, img.mime);
-    const url = publicUrl(env, 'banners', path);
-    try { await patchT(env, d.tid, { banner_url: url }); }
-    catch (e) { await storageDelete(env, 'banners', path); throw e; }
-    const okReg = await regUpsert(env, { bucket: 'banners', path, kind: 'tournament_banner', tournament_id: d.tid, ref_table: 'tournaments', ref_id: d.tid, size_bytes: size });
-    await dropOld(env, 'banners', ourPath(env, t.banner_url, 'banners'));
-    await clearState(env, chat);
-    await audit(env, 'banner_turnamen', 'tournaments', 'via bot', d.tid, { banner_url: t.banner_url }, { banner_url: url });
-    const v = await tDetail(env, d.tid, '✅ Banner turnamen diganti.' + (okReg ? '' : '\n⚠️ Gagal mencatat ke file_registry.'));
-    return show(env, chat, null, v.text, v.markup);
-  }
-
   if (st.state === 'as_up') {
     const a = ASSET_KEYS.findIndex((x) => x[0] === d.key);
     if (a < 0) throw new Error('Aset tidak dikenal');
@@ -207,13 +221,14 @@ async function onUpload(env, chat, st, img) {
     return asShow(env, chat, a, '✅ Gambar diganti. Website otomatis memakai gambar terbaru.' + (okReg ? '' : '\n⚠️ Gagal mencatat ke file_registry.'));
   }
 }
-U.bn_up = onUpload; U.tb_up = onUpload; U.as_up = onUpload;
+U.bn_up = onUpload; U.as_up = onUpload;
 
 // ================= KONFIGURASI =================
 const CFG = [
   ['admin_whatsapp', 'WhatsApp Admin'], 
   ['waitlist_offer_minutes', 'Batas respons Waiting List (menit)'], 
-  ['admin_fee_qris', 'Biaya Admin QRIS (Rp)']
+  ['admin_fee_qris', 'Biaya Admin QRIS (Rp)'],
+  ['display_bgm_url', 'Link MP3 Backsound Display']
 ];
 
 async function cfgMenu(env, notice) {
@@ -232,6 +247,7 @@ H.cfg = async (env, chat, mid, p) => {
     await setState(env, chat, 'cfg', { key: c[0] });
     const ask = c[0] === 'admin_whatsapp' ? 'Ketik nomor WhatsApp admin (contoh 628123456789). Ketik - untuk mengosongkan.' :
                 c[0] === 'admin_fee_qris' ? 'Ketik nominal Biaya Admin (contoh 1000). Ketik 0 jika tidak ada.' :
+                c[0] === 'display_bgm_url' ? 'Ketik Link MP3 atau URL file audio untuk backsound display. Ketik - untuk mengosongkan.' :
                 'Ketik batas waktu respons Waiting List dalam menit (1 sampai 1440).';
     return show(env, chat, mid, `<b>✏️ ${esc(c[1])}</b>\n${ask}`, { inline_keyboard: [[b('✖️ Batal', 'm:cfg')]] });
   }
@@ -250,6 +266,10 @@ T.cfg = async (env, chat, st, text) => {
     const n = /^\d{1,9}$/.test(text) ? Number(text) : -1;
     if (n < 0) return show(env, chat, null, '❌ Isi angka 0 atau lebih (tanpa titik/koma).', { inline_keyboard: [[b('✖️ Batal', 'm:cfg')]] });
     val = n;
+  } else if (key === 'display_bgm_url') {
+    if (text === '-') val = '';
+    else if (!text.startsWith('http')) return show(env, chat, null, '❌ Harus berupa link http/https.', { inline_keyboard: [[b('✖️ Batal', 'm:cfg')]] });
+    else val = text;
   } else {
     const n = /^\d{1,4}$/.test(text) ? Number(text) : 0;
     if (n < 1 || n > 1440) return show(env, chat, null, '❌ Isi angka 1 sampai 1440 (menit).', { inline_keyboard: [[b('✖️ Batal', 'm:cfg')]] });
@@ -262,7 +282,7 @@ T.cfg = async (env, chat, st, text) => {
   return sh(env, chat, null, await cfgMenu(env, `✅ ${esc(c[1])} diperbarui.`));
 };
 
-// ================= WAITING LIST (lihat antrean) =================
+// ================= WAITING LIST =================
 async function wlTournaments(env) {
   const rows = (await sb(env, 'GET', 'waiting_list?status=in.(menunggu,ditawari)&select=tournament_id,status&limit=1000')) || [];
   const per = {};
