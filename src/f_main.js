@@ -87,7 +87,7 @@ export async function settingsMenu(env) {
       [b(open ? '🛠 Aktifkan Maintenance' : '✅ Matikan Maintenance', 'm:mt:' + (open ? '1' : '0'))],
       [b('🖼 Banner', 'm:bn'), b('🧾 QRIS & Aset', 'm:as')],
       [b('🔧 Konfigurasi', 'm:cfg'), b('📜 Aturan', 'm:ru')],
-      [b('🎨 Ganti Tema', 'm:thm')], 
+      [b('🎨 Ganti Tema', 'm:thm'), b('🛠 Admin Tools & Bersih-bersih', 'm:adm')],
       ...BACK] },
   };
 }
@@ -184,7 +184,9 @@ export async function tDetail(env, id, notice) {
   if (t.stream_url) L.push(`🔴 Live Stream: ${esc(t.stream_url)}`);
   
   const kb = [];
+  // QUICK ACTION DI DETAIL TURNAMEN
   if (!FINAL.includes(t.status)) {
+    kb.push([b('⚡ Aksi Cepat (Match/Timer)', 'm:adm:q_t:' + id)]);
     kb.push([b('🔁 Ubah Status', 'm:t:s:' + id), b(t.registration_enabled ? '🔴 Registrasi OFF' : '🟢 Registrasi ON', 'm:t:r:' + id)]);
     if (t.status === 'ditunda') kb.push([b('📅 Atur Jadwal Lanjutan', 'm:t:j:' + id), b('▶️ Lanjutkan', 'm:t:c:' + id)]);
     else kb.push([b('⏸ Tunda Turnamen', 'm:t:p:' + id)]);
@@ -337,7 +339,7 @@ T.tj = async (env, chat, st, text) => {
   return sh(env, chat, null, await tDetail(env, id, `✅ Jadwal lanjutan: ${wib(p.iso)}`));
 };
 
-// ----- Wizard Buat Turnamen (UPDATED: ONLINE / OFFLINE) -----
+// ----- Wizard Buat Turnamen -----
 function wizNext(d) {
   if (!d.game_id) return 'game'; 
   if (!d.name) return 'name'; 
@@ -464,7 +466,7 @@ H.w = async (env, chat, mid, p) => {
   return wizShow(env, chat, mid, d);
 };
 
-// ----- Edit Turnamen (UPDATED: PRIZES %) -----
+// ----- Edit Turnamen -----
 const TE = [['name', 'Nama'], ['description', 'Deskripsi'], ['entry_fee', 'Biaya'], ['prize_pool', 'Total Hadiah'], ['total_slots', 'Jumlah Slot'],
   ['starters_per_team', 'Pemain Utama/Tim'], ['winner_positions', 'Posisi Pemenang'], ['prizes_pct', 'Hadiah (%)'], ['schedule_at', 'Jadwal'], ['registration_deadline', 'Batas Daftar'], ['prizes', 'Hadiah per Posisi (Rp)']];
 const ACTIVE_REG = 'status=in.(menunggu_pembayaran,menunggu_verifikasi,data_belum_lengkap,resmi_terdaftar)';
@@ -496,7 +498,7 @@ H.te = async (env, chat, mid, p) => {
     else if (k === 'total_slots') ask = `Sekarang: ${t.total_slots}\nKetik slot baru:`;
     else if (k === 'starters_per_team') ask = `Sekarang: ${t.starters_per_team}\nKetik jumlah pemain utama/tim (1-20).`;
     else if (k === 'winner_positions') ask = `Sekarang: ${t.winner_positions}\nKetik jumlah posisi pemenang:`;
-    else if (k === 'prizes_pct') ask = `Ketik persentase hadiah (Total harus 100).\nContoh untuk 3 juara: <code>50, 30, 20</code>\nContoh untuk 2 juara: <code>60, 40</code>\n\nIngat! Jumlah persen harus sesuai dengan jumlah Posisi Pemenang (${t.winner_positions}).`;
+    else if (k === 'prizes_pct') ask = `Ketik persentase hadiah (Total harus 100).\nContoh untuk 3 juara: <code>50, 30, 20</code>\n\nIngat! Jumlah persen harus sesuai dengan jumlah Posisi Pemenang (${t.winner_positions}).`;
     else if (k === 'schedule_at') ask = `Sekarang: ${wib(t.schedule_at)}\nKetik jadwal baru (WIB).`;
     else if (k === 'registration_deadline') ask = `Sekarang: ${wib(t.registration_deadline)}\nKetik batas daftar baru (WIB).`;
     else {
