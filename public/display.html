@@ -9,11 +9,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
     /* =========================================
-       TEMA MUSIMAN (OTOMATIS DARI DB)
+       TEMA & GLOBAL 16:9 SETUP
        ========================================= */
     :root {
         --bg: #030303; --panel: rgba(15, 15, 17, 0.85); 
-        --chrome: #e2e8f0; --cyan: #00e5ff; /* Default Cyan */
+        --chrome: #e2e8f0; --cyan: #00e5ff; 
         --gold: #ffd700; --red: #e53935;
         --border: rgba(226,232,240,.15); --muted: #777;
     }
@@ -27,9 +27,6 @@
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
     body { background-color: #000; height: 100vh; display: grid; place-items: center; overflow: hidden; }
 
-    /* =========================================
-       WRAPPER 16:9 & BACKGROUND
-       ========================================= */
     .app-wrapper { 
         position: relative; width: min(100vw, calc(100vh * 16/9)); aspect-ratio: 16/9; 
         container-type: size; overflow: hidden; background: var(--bg);
@@ -63,73 +60,79 @@
     /* MAIN & SCENES */
     main { position: absolute; inset: 7cqw 0 3.5cqw 0; padding: 2cqw 4cqw; display: flex; justify-content: center; align-items: center; z-index: 5; }
     .scene { width: 100%; height: 100%; display: none; flex-direction: column; }
-    .scene.active { display: flex; animation: fadeInScale 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
-    .page-title { font-family: 'Orbitron'; font-size: 2.5cqw; color: #fff; text-align: center; margin-bottom: 1.5cqw; letter-spacing: 0.3cqw; text-shadow: 0 0 2cqw var(--cyan); animation: textGlow 3s ease-in-out infinite alternate; font-weight: 900; }
+    .scene.active { display: flex; animation: fadeInScale 0.4s ease-out forwards; }
+    .page-title { font-family: 'Orbitron'; font-size: 2.2cqw; color: #fff; text-align: center; margin-bottom: 1cqw; letter-spacing: 0.3cqw; text-shadow: 0 0 2cqw var(--cyan); animation: textGlow 3s ease-in-out infinite alternate; font-weight: 900; }
 
     /* =========================================
-       SCENE 1: STANDBY (COUNTDOWN)
+       SCENE 1: STANDBY (TIMER & H2H)
        ========================================= */
     #scene-standby { justify-content: center; align-items: center; text-align: center; }
-    .standby-logo { width: 15cqw; margin-bottom: 1.5cqw; filter: drop-shadow(0 0 3cqw var(--cyan)); animation: floatBox 4s ease-in-out infinite; }
-    .standby-title { font-family: 'Orbitron'; font-size: 4cqw; color: #fff; letter-spacing: 1cqw; margin-bottom: 0.5cqw; text-shadow: 0 0 2cqw var(--cyan); }
-    .standby-sub { font-family: 'Rajdhani'; font-size: 1.5cqw; color: var(--gold); letter-spacing: 0.4cqw; text-transform: uppercase; margin-bottom: 3cqw; font-weight: 700; }
-    .cd { display: flex; align-items: center; gap: 1cqw; }
-    .reel { width: 7cqw; height: 9cqw; overflow: hidden; border-radius: 0.5cqw; border: 1px solid var(--cyan); background: linear-gradient(#0a0a0a, #1c1012 50%, #0a0a0a); box-shadow: inset 0 0 1.5cqw #000, 0 0 2cqw rgba(0,229,255,0.3); position: relative; }
-    .strip { will-change: transform; transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1); }
-    .strip i { display: block; height: 9cqw; font: 900 7cqw/9cqw Orbitron; font-style: normal; text-align: center; color: #fff; text-shadow: 0 0 1cqw var(--cyan); }
-    .sep { font: 900 6cqw Orbitron; color: var(--cyan); }
+    .standby-logo { width: 12cqw; margin-bottom: 1.5cqw; filter: drop-shadow(0 0 3cqw var(--cyan)); animation: floatBox 4s ease-in-out infinite; }
+    .standby-title { font-family: 'Orbitron'; font-size: 3cqw; color: #fff; letter-spacing: 1cqw; margin-bottom: 0.5cqw; text-shadow: 0 0 2cqw var(--cyan); }
+    .standby-sub { font-family: 'Rajdhani'; font-size: 1.5cqw; color: var(--gold); letter-spacing: 0.4cqw; text-transform: uppercase; margin-bottom: 2cqw; font-weight: 700; }
+    
+    .h2h-container { display: flex; gap: 3cqw; align-items: center; justify-content: center; margin-bottom: 2cqw; }
+    .h2h-team { background: var(--panel); padding: 1.5cqw 3cqw; border: 1px solid var(--border); border-radius: 1cqw; }
+    .h2h-team h3 { font-family: 'Orbitron'; color: #fff; font-size: 2cqw; margin-bottom: 0.5cqw; }
+    .h2h-team p { color: var(--muted); font-size: 1cqw; }
+    .h2h-vs { font-family: 'Orbitron'; color: var(--red); font-size: 2.5cqw; font-weight: 900; text-shadow: 0 0 10px var(--red); }
+
+    .cd { display: flex; align-items: center; gap: 1cqw; justify-content: center; }
+    .reel { width: 6cqw; height: 8cqw; overflow: hidden; border-radius: 0.5cqw; border: 1px solid var(--cyan); background: linear-gradient(#0a0a0a, #1c1012 50%, #0a0a0a); box-shadow: inset 0 0 1.5cqw #000, 0 0 2cqw rgba(0,229,255,0.3); position: relative; }
+    .strip { will-change: transform; transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1); }
+    .strip i { display: block; height: 8cqw; font: 900 6cqw/8cqw Orbitron; font-style: normal; text-align: center; color: #fff; text-shadow: 0 0 1cqw var(--cyan); }
+    .sep { font: 900 5cqw Orbitron; color: var(--cyan); }
 
     /* =========================================
-       SCENE 2: BR LEADERBOARD (TEXT DIBESARKAN)
+       SCENE 2: BR LEADERBOARD
        ========================================= */
     #br-wrap { display: flex; gap: 2cqw; height: 100%; }
     #br-tbl { flex: 1; display: flex; flex-direction: column; }
-    #pred { width: 25cqw; display: flex; flex-direction: column; }
+    #pred { width: 22cqw; display: flex; flex-direction: column; }
     .panel { background: var(--panel); border: 1px solid var(--border); border-top: 0.25cqw solid var(--cyan); clip-path: polygon(0 0, calc(100% - 1.5cqw) 0, 100% 1.5cqw, 100% 100%, 1.5cqw 100%, 0 calc(100% - 1.5cqw)); overflow: hidden; box-shadow: 0 0 2cqw rgba(0,0,0,0.8); }
     .ph { font: 700 1.1cqw Orbitron; padding: 0.6cqw 1.2cqw; background: linear-gradient(90deg, rgba(226,232,240,0.2), transparent); color: #fff; letter-spacing: 0.1cqw; }
     
-    /* Grid disesuaikan biar muat teks gede */
-    .row { display: grid; grid-template-columns: 3.5fr repeat(6, 1fr) 1.2fr 1.2fr 1fr; align-items: center; height: 3.5cqw; padding: 0 1.5cqw; font-family: 'Rajdhani'; font-weight: 900; font-size: 1.5cqw; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); color: #fff; }
-    .row.h { font-family: 'Orbitron'; font-size: 1.1cqw; color: var(--cyan); height: 3.5cqw; background: #0a0a0a; border-bottom: 0.2cqw solid var(--cyan); }
+    .row { display: grid; grid-template-columns: 3.5fr repeat(6, 1fr) 1.2fr 1.2fr 1fr; align-items: center; height: 3.5cqw; padding: 0 1.5cqw; font-family: 'Rajdhani'; font-weight: 900; font-size: 1.4cqw; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); color: #fff; will-change: transform; }
+    .row.h { font-family: 'Orbitron'; font-size: 1cqw; color: var(--cyan); height: 3cqw; background: #0a0a0a; border-bottom: 0.2cqw solid var(--cyan); }
     .row.r1 { background: linear-gradient(90deg, rgba(0,229,255,0.15), transparent); border-left: 0.3cqw solid var(--cyan); }
     .row.r2 { background: linear-gradient(90deg, rgba(148,163,184,0.1), transparent); border-left: 0.3cqw solid #94a3b8; }
     .row.r3 { background: linear-gradient(90deg, rgba(100,116,139,0.1), transparent); border-left: 0.3cqw solid #64748b; }
-    .tm { display: flex; align-items: center; gap: 1cqw; text-align: left; font-size: 1.5cqw; white-space: nowrap; overflow: hidden; font-weight: 900; }
-    .lg { width: 2.8cqw; height: 2.8cqw; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: #222; font-family: 'Orbitron'; border: 1px solid var(--cyan); flex: none; font-size: 1.2cqw; color: var(--cyan); }
-    .rk { font-family: 'Orbitron'; font-weight: 900; font-size: 1.6cqw; color: var(--cyan); }
+    .tm { display: flex; align-items: center; gap: 1cqw; text-align: left; font-size: 1.4cqw; white-space: nowrap; overflow: hidden; font-weight: 900; }
+    .lg { width: 2.5cqw; height: 2.5cqw; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: #222; font-family: 'Orbitron'; border: 1px solid var(--cyan); flex: none; font-size: 1.1cqw; color: var(--cyan); }
+    .rk { font-family: 'Orbitron'; font-weight: 900; font-size: 1.5cqw; color: var(--cyan); }
     
-    .pi { display: flex; align-items: center; gap: 1cqw; padding: 0.8cqw 1.5cqw; font-size: 1.3cqw; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .pi em { font-family: 'Orbitron'; font-weight: 900; color: var(--cyan); font-style: normal; width: 2.5cqw; }
-    .pi small { display: block; color: var(--muted); font-size: 0.9cqw; font-weight: 600; }
+    .pi { display: flex; align-items: center; gap: 1cqw; padding: 0.6cqw 1.2cqw; font-size: 1.2cqw; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .pi em { font-family: 'Orbitron'; font-weight: 900; color: var(--cyan); font-style: normal; width: 2cqw; }
+    .pi small { display: block; color: var(--muted); font-size: 0.8cqw; font-weight: 600; }
     .pi b { margin-left: auto; font-family: 'Orbitron'; color: #fff; }
 
     /* =========================================
-       SCENE 3: CS SCHEDULE (CARD STYLE)
+       SCENE 3: CS SCHEDULE
        ========================================= */
     .schedule-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2cqw; padding-right: 1.5cqw; }
     .schedule-list::-webkit-scrollbar { width: 0.5cqw; }
     .schedule-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 1cqw; }
     .schedule-list::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 1cqw; box-shadow: 0 0 1.5cqw var(--cyan); }
     .round-group { display: flex; flex-direction: column; gap: 1cqw; }
-    .round-header { font-family: 'Orbitron'; font-size: 1.6cqw; color: var(--cyan); letter-spacing: 0.2cqw; text-transform: uppercase; border-bottom: 0.2cqw solid rgba(255,255,255,0.1); padding-bottom: 0.5cqw; margin-bottom: 1cqw; display: flex; align-items: center; gap: 1cqw; text-shadow: 0 0 1cqw var(--cyan); font-weight: 900; }
-    .bo-label { font-family: 'Rajdhani'; font-size: 1.1cqw; background: rgba(255,255,255,0.1); padding: 0.2cqw 1cqw; border-radius: 0.5cqw; border: 1px solid var(--border); text-shadow: none; font-weight: 700; }
-    .match-card { background: var(--panel); border: 0.15cqw solid var(--border); border-radius: 1cqw; display: flex; align-items: center; padding: 1.2cqw 2cqw; backdrop-filter: blur(10px); position: relative; overflow: hidden; opacity: 0; animation: slideIn 0.6s forwards, floatCard 5s ease-in-out infinite; transition: transform 0.3s, border-color 0.3s; }
+    .round-header { font-family: 'Orbitron'; font-size: 1.5cqw; color: var(--cyan); letter-spacing: 0.2cqw; text-transform: uppercase; border-bottom: 0.2cqw solid rgba(255,255,255,0.1); padding-bottom: 0.5cqw; margin-bottom: 1cqw; display: flex; align-items: center; gap: 1cqw; text-shadow: 0 0 1cqw var(--cyan); font-weight: 900; }
+    .bo-label { font-family: 'Rajdhani'; font-size: 1cqw; background: rgba(255,255,255,0.1); padding: 0.2cqw 1cqw; border-radius: 0.5cqw; border: 1px solid var(--border); text-shadow: none; font-weight: 700; }
+    .match-card { background: var(--panel); border: 0.15cqw solid var(--border); border-radius: 1cqw; display: flex; align-items: center; padding: 1.2cqw 2cqw; backdrop-filter: blur(10px); position: relative; overflow: hidden; opacity: 0; animation: slideIn 0.5s forwards, floatCard 5s ease-in-out infinite; transition: transform 0.3s, border-color 0.3s; }
     .match-card:hover { transform: scale(1.02) translateX(10px) !important; border-color: var(--cyan); box-shadow: 0 0 3cqw rgba(0,229,255,0.4); z-index: 20; animation-play-state: paused; }
     .match-info { width: 15cqw; display: flex; flex-direction: column; flex-shrink: 0; }
-    .match-no { font-family: 'Orbitron'; font-size: 1.5cqw; font-weight: 900; color: #fff; }
+    .match-no { font-family: 'Orbitron'; font-size: 1.4cqw; font-weight: 900; color: #fff; }
     .teams-area { flex: 1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 2cqw; padding: 0 3cqw; border-left: 0.1cqw solid rgba(255,255,255,0.1); border-right: 0.1cqw solid rgba(255,255,255,0.1); }
     .cs-team-wrap { display: flex; align-items: center; gap: 1cqw; }
     .cs-team-a .cs-team-wrap { justify-content: flex-end; }
     .cs-team-b .cs-team-wrap { justify-content: flex-start; }
-    .cs-logo { width: 3cqw; height: 3cqw; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: #222; }
-    .team { font-family: 'Rajdhani'; font-size: 1.8cqw; font-weight: 900; letter-spacing: 0.1cqw; color: var(--cyan); text-shadow: 0 0 0.5cqw rgba(0,229,255,0.3); }
+    .cs-logo { width: 2.8cqw; height: 2.8cqw; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: #222; }
+    .team { font-family: 'Rajdhani'; font-size: 1.6cqw; font-weight: 900; letter-spacing: 0.1cqw; color: var(--cyan); text-shadow: 0 0 0.5cqw rgba(0,229,255,0.3); }
     .team-a { text-align: right; }
     .team-b { text-align: left; }
     .team.loser { color: var(--muted); text-decoration: line-through; text-shadow: none; }
     .team.loser .cs-logo { opacity: 0.5; filter: grayscale(100%); }
     .score-box { font-family: 'Orbitron'; font-size: 1.8cqw; font-weight: 900; background: rgba(0,0,0,0.6); padding: 0.5cqw 2cqw; border-radius: 0.5cqw; border: 0.1cqw solid #333; color: #fff; display: flex; align-items: center; gap: 1cqw; }
-    .status-area { width: 18cqw; display: flex; justify-content: flex-end; flex-shrink: 0; }
-    .badge { font-family: 'Orbitron'; font-size: 1cqw; font-weight: 700; padding: 1cqw 1.5cqw; border-radius: 0.5cqw; letter-spacing: 0.1cqw; text-align: center; width: 100%; }
+    .status-area { width: 16cqw; display: flex; justify-content: flex-end; flex-shrink: 0; }
+    .badge { font-family: 'Orbitron'; font-size: 0.9cqw; font-weight: 700; padding: 0.8cqw 1.2cqw; border-radius: 0.5cqw; letter-spacing: 0.1cqw; text-align: center; width: 100%; }
     .st-done { background: #222; color: var(--cyan); border: 0.1cqw solid var(--cyan); }
     .st-live { background: rgba(229,57,53,0.15); color: var(--red); border: 0.1cqw solid var(--red); animation: pulseRed 1s infinite; }
     .match-card.is-live { border-left: 0.4cqw solid var(--red); box-shadow: inset 3cqw 0 5cqw -3cqw rgba(229,57,53,0.4); }
@@ -139,20 +142,13 @@
     .st-wait { background: transparent; color: #555; border: 0.1cqw dashed #444; }
 
     /* =========================================
-       SCENE 4: LIVE STREAM (NORMAL & FULLSCREEN)
+       SCENE 4: LIVE STREAM
        ========================================= */
     #lv-wrap { display: flex; width: 100%; height: 100%; gap: 2cqw; transition: 0.5s; }
     #lv-v { flex: 1; border: 2px solid var(--border); border-radius: 0.5cqw; overflow: hidden; background: #000; position: relative; transition: 0.5s; }
     #lv-v iframe { width: 100%; height: 100%; border: none; }
     
-    /* TOMBOL FULLSCREEN VIDEO */
-    .btn-vid-fs { 
-        position: absolute; bottom: 1cqw; right: 1cqw; 
-        background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: var(--cyan); 
-        padding: 0.6cqw 1.2cqw; border-radius: 0.5cqw; cursor: pointer; 
-        font-family: 'Orbitron'; font-size: 0.9cqw; font-weight: 700; display: flex; align-items: center; gap: 0.5cqw;
-        transition: 0.3s; opacity: 0.5; z-index: 10;
-    }
+    .btn-vid-fs { position: absolute; bottom: 1cqw; right: 1cqw; background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: var(--cyan); padding: 0.6cqw 1.2cqw; border-radius: 0.5cqw; cursor: pointer; font-family: 'Orbitron'; font-size: 0.8cqw; font-weight: 700; display: flex; align-items: center; gap: 0.5cqw; transition: 0.3s; opacity: 0.5; z-index: 10; }
     .btn-vid-fs:hover { opacity: 1; background: rgba(0,229,255,0.2); border-color: var(--cyan); box-shadow: 0 0 1cqw var(--cyan); }
 
     .side { width: 28cqw; display: flex; flex-direction: column; gap: 1.5cqw; transition: 0.5s; }
@@ -166,8 +162,8 @@
     .mp img { width: 5cqw; height: 3cqw; object-fit: cover; border-radius: 0.3cqw; border: 1px solid var(--border); }
     .mp-info { flex: 1; }
     .mp-name { font-size: 1.1cqw; font-weight: 700; color: #fff; font-family: 'Rajdhani'; }
-    .mp-match { font-size: 0.8cqw; color: var(--muted); }
-    .mp em { font-family: 'Orbitron'; font-style: normal; font-size: 0.7cqw; padding: 0.2cqw 0.8cqw; border-radius: 0.3cqw; font-weight: 700; }
+    .mp-match { font-size: 0.7cqw; color: var(--muted); }
+    .mp em { font-family: 'Orbitron'; font-style: normal; font-size: 0.6cqw; padding: 0.2cqw 0.6cqw; border-radius: 0.3cqw; font-weight: 700; }
     .mp em.selesai { background: rgba(67,160,71,0.2); color: #43a047; border: 1px solid #43a047; }
     .mp em.live { background: rgba(229,57,53,0.2); color: var(--red); border: 1px solid var(--red); animation: pulseRed 1.5s infinite; }
     .mp em.next { background: #222; color: var(--chrome); border: 1px solid #555; }
@@ -176,60 +172,62 @@
     #chat { padding: 1cqw 1.5cqw; overflow-y: auto; height: calc(100% - 3cqw); display: flex; flex-direction: column; gap: 0.5cqw; }
     #chat::-webkit-scrollbar { width: 0.4cqw; }
     #chat::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 1cqw; }
-    #chat p { font-size: 1.2cqw; padding: 0.4cqw 0; border-bottom: 1px solid rgba(255,255,255,0.05); animation: slideUp 0.3s ease-out forwards; }
+    #chat p { font-size: 1.1cqw; padding: 0.3cqw 0; border-bottom: 1px solid rgba(255,255,255,0.05); animation: slideUp 0.3s ease-out forwards; }
     #chat b { color: var(--cyan); }
 
-    /* FULLSCREEN MODE (Sembunyikan Sidebar, Video Full, Chat Overlay) */
+    /* FULLSCREEN MODE & CHAT OVERLAY */
     #lv-wrap.full-video .side { display: none; }
     #lv-wrap.full-video #lv-v { border-radius: 0; border: none; }
     
-    /* OVERLAY CHAT (Hanya Muncul di Full Video) */
-    #chat-overlay { position: absolute; right: 2cqw; bottom: 2cqw; width: 20cqw; display: none; flex-direction: column; justify-content: flex-end; mask-image: linear-gradient(to top, black 80%, transparent 100%); z-index: 10; }
+    #chat-overlay { position: absolute; right: 1.5cqw; bottom: 1.5cqw; width: 16cqw; display: none; flex-direction: column; justify-content: flex-end; mask-image: linear-gradient(to top, black 85%, transparent 100%); z-index: 10; }
     #lv-wrap.full-video #chat-overlay { display: flex; }
     
-    .ov-msg { display: flex; align-items: flex-start; gap: 0.6cqw; padding: 0.4cqw 0.6cqw; margin-bottom: 0.4cqw; background: rgba(0,0,0,0.15); border-radius: 0.4cqw; text-shadow: 0 1px 3px rgba(0,0,0,0.9); will-change: transform, opacity; }
-    .ov-msg.in { animation: chatIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
-    .ov-msg.out { animation: chatOut 0.3s ease-in forwards; }
-    .ov-avatar { width: 2cqw; height: 2cqw; border-radius: 50%; display: grid; place-items: center; font-family: 'Orbitron'; font-size: 0.8cqw; font-weight: 900; color: #fff; flex-shrink: 0; border: 1px solid; }
+    .ov-msg { display: flex; align-items: flex-start; gap: 0.4cqw; padding: 0.4cqw 0.6cqw; margin-bottom: 0.3cqw; background: rgba(0,0,0,0.15); border-radius: 0.4cqw; text-shadow: 0 1px 3px rgba(0,0,0,0.9); will-change: transform, opacity; }
+    .ov-avatar { width: 1.8cqw; height: 1.8cqw; border-radius: 50%; display: grid; place-items: center; font-family: 'Orbitron'; font-size: 0.7cqw; font-weight: 900; color: #fff; flex-shrink: 0; border: 1px solid; }
     .ov-content { flex: 1; }
-    .ov-name { font-family: 'Rajdhani'; font-size: 1cqw; font-weight: 700; color: #fff; }
-    .ov-vip { color: var(--gold); font-size: 0.8cqw; filter: drop-shadow(0 0 0.2cqw var(--gold)); }
-    .ov-text { font-size: 0.9cqw; color: #ddd; line-height: 1.3; word-wrap: break-word; }
+    .ov-name { font-family: 'Rajdhani'; font-size: 0.9cqw; font-weight: 700; color: #fff; }
+    .ov-vip { color: var(--gold); font-size: 0.7cqw; filter: drop-shadow(0 0 0.2cqw var(--gold)); }
+    .ov-text { font-size: 0.8cqw; color: #ddd; line-height: 1.3; word-wrap: break-word; }
+
+    /* =========================================
+       KILL FEED (KIRI BAWAH)
+       ========================================= */
+    #kill-feed { position: absolute; left: 1.5cqw; bottom: 1.5cqw; display: flex; flex-direction: column; gap: 0.4cqw; z-index: 10; pointer-events: none; }
+    .kf-item { background: rgba(15, 15, 17, 0.8); border-left: 0.3cqw solid var(--red); padding: 0.4cqw 1cqw; border-radius: 0.3cqw; font-family: 'Rajdhani'; font-size: 1cqw; color: #fff; display: flex; align-items: center; gap: 0.5cqw; animation: slideInLeft 0.3s ease-out forwards; }
+    .kf-killer { color: var(--cyan); font-weight: 700; }
+    .kf-victim { color: #888; font-weight: 600; text-decoration: line-through; }
+    .kf-icon { color: var(--red); font-size: 0.8cqw; }
 
     /* =========================================
        POP-UP SPONSOR MEWAH
        ========================================= */
-    #sp { position: absolute; top: 8cqw; right: -60cqw; z-index: 999; display: flex; align-items: center; gap: 1.5cqw; padding: 1.5cqw 2.5cqw; font-family: 'Orbitron'; font-weight: 700; font-size: 1.2cqw; background: rgba(15, 15, 17, 0.85); backdrop-filter: blur(15px); border: 1px solid var(--cyan); border-right: none; border-radius: 1cqw 0 0 1cqw; transition: transform 0.8s cubic-bezier(0.2, 0.9, 0.2, 1); box-shadow: 0 0 3cqw rgba(0,229,255,0.3), inset 0 0 2cqw rgba(0,229,255,0.1); animation: floatCard 3s ease-in-out infinite; }
+    #sp { position: absolute; top: 8cqw; right: -60cqw; z-index: 999; display: flex; align-items: center; gap: 1.5cqw; padding: 1.2cqw 2.5cqw; font-family: 'Orbitron'; font-weight: 700; font-size: 1.1cqw; background: rgba(15, 15, 17, 0.85); backdrop-filter: blur(15px); border: 1px solid var(--cyan); border-right: none; border-radius: 1cqw 0 0 1cqw; transition: transform 0.8s cubic-bezier(0.2, 0.9, 0.2, 1); box-shadow: 0 0 3cqw rgba(0,229,255,0.3), inset 0 0 2cqw rgba(0,229,255,0.1); animation: floatCard 3s ease-in-out infinite; }
     #sp::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 0.3cqw; background: var(--cyan); box-shadow: 0 0 1.5cqw var(--cyan); border-radius: 1cqw 0 0 1cqw; }
     #sp.in { transform: translateX(-60cqw); animation: glitchIn 0.5s forwards, floatCard 3s ease-in-out infinite 0.5s; }
-    #sp img { height: 4.5cqw; filter: drop-shadow(0 0 1cqw var(--cyan)); }
+    #sp img { height: 4cqw; filter: drop-shadow(0 0 1cqw var(--cyan)); }
     #sp span { color: #fff; text-shadow: 0 0 1cqw var(--cyan); letter-spacing: 0.1cqw; }
     #sp small { display: block; font-size: 0.7cqw; color: var(--cyan); margin-top: 0.2cqw; font-family: 'Rajdhani'; }
 
     /* KONTROL AUTO-HIDE */
     #ctl { position: absolute; left: 2cqw; bottom: 4cqw; z-index: 10000; display: flex; gap: 0.5cqw; padding: 0.5cqw; background: rgba(0,0,0,0.8); border: 1px solid var(--border); border-radius: 0.4cqw; opacity: 0.1; transition: opacity 0.3s; }
     #ctl:hover { opacity: 1; }
-    .btn { font-family: 'Orbitron'; font-weight: 700; font-size: 0.85cqw; color: var(--chrome); background: #111; border: 1px solid var(--border); padding: 0 1.2cqw; height: 2.5cqw; border-radius: 0.4cqw; cursor: pointer; transition: 0.2s; }
+    .btn { font-family: 'Orbitron'; font-weight: 700; font-size: 0.8cqw; color: var(--chrome); background: #111; border: 1px solid var(--border); padding: 0 1cqw; height: 2.2cqw; border-radius: 0.4cqw; cursor: pointer; transition: 0.2s; }
     .btn:hover, .btn.on { background: var(--cyan); color: #000; border-color: var(--cyan); box-shadow: 0 0 1cqw var(--cyan); }
     .btn.full-btn { background: var(--gold); color: #000; border-color: var(--gold); margin-left: 0.5cqw; }
 
-    /* =========================================
-       START SCREEN & TRANSITION OVERLAY
-       ========================================= */
+    /* START SCREEN & TRANSITION */
     #start-screen { position: fixed; inset: 0; background: #000; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: opacity 0.5s; }
     #start-screen h1 { font-family: 'Orbitron'; color: var(--cyan); font-size: 3rem; text-shadow: 0 0 20px var(--cyan); margin-bottom: 20px; }
     #start-screen p { font-family: 'Rajdhani'; color: #fff; font-size: 1.5rem; letter-spacing: 2px; animation: pulse 1.5s infinite; }
 
-    /* TRANSISI LOGO POP + FLASH BLUR */
     #trans-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); z-index: 9999; display: none; justify-content: center; align-items: center; overflow: hidden; }
-    #trans-logo { width: 25cqw; position: absolute; opacity: 0; transform: scale(0.5); filter: drop-shadow(0 0 4cqw var(--cyan)); }
+    #trans-logo { width: 22cqw; position: absolute; opacity: 0; transform: scale(0.5); filter: drop-shadow(0 0 4cqw var(--cyan)); }
     #trans-flash { position: absolute; top: 50%; left: 50%; width: 10cqw; height: 10cqw; background: #fff; border-radius: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; filter: blur(2cqw); pointer-events: none; }
 
-    /* =========================================
-       KEYFRAMES (60FPS SMOOTH)
-       ========================================= */
+    /* KEYFRAMES 60FPS */
     @keyframes fadeInScale { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
     @keyframes slideIn { from { opacity: 0; transform: translateX(-5cqw); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
     @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes floatCard { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.5cqw); } }
     @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
@@ -243,16 +241,6 @@
     @keyframes floatBox { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.5cqw); } }
     @keyframes glitchIn { 0% { transform: translateX(0); opacity: 0; } 20% { transform: translateX(-2cqw); opacity: 1; } 40% { transform: translateX(1cqw); } 60% { transform: translateX(-0.5cqw); } 80% { transform: translateX(0.5cqw); } 100% { transform: translateX(0); } }
     @keyframes logoPop { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-    
-    /* CHAT SMOOTH ANIMATION */
-    @keyframes chatIn {
-        0% { opacity: 0; transform: translateY(20px) scale(0.95); }
-        100% { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    @keyframes chatOut {
-        0% { opacity: 1; transform: translateY(0) scale(1); max-height: 100px; margin-bottom: 0.4cqw; }
-        100% { opacity: 0; transform: translateY(-20px) scale(0.95); max-height: 0; margin-bottom: 0; padding: 0; border: none; }
-    }
 </style>
 </head>
 <body class="theme-default">
@@ -263,7 +251,6 @@
 </div>
 
 <div class="app-wrapper" id="app-wrapper">
-    <!-- TRANSISI OVERLAY -->
     <div id="trans-overlay">
         <img id="trans-logo" src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="Logo">
         <div id="trans-flash"></div>
@@ -294,6 +281,20 @@
             <img id="sb-logo" class="standby-logo" src="" alt="Logo" style="display:none;">
             <h1 class="standby-title">GH-T ARENA</h1>
             <div class="standby-sub" id="standby-sub">WAITING FOR SCHEDULE</div>
+            
+            <!-- H2H Stats (Muncul kalau ada 2 tim terdaftar) -->
+            <div class="h2h-container" id="h2h-container" style="display:none;">
+                <div class="h2h-team">
+                    <h3 id="h2h-a-name">Team A</h3>
+                    <p id="h2h-a-stats">-</p>
+                </div>
+                <div class="h2h-vs">VS</div>
+                <div class="h2h-team">
+                    <h3 id="h2h-b-name">Team B</h3>
+                    <p id="h2h-b-stats">-</p>
+                </div>
+            </div>
+
             <div class="cd" id="cd"></div>
         </div>
 
@@ -330,8 +331,8 @@
                     <button class="btn-vid-fs" onclick="toggleVideoFullscreen()"><i class="fa-solid fa-expand"></i> FULL VIDEO</button>
                 </div>
                 
-                <!-- Overlay Chat (Hanya Muncul saat Full Video) -->
                 <div id="chat-overlay"></div>
+                <div id="kill-feed"></div> <!-- Kill Feed Nyempil di kiri bawah -->
 
                 <div class="side">
                     <div class="panel" id="chat-p">
@@ -367,18 +368,25 @@
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════
-// 1. SETUP & START FULLSCREEN
-// ═══════════════════════════════════════════════════════════
+// =========================================
+// AUDIO BACKSOUND
+// =========================================
+let bgmAudio = new Audio();
+bgmAudio.loop = true;
+bgmAudio.volume = 0.5;
+
+// =========================================
+// SETUP & START FULLSCREEN
+// =========================================
 const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let TOURNAMENT_ID = new URLSearchParams(window.location.search).get('t') || null;
-let siteSettings = { logo: '', runningText: '', activeTheme: 'default' };
-let tournamentInfo = { name: '', status: '', schedule: '', streamUrl: '' };
+let siteSettings = {};
+let tournamentInfo = {};
 let brData = []; let predatorData = []; let mapData = []; let chatData = []; let sponsorData = []; 
-let csData = [];
+let csData = []; let killFeedData = [];
 
 function startDisplay() {
     const el = document.getElementById('start-screen');
@@ -391,9 +399,9 @@ function startDisplay() {
     fetchData();
 }
 
-// ═══════════════════════════════════════════════════════════
-// 2. FETCH DATA SUPABASE
-// ═══════════════════════════════════════════════════════════
+// =========================================
+// FETCH DATA SUPABASE
+// =========================================
 async function fetchData() {
     try {
         if (!TOURNAMENT_ID) {
@@ -413,29 +421,36 @@ async function fetchData() {
         const { data: settings } = await sb.from('site_settings').select('key, value');
         if(settings) {
             settings.forEach(s => {
-                if(s.key === 'logo_transparent') siteSettings.logo = s.value;
-                if(s.key === 'display_running_text') siteSettings.runningText = s.value;
-                if(s.key === 'active_theme') siteSettings.activeTheme = s.value.replace(/"/g, '');
+                siteSettings[s.key] = s.value;
+                if(s.key === 'display_bgm_url' && s.value) {
+                    bgmAudio.src = s.value.replace(/"/g, '');
+                }
+                if(s.key === 'display_bgm_volume') {
+                    bgmAudio.volume = parseFloat(s.value) || 0.5;
+                }
             });
         }
 
         const { data: br } = await sb.from('v_leaderboard_public').select('*').eq('tournament_id', TOURNAMENT_ID).order('rank_no');
-        if(br) brData = br.map(t => ({ id: t.registration_id, name: t.team_name, logo: t.logo_url, rank: t.rank_no, totalKills: t.total_kills, totalPts: t.total_points }));
+        if(br) brData = br;
 
         const { data: pred } = await sb.from('v_predator_live').select('*').eq('tournament_id', TOURNAMENT_ID);
-        if(pred) predatorData = pred.map(p => ({ nickname: p.nickname, team: p.team_name, kills: p.total_kills }));
+        if(pred) predatorData = pred;
 
         const { data: maps } = await sb.from('br_matches').select('match_no, status, game_maps(name, image_url)').eq('tournament_id', TOURNAMENT_ID).order('match_no');
-        if(maps) mapData = maps.map(m => ({ name: m.game_maps?.name || 'Map', image: m.game_maps?.image_url || '', status: m.status === 'selesai' ? 'selesai' : (m.status === 'berlangsung' ? 'live' : 'next') }));
+        if(maps) mapData = maps;
 
         const { data: chat } = await sb.from('tournament_chats').select('username, message').eq('tournament_id', TOURNAMENT_ID).order('created_at', {ascending: false}).limit(20);
         if(chat) chatData = chat.reverse();
 
         const { data: sp } = await sb.from('sponsors').select('*').eq('is_active', true).order('sort_order');
-        if(sp) sponsorData = sp.map(s => ({ name: s.name, logo: s.logo_url }));
+        if(sp) sponsorData = sp;
 
         const { data: cs } = await sb.from('v_cs_bracket_public').select('*').eq('tournament_id', TOURNAMENT_ID).order('round_no');
         if(cs) csData = cs;
+
+        const { data: kf } = await sb.from('kill_feeds').select('*').eq('tournament_id', TOURNAMENT_ID).order('created_at', {ascending: false}).limit(5);
+        if(kf) killFeedData = kf;
 
         renderAll();
         setupRealtime();
@@ -443,18 +458,18 @@ async function fetchData() {
     } catch(err) { console.error("Error Fetch:", err); renderAll(); }
 }
 
-// ═══════════════════════════════════════════════════════════
-// 3. RENDER UI
-// ═══════════════════════════════════════════════════════════
+// =========================================
+// RENDER UI
+// =========================================
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 
 function renderAll() {
-    document.body.className = 'theme-' + siteSettings.activeTheme;
-    const L = siteSettings.logo;
-    ['#h-logo','#sb-logo'].forEach(q=>{ const el=$(q); if(L) { el.src=L; el.style.display='block'; } });
+    if(siteSettings.active_theme) document.body.className = 'theme-' + siteSettings.active_theme.replace(/"/g, '');
+    if(siteSettings.logo_transparent) { $('#h-logo').src = siteSettings.logo_transparent; $('#h-logo').style.display='block'; $('#sb-logo').src = siteSettings.logo_transparent; $('#sb-logo').style.display='block'; }
+    
     $('#h-name').textContent = tournamentInfo.name || 'GH-T ARENA';
-    $('#mq-text').textContent = siteSettings.runningText || '🔥 SELAMAT DATANG DI GH-T ARENA 🔥';
+    $('#mq-text').textContent = siteSettings.display_running_text || '🔥 SELAMAT DATANG DI GH-T ARENA 🔥';
     
     const st = $('#h-st');
     st.innerHTML = `<div class="live-dot"></div> ${tournamentInfo.status ? tournamentInfo.status.toUpperCase() : 'LIVE'}`;
@@ -463,57 +478,60 @@ function renderAll() {
     renderBR();
     renderCS();
     renderLive();
+    renderKillFeed();
     startSponsorLoop();
 }
 
-// -- COUNTDOWN DINAMIS --
+// -- COUNTDOWN & H2H --
 let cdInterval;
 function startCountdown() {
     if(cdInterval) clearInterval(cdInterval);
     const cdContainer = $('#cd');
-    if(cdContainer.children.length === 0) {
-        cdContainer.innerHTML = [0,1,'s',2,3,'s',4,5].map(x => x=='s' ? '<span class="sep">:</span>' : `<div class="reel"><div class="strip"><i>0</i></div></div>`).join('');
-    }
+    if(cdContainer.children.length === 0) cdContainer.innerHTML = [0,1,'s',2,3,'s',4,5].map(x => x=='s' ? '<span class="sep">:</span>' : `<div class="reel"><div class="strip"><i>0</i></div></div>`).join('');
     
+    // Render H2H Dummy (Bisa dihubungkan ke match selanjutnya)
+    if(csData.length > 0) {
+        const nextMatch = csData.find(m => m.status === 'belum_dimulai');
+        if(nextMatch && nextMatch.team_a_name && nextMatch.team_b_name) {
+            $('#h2h-container').style.display = 'flex';
+            $('#h2h-a-name').textContent = nextMatch.team_a_name;
+            $('#h2h-b-name').textContent = nextMatch.team_b_name;
+            $('#h2h-a-stats').textContent = 'Menunggu Match';
+            $('#h2h-b-stats').textContent = 'Menunggu Match';
+        }
+    }
+
     const STR = $$('.strip'), CUR = [];
     cdInterval = setInterval(() => {
         let target = tournamentInfo.schedule ? new Date(tournamentInfo.schedule).getTime() : NaN;
-        
-        if (isNaN(target)) {
-            $('#standby-sub').textContent = "WAITING FOR SCHEDULE";
-            return; 
-        }
-
+        if (isNaN(target)) { $('#standby-sub').textContent = "WAITING FOR SCHEDULE"; return; }
         const t = Math.max(0, Math.floor((target - Date.now()) / 1000));
-        
-        if(t === 0) $('#standby-sub').textContent = "MATCH IS STARTING";
-        else $('#standby-sub').textContent = "MATCH WILL START IN";
-
+        if(t === 0) $('#standby-sub').textContent = "MATCH IS STARTING"; else $('#standby-sub').textContent = "MATCH WILL START IN";
         [Math.min(99, Math.floor(t / 3600)), Math.floor(t % 3600 / 60), t % 60].flatMap(n => [Math.floor(n / 10), n % 10]).forEach((v, i) => {
             const s = STR[i], o = CUR[i]; if(o === v) return; CUR[i] = v;
             if(o == null) { s.innerHTML = `<i>${v}</i>`; return; }
             s.style.transition = 'none'; s.style.transform = 'none'; s.innerHTML = `<i>${o}</i><i>${v}</i>`; void s.offsetHeight;
-            s.style.transition = 'transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1)'; s.style.transform = 'translateY(-9cqw)';
-            clearTimeout(s._t); s._t = setTimeout(() => { s.style.transition = 'none'; s.style.transform = 'none'; s.innerHTML = `<i>${v}</i>`; }, 650);
+            s.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1)'; s.style.transform = 'translateY(-8cqw)';
+            clearTimeout(s._t); s._t = setTimeout(() => { s.style.transition = 'none'; s.style.transform = 'none'; s.innerHTML = `<i>${v}</i>`; }, 550);
         });
     }, 1000);
 }
 
-// -- BR LEADERBOARD --
+// -- BR --
 function renderBR() {
     const L = $('#br-list'); L.innerHTML = '';
-    const rows = [...brData].sort((a,b) => a.rank - b.rank);
+    const rows = [...brData].sort((a,b) => a.rank_no - b.rank_no);
     if(rows.length === 0) { L.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted);">Belum ada data</div>'; return; }
     rows.forEach(t => {
-        let logoTag = t.logo ? `<img class="lg" src="${esc(t.logo)}" onerror="this.style.opacity=0">` : `<span class="lg">${esc((t.name||'?')[0])}</span>`;
-        let r = document.createElement('div'); r.className = 'row' + (t.rank <= 3 ? ' r' + t.rank : '');
-        r.innerHTML = `<div class="tm">${logoTag}${esc(t.name)}</div>` + [1,2,3,4,5,6].map(()=>'<span style="opacity:0.3">-</span>').join('') + `<b>${t.totalKills}</b><b>${t.totalPts}</b><b class="rk">${t.rank}</b>`;
+        let logoTag = t.logo_url ? `<img class="lg" src="${esc(t.logo_url)}" onerror="this.style.opacity=0">` : `<span class="lg">${esc((t.team_name||'?')[0])}</span>`;
+        let r = document.createElement('div'); r.className = 'row' + (t.rank_no <= 3 ? ' r' + t.rank_no : '');
+        r.innerHTML = `<div class="tm">${logoTag}${esc(t.team_name)}</div>` + [1,2,3,4,5,6].map(()=>'<span style="opacity:0.3">-</span>').join('') + `<b>${t.total_kills}</b><b>${t.total_points}</b><b class="rk">${t.rank_no}</b>`;
         L.appendChild(r);
     });
-    $('#pr-list').innerHTML = [...predatorData].sort((a,b)=>b.kills-a.kills).slice(0,5).map((p,i)=>`<div class="pi"><em>${i+1}</em><div>${esc(p.nickname)}<small>${esc(p.team)}</small></div><b>${p.kills}</b></div>`).join('') || '<div style="text-align:center; padding: 2cqw; color: var(--muted);">Belum ada data</div>';
+    $('#pr-list').innerHTML = [...predatorData].sort((a,b)=>b.total_kills-a.total_kills).slice(0,5).map((p,i)=>`<div class="pi"><em>${i+1}</em><div>${esc(p.nickname)}<small>${esc(p.team_name)}</small></div><b>${p.total_kills}</b></div>`).join('') || '<div style="text-align:center; padding: 2cqw; color: var(--muted);">Belum ada data</div>';
 }
 
-// -- CS SCHEDULE --
+// -- CS --
 function renderCS() {
     const list = $('#cs-schedule-list'); list.innerHTML = '';
     if(!csData || csData.length === 0) { list.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Jadwal Belum Tersedia</div>'; return; }
@@ -575,7 +593,19 @@ function renderCS() {
     });
 }
 
-// -- LIVE STREAM & FULLSCREEN VIDEO --
+// -- KILL FEED --
+function renderKillFeed() {
+    const box = $('#kill-feed');
+    box.innerHTML = '';
+    killFeedData.forEach(kf => {
+        const el = document.createElement('div');
+        el.className = 'kf-item';
+        el.innerHTML = `<span class="kf-killer">${esc(kf.killer_team)}</span> <i class="fa-solid fa-skull kf-icon"></i> <span class="kf-victim">${esc(kf.victim_team)}</span>`;
+        box.appendChild(el);
+    });
+}
+
+// -- LIVE STREAM & MAP --
 let isFullVideo = false;
 function toggleVideoFullscreen() {
     const wrap = document.getElementById('lv-wrap');
@@ -598,40 +628,35 @@ function renderLive() {
         if(f.getAttribute('src') !== embedUrl) f.src = embedUrl;
     }
     
-    // Render Sidebar Chat (Normal)
     const c = $('#chat');
     if(chatData.length > 0) {
         c.innerHTML = chatData.map(x => `<p><b>${esc(x.username)}</b> ${esc(x.message)}</p>`).join('');
         c.scrollTop = c.scrollHeight;
     }
     
-    // Render Map Pool
     $('#maps').innerHTML = mapData.map(m => `
         <div class="mp">
-            <img src="${esc(m.image)}" onerror="this.src='https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg'">
+            <img src="${esc(m.game_maps?.image_url || '')}" onerror="this.src='https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg'">
             <div class="mp-info">
-                <div class="mp-name">${esc(m.name)}</div>
+                <div class="mp-name">${esc(m.game_maps?.name || 'Map')}</div>
                 <div class="mp-match">Match ${m.match_no}</div>
             </div>
-            <em class="${esc(m.status)}">${esc(m.status.toUpperCase())}</em>
+            <em class="${m.status === 'selesai' ? 'selesai' : (m.status === 'berlangsung' ? 'live' : 'next')}">${m.status ? m.status.toUpperCase() : 'NEXT'}</em>
         </div>
     `).join('');
     
-    // Isi Overlay Chat awal dengan chat terakhir
     const ov = $('#chat-overlay'); ov.innerHTML = '';
     const lastMsgs = chatData.slice(-6);
     lastMsgs.forEach(msg => addOverlayChat(msg.username, msg.message, false));
 }
 
-// LOGIKA CHAT OVERLAY (YOUTUBE STYLE - MAX 6)
 function addOverlayChat(name, text, animate = true) {
     const box = document.getElementById('chat-overlay');
-    
     const el = document.createElement('div');
     el.className = 'ov-msg';
     
     const initial = name.charAt(0).toUpperCase();
-    const isVip = name.toLowerCase().includes('vip') || name.toLowerCase().includes('boss'); // Dummy logic
+    const isVip = name.toLowerCase().includes('vip') || name.toLowerCase().includes('boss');
     const color = isVip ? '#ffd700' : '#00e5ff';
     const bg = 'rgba(255,255,255,0.1)';
     const crown = isVip ? `<i class="fa-solid fa-crown ov-vip"></i>` : '';
@@ -644,12 +669,11 @@ function addOverlayChat(name, text, animate = true) {
         </div>
     `;
     
-    // Animasi In Smooth
     if(animate) {
         el.style.opacity = '0';
         el.style.transform = 'translateY(20px) scale(0.95)';
         box.appendChild(el);
-        void el.offsetWidth; // Reflow
+        void el.offsetWidth; 
         el.style.transition = 'all 0.4s cubic-bezier(0.2, 0.9, 0.3, 1)';
         el.style.opacity = '1';
         el.style.transform = 'translateY(0) scale(1)';
@@ -657,7 +681,6 @@ function addOverlayChat(name, text, animate = true) {
         box.appendChild(el);
     }
 
-    // Batasi max 6 chat
     if (box.children.length > 6) {
         const first = box.firstElementChild;
         first.style.transition = 'all 0.3s ease-in';
@@ -670,14 +693,14 @@ function addOverlayChat(name, text, animate = true) {
     }
 }
 
-// -- SPONSOR MEWAH --
+// -- SPONSOR --
 let spI = 0, spTimeout;
 function startSponsorLoop() {
     if(spTimeout) clearTimeout(spTimeout);
     if(!sponsorData.length) return;
     const s = sponsorData[spI++ % sponsorData.length], e = $('#sp');
     
-    $('#sp-logo').src = s.logo || '';
+    $('#sp-logo').src = s.logo_url || '';
     $('#sp-name').innerText = s.name;
     
     e.classList.remove('in');
@@ -690,19 +713,21 @@ function startSponsorLoop() {
     }, 6000);
 }
 
-// REALTIME LISTENER (AUTO UPDATE TANPA REFRESH)
+// -- REALTIME LISTENER --
 function setupRealtime() {
     sb.channel('rt_display').on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_chats' }, payload => {
         if(payload.new.tournament_id === TOURNAMENT_ID) {
-            // Masukin ke array data
             chatData.push(payload.new); if(chatData.length > 50) chatData.shift();
-            
-            // Render ke Sidebar Chat
             if(document.getElementById('scene-live').classList.contains('active')) {
                 renderLive(); 
-                // Tambahin ke Overlay Chat juga
                 addOverlayChat(payload.new.username, payload.new.message);
             }
+        }
+    }).on('postgres_changes', { event: '*', schema: 'public', table: 'kill_feeds' }, payload => {
+        if(payload.new.tournament_id === TOURNAMENT_ID) {
+            killFeedData.unshift(payload.new);
+            if(killFeedData.length > 5) killFeedData.pop();
+            renderKillFeed();
         }
     }).on('postgres_changes', { event: '*', schema: 'public', table: 'cs_matches' }, payload => {
         fetchData();
@@ -715,9 +740,9 @@ function setupRealtime() {
     }).subscribe();
 }
 
-// ═══════════════════════════════════════════════════════════
-// 4. NAVIGASI & TRANSISI (SMOOTH 60FPS)
-// ═══════════════════════════════════════════════════════════
+// =========================================
+// NAVIGASI & TRANSISI (LOGO + FLASH)
+// =========================================
 window.nav = function(targetScene) {
     if (window.isTransitioning) return;
     const currentEl = document.querySelector('.scene.active');
@@ -737,17 +762,14 @@ window.nav = function(targetScene) {
     flash.style.filter = 'blur(2cqw)';
     void logo.offsetWidth; 
 
-    // 1. Logo Pop In (0.6s)
     logo.style.animation = 'logoPop 0.6s ease-out forwards';
 
-    // 2. Flash (Mulai setelah 0.6s)
     setTimeout(() => {
         flash.style.transition = 'transform 0.8s ease-in, opacity 0.5s ease-in, filter 0.5s ease-in';
         flash.style.transform = 'translate(-50%, -50%) scale(50)'; 
         flash.style.opacity = '1'; 
         flash.style.filter = 'blur(0px)'; 
 
-        // 3. Ganti Scene pas Flash Penuh
         setTimeout(() => {
             if (currentEl) currentEl.classList.remove('active');
             const newEl = document.getElementById('scene-' + targetScene);
@@ -757,7 +779,6 @@ window.nav = function(targetScene) {
             if (targetScene === 'br') renderBR(); 
             if (targetScene === 'live') renderLive();
 
-            // 4. Flash Pudar
             setTimeout(() => {
                 flash.style.transition = 'opacity 0.6s ease-out';
                 flash.style.opacity = '0'; 
