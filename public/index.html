@@ -981,7 +981,8 @@ async function openDetail(mode, id) {
   $('det-fee').innerText = rp(data.entry_fee);
   $('det-slots').innerText = `${data.filled_slots} / ${data.total_slots} Tim`;
   $('det-date').innerText = data.schedule_at ? new Date(data.schedule_at).toLocaleDateString('id-ID') : '-';
-
+startTournamentTimer(data.schedule_at);
+   
   if (data.is_offline) {
     $('det-offline').classList.remove('hidden');
     $('det-loc-name').innerText = data.location_name || 'Lokasi belum diatur';
