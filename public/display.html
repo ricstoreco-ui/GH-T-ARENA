@@ -209,7 +209,7 @@
     #sp small { display: block; font-size: 0.7cqw; color: var(--cyan); margin-top: 0.2cqw; font-family: 'Rajdhani'; }
 
     /* KONTROL AUTO-HIDE */
-    #ctl { position: absolute; left: 2cqw; bottom: 4cqw; z-index: 10000; display: flex; gap: 0.5cqw; padding: 0.5cqw; background: rgba(0,0,0,0.8); border: 1px solid var(--border); border-radius: 0.4cqw; opacity: 0.1; transition: opacity 0.3s; }
+    #ctl { position: absolute; left: 2cqw; bottom: 4cqw; z-index: 10000; display: flex; gap: 0.5cqw; padding: 0.5cqw; background: rgba(0,0,0,0.8); border: 1px solid var(--border); border-radius: 0.4cqw; opacity: 0.8; transition: opacity 0.3s; }
     #ctl:hover { opacity: 1; }
     .btn { font-family: 'Orbitron'; font-weight: 700; font-size: 0.8cqw; color: var(--chrome); background: #111; border: 1px solid var(--border); padding: 0 1cqw; height: 2.2cqw; border-radius: 0.4cqw; cursor: pointer; transition: 0.2s; }
     .btn:hover, .btn.on { background: var(--cyan); color: #000; border-color: var(--cyan); box-shadow: 0 0 1cqw var(--cyan); }
@@ -219,10 +219,6 @@
     #start-screen { position: fixed; inset: 0; background: #000; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: opacity 0.5s; }
     #start-screen h1 { font-family: 'Orbitron'; color: var(--cyan); font-size: 3rem; text-shadow: 0 0 20px var(--cyan); margin-bottom: 20px; }
     #start-screen p { font-family: 'Rajdhani'; color: #fff; font-size: 1.5rem; letter-spacing: 2px; animation: pulse 1.5s infinite; }
-
-    #trans-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); z-index: 9999; display: none; justify-content: center; align-items: center; overflow: hidden; }
-    #trans-logo { width: 22cqw; position: absolute; opacity: 0; transform: scale(0.5); filter: drop-shadow(0 0 4cqw var(--cyan)); }
-    #trans-flash { position: absolute; top: 50%; left: 50%; width: 10cqw; height: 10cqw; background: #fff; border-radius: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; filter: blur(2cqw); pointer-events: none; }
 
     /* KEYFRAMES 60FPS */
     @keyframes fadeInScale { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
@@ -240,7 +236,6 @@
     @keyframes textGlow { from { text-shadow: 0 0 1cqw rgba(0,229,255,0.5); } to { text-shadow: 0 0 2.5cqw rgba(0,229,255,1); } }
     @keyframes floatBox { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.5cqw); } }
     @keyframes glitchIn { 0% { transform: translateX(0); opacity: 0; } 20% { transform: translateX(-2cqw); opacity: 1; } 40% { transform: translateX(1cqw); } 60% { transform: translateX(-0.5cqw); } 80% { transform: translateX(0.5cqw); } 100% { transform: translateX(0); } }
-    @keyframes logoPop { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 </style>
 </head>
 <body class="theme-default">
@@ -251,12 +246,9 @@
 </div>
 
 <div class="app-wrapper" id="app-wrapper">
-    <div id="trans-overlay">
-        <img id="trans-logo" src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="Logo">
-        <div id="trans-flash"></div>
-    </div>
-<!-- VIDEO TRANSISI FULL SCREEN -->
-<video id="video-transisi" muted playsinline style="display: none; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 9998; pointer-events: none; opacity: 0; transition: opacity 0.3s ease-in-out;"></video>
+    <!-- VIDEO TRANSISI (Di dalam frame 16:9) -->
+    <video id="video-transisi" muted playsinline style="display: none; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 9998; pointer-events: none; opacity: 0; transition: opacity 0.3s ease-in-out;"></video>
+
     <div class="particles">
         <div class="particle"></div><div class="particle"></div><div class="particle"></div>
         <div class="particle"></div><div class="particle"></div>
@@ -347,6 +339,11 @@
                 </div>
             </div>
         </div>
+
+        <!-- SCENE 5: IKLAN KHUSUS (16:9 / 9:16 Support) -->
+        <div id="scene-ads" class="scene" style="justify-content: center; align-items: center; background: #000; padding: 0;">
+            <video id="ads-video" muted playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>
+        </div>
     </main>
 
     <div id="sp">
@@ -361,6 +358,7 @@
 
     <div id="ctl">
         <button class="btn" data-s="standby">STANDBY</button>
+        <button class="btn" data-s="ads">IKLAN</button>
         <button class="btn" data-s="br">BR</button>
         <button class="btn" data-s="cs">CS</button>
         <button class="btn" data-s="live">LIVE</button>
@@ -397,6 +395,7 @@ function startDisplay() {
     if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(e => console.log(e));
     }
+    if (bgmAudio.src) bgmAudio.play().catch(e => console.log('BGM:', e));
     fetchData();
 }
 
@@ -490,7 +489,6 @@ function startCountdown() {
     const cdContainer = $('#cd');
     if(cdContainer.children.length === 0) cdContainer.innerHTML = [0,1,'s',2,3,'s',4,5].map(x => x=='s' ? '<span class="sep">:</span>' : `<div class="reel"><div class="strip"><i>0</i></div></div>`).join('');
     
-    // Render H2H Dummy (Bisa dihubungkan ke match selanjutnya)
     if(csData.length > 0) {
         const nextMatch = csData.find(m => m.status === 'belum_dimulai');
         if(nextMatch && nextMatch.team_a_name && nextMatch.team_b_name) {
@@ -715,17 +713,18 @@ function startSponsorLoop() {
 }
 
 // -- REALTIME LISTENER --
+let rtChannel = null;
 function setupRealtime() {
-    sb.channel('rt_display').on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_chats' }, payload => {
-        if(payload.new.tournament_id === TOURNAMENT_ID) {
+    if (rtChannel) sb.removeChannel(rtChannel);
+    rtChannel = sb.channel('rt_display').on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_chats' }, payload => {
+        if(payload.new && payload.new.tournament_id === TOURNAMENT_ID) {
             chatData.push(payload.new); if(chatData.length > 50) chatData.shift();
             if(document.getElementById('scene-live').classList.contains('active')) {
                 renderLive(); 
-                addOverlayChat(payload.new.username, payload.new.message);
             }
         }
     }).on('postgres_changes', { event: '*', schema: 'public', table: 'kill_feeds' }, payload => {
-        if(payload.new.tournament_id === TOURNAMENT_ID) {
+        if(payload.new && payload.new.tournament_id === TOURNAMENT_ID) {
             killFeedData.unshift(payload.new);
             if(killFeedData.length > 5) killFeedData.pop();
             renderKillFeed();
@@ -742,37 +741,6 @@ function setupRealtime() {
 }
 
 // =========================================
-// NAVIGASI & TRANSISI (LOGO + FLASH)
-// =========================================
-window.nav = function(targetScene) {
-    if (window.isTransitioning) return;
-    const currentEl = document.querySelector('.scene.active');
-    if (currentEl && currentEl.id === 'scene-' + targetScene) return;
-
-    window.isTransitioning = true;
-
-    mainkanTransisi(() => {
-        if (currentEl) currentEl.classList.remove('active');
-        
-        const newEl = document.getElementById('scene-' + targetScene);
-        if (newEl) newEl.classList.add('active');
-
-        if (targetScene === 'cs') renderCS(); 
-        if (targetScene === 'br') renderBR(); 
-        if (targetScene === 'live') renderLive();
-        
-        setTimeout(() => { window.isTransitioning = false; }, 100);
-    });
-};
-
-$$('#ctl .btn[data-s]').forEach(b => b.onclick = () => nav(b.dataset.s));
-$('#fv').onclick = () => {
-    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-    else document.exitFullscreen();
-};
-
-setInterval(() => { $('#clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false }); }, 1000);
-    // =========================================
 // LOGIKA VIDEO TRANSISI (FADE)
 // =========================================
 const videoTransisi = document.getElementById('video-transisi');
@@ -792,21 +760,84 @@ function mainkanTransisi(callback) {
     
     videoTransisi.play().catch(e => console.log("Gagal mainkan transisi:", e));
 
-    // --- BAGIAN YANG DIUBAH ---
+    // Begitu video selesai, pindah scene di belakang layar, lalu Fade Out
     videoTransisi.onended = () => {
-        // 1. PINDAH SCENE DULU (Di belakang layar)
         if (callback) callback(); 
-
-        // 2. Baru videonya memudar (Fade Out)
+        
         videoTransisi.style.transition = 'opacity 0.5s ease-out';
         videoTransisi.style.opacity = '0'; 
         
-        // 3. Setelah 0.5 detik (transisi pudar selesai), sembunyikan video
         setTimeout(() => {
             videoTransisi.style.display = 'none';
         }, 500); 
     };
 }
+
+// =========================================
+// LOGIKA IKLAN BERGANTIAN (16:9 & 9:16)
+// =========================================
+const daftarIklan = [
+    "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/lv_0_20261117014719.mp4",
+    "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/lv_0_20261117014702.mp4",
+    "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/GH_TOPUP_Ad_60s_1080p.mp4",
+    "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/lv_0_20261117014702.mp4"
+];
+
+let urutanIklan = 0;
+const elemenIklan = document.getElementById('ads-video');
+
+function putarIklanBerikutnya() {
+    if (!elemenIklan) return;
+    elemenIklan.src = daftarIklan[urutanIklan];
+    elemenIklan.play().catch(e => console.log("Autoplay iklan dicegah browser:", e));
+}
+
+if (elemenIklan) {
+    elemenIklan.addEventListener('ended', () => {
+        urutanIklan++;
+        if (urutanIklan >= daftarIklan.length) urutanIklan = 0; 
+        putarIklanBerikutnya();
+    });
+}
+
+// =========================================
+// NAVIGASI & TRANSISI (UPDATED)
+// =========================================
+window.nav = function(targetScene) {
+    if (window.isTransitioning) return;
+    const currentEl = document.querySelector('.scene.active');
+    if (currentEl && currentEl.id === 'scene-' + targetScene) return;
+
+    window.isTransitioning = true;
+
+    mainkanTransisi(() => {
+        if (currentEl) currentEl.classList.remove('active');
+        
+        const newEl = document.getElementById('scene-' + targetScene);
+        if (newEl) newEl.classList.add('active');
+
+        if (targetScene === 'cs') renderCS(); 
+        if (targetScene === 'br') renderBR(); 
+        if (targetScene === 'live') renderLive();
+        
+        // Kontrol Video Iklan
+        if (targetScene === 'ads') {
+            putarIklanBerikutnya();
+        } else {
+            if (elemenIklan) elemenIklan.pause(); 
+        }
+        
+        setTimeout(() => { window.isTransitioning = false; }, 100);
+    });
+};
+
+$$('#ctl .btn[data-s]').forEach(b => b.onclick = () => nav(b.dataset.s));
+$('#fv').onclick = () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+};
+
+setInterval(() => { $('#clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false }); }, 1000);
 </script>
 </body>
 </html>
