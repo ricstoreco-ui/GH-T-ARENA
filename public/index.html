@@ -140,6 +140,10 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
 
     <!-- ================= INTRO OVERLAY ================= -->
     <div id="intro-overlay">
+       <!-- TOMBOL SKIP INTRO -->
+<button id="btn-skip-intro" onclick="skipIntro()" style="position: absolute; top: 30px; right: 30px; z-index: 10000; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid var(--cyan); padding: 8px 16px; border-radius: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; cursor: pointer; backdrop-filter: blur(5px); display: flex; align-items: center; gap: 8px; transition: 0.3s; box-shadow: 0 0 10px rgba(0,229,255,0.3);">
+    SKIP INTRO <i class="fa-solid fa-forward"></i>
+</button>
         <div class="bg-glow"></div>
         <div class="grid-moving"></div>
         <div id="loading-wrapper">
@@ -1741,6 +1745,34 @@ function shareToWA() {
 
     const encodedPesan = encodeURIComponent(pesan);
     window.open(`https://wa.me/?text=${encodedPesan}`, '_blank');
+}
+   // =========================================
+// FUNGSI SKIP INTRO WEB
+// =========================================
+function skipIntro() {
+    const introOverlay = document.getElementById('intro-overlay');
+    const mainContent = document.getElementById('main-content');
+    
+    // Sembunyikan intro dengan efek fade out
+    introOverlay.classList.add('fade-out'); 
+    
+    // Paksa tampilkan konten utama
+    setTimeout(() => {
+        introOverlay.style.display = 'none';
+        
+        mainContent.style.display = 'block';
+        void mainContent.offsetWidth; 
+        mainContent.style.opacity = '1';
+        
+        // Munculkan Navbar & Bottom Nav
+        document.getElementById('nav').classList.remove('hidden');
+        document.getElementById('server').classList.remove('hidden');
+        document.getElementById('btm-nav').classList.remove('hidden');
+        
+        // Jalankan fungsi web
+        startClock();
+        initAuth();
+    }, 500); // Jeda setengah detik agar mulus
 }
 </script>
 </body>
