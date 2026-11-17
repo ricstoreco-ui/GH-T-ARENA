@@ -784,7 +784,7 @@ function mainkanTransisi(callback) {
     videoTransisi.style.display = 'block';
     videoTransisi.currentTime = 0; 
     
-    // Fade In (Muncul)
+    // Fade In
     videoTransisi.style.transition = 'opacity 0.3s ease-in';
     videoTransisi.style.opacity = '0'; 
     void videoTransisi.offsetWidth; 
@@ -792,14 +792,18 @@ function mainkanTransisi(callback) {
     
     videoTransisi.play().catch(e => console.log("Gagal mainkan transisi:", e));
 
-    // Fade Out (Hilang)
+    // --- BAGIAN YANG DIUBAH ---
     videoTransisi.onended = () => {
+        // 1. PINDAH SCENE DULU (Di belakang layar)
+        if (callback) callback(); 
+
+        // 2. Baru videonya memudar (Fade Out)
         videoTransisi.style.transition = 'opacity 0.5s ease-out';
         videoTransisi.style.opacity = '0'; 
         
+        // 3. Setelah 0.5 detik (transisi pudar selesai), sembunyikan video
         setTimeout(() => {
             videoTransisi.style.display = 'none';
-            callback(); // Pindah ke scene baru
         }, 500); 
     };
 }
