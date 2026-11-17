@@ -937,13 +937,16 @@ function switchHomeTab(tab) {
 }
 
 function openDetailHero() { if (curTourData) openDetail(curTourData.format, curTourData.id); }
-
 async function openDetail(mode, id) {
   if (!id) return;
   curTourMode = mode; curTour = id;
+  
   const { data, error } = await sb.from('v_tournaments_public').select('*').eq('id', id).single();
   if (error || !data) return toast('Turnamen tidak ditemukan', 'danger');
   curTourData = data;
+
+  // 🔥 AMBIL DATA HADIAH RUPIAH DARI TABEL
+  const { data: prizesData } = await sb.from('tournament_prizes').select('place, amount').eq('tournament_id', id).order('place');
 
   $('det-title').innerText = data.name;
   $('det-img').src = data.banner_url || 'https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg';
@@ -967,7 +970,9 @@ async function openDetail(mode, id) {
     $('det-offline').classList.add('hidden');
   }
 
-  renderPodium(Number(data.prize_pool), data.winner_positions, data.prizes_config);
+  // 🔥 KIRIM DATA PRIZES KE FUNGSI RENDER
+  renderPodium(Number(data.prize_pool), data.winner_positions, prizesData, data.prizes_config);
+  
   $('det-br').classList.toggle('hidden', mode !== 'BR');
   
   if (mode === 'BR') loadMaps(id);
@@ -978,25 +983,44 @@ async function openDetail(mode, id) {
   if (data.stream_url) { $('stream-box').style.display = 'block'; } else { $('stream-box').style.display = 'none'; }
   nav('detail');
 }
-
-function renderPodium(totalPrize, winnerPos, prizesConfig) {
+function renderPodium(totalPrize, winnerPos, prizesTable, prizesConfig) {
   const container = $('podium-container');
   container.innerHTML = '';
+  if (!winnerPos || winnerPos < 1) return;
+
+  let medals = ['🥇','🥈','🥉','🏅','🏅','🏅','🏅','🏅','🏅','🏅','🏅','🏅'];
+  let classes = ['p-1','p-2','p-3','p-other','p-other','p-other','p-other','p-other','p-other','p-other','p-other','p-other'];
+
+  // 🔥 PAKAI DATA RUPIAH LANGSUNG DARI TABEL tournament_prizes
+  if (prizesTable && prizesTable.length > 0) {
+    for (let i = 0; i < winnerPos; i++) {
+      const pData = prizesTable.find(x => x.place === (i + 1));
+      const amount = pData ? Number(pData.amount) : 0;
+      
+      container.innerHTML += `
+        <div class="p-box ${classes[i] || 'p-other'}" style="${i >= 3 ? 'height: 60px;' : ''}">
+          <div class="medal">${medals[i] || '#' + (i+1)}</div>
+          <div class="p-name">Juara ${i + 1}</div>
+          <div class="p-prize">${rp(amount)}</div>
+        </div>
+      `;
+    }
+    return; // Selesai pakai tabel, hentikan fungsi di sini
+  }
+
+  // CADANGAN LAMA (Jika tabel kosong, pakai persentase)
   let pcts = prizesConfig ? (typeof prizesConfig === 'string' ? JSON.parse(prizesConfig) : prizesConfig) : [50, 30, 20];
   if (pcts.length !== winnerPos) {
     pcts = pcts.slice(0, winnerPos); 
     while (pcts.length < winnerPos) pcts.push(0);
   }
-  const medals = ['🥇', '🥈', '🥉', '🏅', '🏅'];
-  const classes = ['p-1', 'p-2', 'p-3', 'p-other', 'p-other'];
+
   for (let i = 0; i < winnerPos; i++) {
     const pct = pcts[i] || 0;
     const amount = Math.round(totalPrize * (pct / 100));
-    const medal = medals[i] || `#${i+1}`;
-    const cls = classes[i] || 'p-other';
     container.innerHTML += `
-      <div class="p-box ${cls}" style="${i >= 3 ? 'height: 60px;' : ''}">
-        <div class="medal">${medal}</div>
+      <div class="p-box ${classes[i] || 'p-other'}" style="${i >= 3 ? 'height: 60px;' : ''}">
+        <div class="medal">${medals[i] || '#' + (i+1)}</div>
         <div class="p-name">Juara ${i+1}</div>
         <div class="p-prize">${rp(amount)}</div>
       </div>
