@@ -255,7 +255,8 @@
         <img id="trans-logo" src="https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png" alt="Logo">
         <div id="trans-flash"></div>
     </div>
-
+<!-- VIDEO TRANSISI FULL SCREEN -->
+<video id="video-transisi" muted playsinline style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 9998; pointer-events: none; opacity: 0; transition: opacity 0.3s ease-in-out;"></video>
     <div class="particles">
         <div class="particle"></div><div class="particle"></div><div class="particle"></div>
         <div class="particle"></div><div class="particle"></div>
@@ -749,51 +750,19 @@ window.nav = function(targetScene) {
     if (currentEl && currentEl.id === 'scene-' + targetScene) return;
 
     window.isTransitioning = true;
-    const overlay = document.getElementById('trans-overlay');
-    const logo = document.getElementById('trans-logo');
-    const flash = document.getElementById('trans-flash');
 
-    overlay.style.display = 'flex';
-    overlay.style.opacity = '1';
-    logo.style.animation = 'none';
-    flash.style.transition = 'none';
-    flash.style.transform = 'translate(-50%, -50%) scale(0)';
-    flash.style.opacity = '0';
-    flash.style.filter = 'blur(2cqw)';
-    void logo.offsetWidth; 
+    mainkanTransisi(() => {
+        if (currentEl) currentEl.classList.remove('active');
+        
+        const newEl = document.getElementById('scene-' + targetScene);
+        if (newEl) newEl.classList.add('active');
 
-    logo.style.animation = 'logoPop 0.6s ease-out forwards';
-
-    setTimeout(() => {
-        flash.style.transition = 'transform 0.8s ease-in, opacity 0.5s ease-in, filter 0.5s ease-in';
-        flash.style.transform = 'translate(-50%, -50%) scale(50)'; 
-        flash.style.opacity = '1'; 
-        flash.style.filter = 'blur(0px)'; 
-
-        setTimeout(() => {
-            if (currentEl) currentEl.classList.remove('active');
-            const newEl = document.getElementById('scene-' + targetScene);
-            if (newEl) newEl.classList.add('active');
-
-            if (targetScene === 'cs') renderCS(); 
-            if (targetScene === 'br') renderBR(); 
-            if (targetScene === 'live') renderLive();
-
-            setTimeout(() => {
-                flash.style.transition = 'opacity 0.6s ease-out';
-                flash.style.opacity = '0'; 
-                
-                overlay.style.transition = 'opacity 0.6s ease-out';
-                overlay.style.opacity = '0'; 
-
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                    window.isTransitioning = false;
-                }, 600); 
-
-            }, 200); 
-        }, 800); 
-    }, 600); 
+        if (targetScene === 'cs') renderCS(); 
+        if (targetScene === 'br') renderBR(); 
+        if (targetScene === 'live') renderLive();
+        
+        setTimeout(() => { window.isTransitioning = false; }, 100);
+    });
 };
 
 $$('#ctl .btn[data-s]').forEach(b => b.onclick = () => nav(b.dataset.s));
@@ -803,6 +772,37 @@ $('#fv').onclick = () => {
 };
 
 setInterval(() => { $('#clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false }); }, 1000);
+    // =========================================
+// LOGIKA VIDEO TRANSISI (FADE)
+// =========================================
+const videoTransisi = document.getElementById('video-transisi');
+videoTransisi.src = "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/GH_TopUp_to_T-Arena_Intro_16s_v2.mp4"; 
+
+function mainkanTransisi(callback) {
+    if (!videoTransisi.src) return callback(); 
+
+    videoTransisi.style.display = 'block';
+    videoTransisi.currentTime = 0; 
+    
+    // Fade In (Muncul)
+    videoTransisi.style.transition = 'opacity 0.3s ease-in';
+    videoTransisi.style.opacity = '0'; 
+    void videoTransisi.offsetWidth; 
+    videoTransisi.style.opacity = '1'; 
+    
+    videoTransisi.play().catch(e => console.log("Gagal mainkan transisi:", e));
+
+    // Fade Out (Hilang)
+    videoTransisi.onended = () => {
+        videoTransisi.style.transition = 'opacity 0.5s ease-out';
+        videoTransisi.style.opacity = '0'; 
+        
+        setTimeout(() => {
+            videoTransisi.style.display = 'none';
+            callback(); // Pindah ke scene baru
+        }, 500); 
+    };
+}
 </script>
 </body>
 </html>
