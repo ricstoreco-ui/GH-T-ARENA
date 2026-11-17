@@ -279,7 +279,15 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
             <div class="meta-grid">
             <div class="meta-box"><span>Total Hadiah</span><strong id="det-prize">-</strong></div>
             <div class="meta-box"><span>Biaya Masuk</span><strong id="det-fee">-</strong></div>
-            <div class="meta-box"><span>Slot Tersedia</span><strong id="det-slots">-</strong></div>
+            <div class="meta-box" style="position: relative;">
+    <span>Slot Tersedia</span>
+    <strong id="det-slots">-</strong>
+    
+    <!-- PROGRESS BAR SLOT -->
+    <div style="width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 10px; margin-top: 8px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);">
+        <div id="slot-progress-bar" style="width: 0%; height: 100%; background: var(--success); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s;"></div>
+    </div>
+            </div>
             <div class="meta-box"><span>Jadwal Mulai</span><strong id="det-date">-</strong></div>
             </div>
            <!-- KOTAK TIMER TURNAMEN -->
@@ -980,6 +988,27 @@ async function openDetail(mode, id) {
   $('det-prize').innerText = rp(data.prize_pool);
   $('det-fee').innerText = rp(data.entry_fee);
   $('det-slots').innerText = `${data.filled_slots} / ${data.total_slots} Tim`;
+   // --- LOGIKA PROGRESS BAR SLOT ---
+const totalSlots = Number(data.total_slots) || 1; 
+const filledSlots = Number(data.filled_slots) || 0;
+const slotPercent = Math.min(100, Math.round((filledSlots / totalSlots) * 100));
+
+const progBar = $('slot-progress-bar');
+if (progBar) {
+    progBar.style.width = slotPercent + '%';
+    
+    // Ganti warna sesuai tingkat kepenuhan
+    if (slotPercent >= 100) {
+        progBar.style.background = 'var(--danger)'; // Merah (Penuh)
+        progBar.style.boxShadow = '0 0 10px var(--danger)'; // Efek nyala
+    } else if (slotPercent >= 80) {
+        progBar.style.background = '#ff9800'; // Oranye (Hampir penuh)
+    } else if (slotPercent >= 50) {
+        progBar.style.background = 'var(--gold)'; // Kuning
+    } else {
+        progBar.style.background = 'var(--success)'; // Hijau
+    }
+}
   $('det-date').innerText = data.schedule_at ? new Date(data.schedule_at).toLocaleDateString('id-ID') : '-';
 startTournamentTimer(data.schedule_at);
    
