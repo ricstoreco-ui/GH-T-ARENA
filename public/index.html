@@ -282,6 +282,11 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
             <div class="meta-box"><span>Slot Tersedia</span><strong id="det-slots">-</strong></div>
             <div class="meta-box"><span>Jadwal Mulai</span><strong id="det-date">-</strong></div>
             </div>
+           <!-- KOTAK TIMER TURNAMEN -->
+<div id="det-timer-box" class="glass" style="text-align:center; border: 1px solid var(--chrome); margin-bottom:20px; padding: 15px; box-shadow: 0 0 15px var(--glow);">
+    <p style="font-size:0.75rem; color:var(--silver); text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">Turnamen Dimulai Dalam:</p>
+    <div id="det-timer" style="font-family:'Orbitron'; font-size:1.4rem; color:var(--cyan); font-weight:bold; text-shadow:0 0 10px var(--cyan);">Memuat...</div>
+</div>
             <div id="det-br">
             <h3 class="title">Map Pool BR</h3>
             <div class="map-pool" id="map-pool"></div>
@@ -1823,6 +1828,53 @@ window.addEventListener('appinstalled', () => {
     const installBtn = document.getElementById('btn-install-app');
     if (installBtn) installBtn.style.display = 'none';
 });
+   // =========================================
+// FUNGSI TIMER COUNTDOWN TURNAMEN
+// =========================================
+let tourTimerInterval = null;
+
+function startTournamentTimer(targetDateStr) {
+    if (tourTimerInterval) clearInterval(tourTimerInterval);
+    
+    const timerEl = document.getElementById('det-timer');
+    if (!timerEl) return;
+
+    if (!targetDateStr) {
+        timerEl.innerText = "JADWAL BELUM DITENTUKAN";
+        timerEl.style.color = "var(--muted)";
+        timerEl.style.textShadow = "none";
+        return;
+    }
+
+    const target = new Date(targetDateStr).getTime();
+
+    tourTimerInterval = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = target - now;
+
+        if (distance < 0) {
+            clearInterval(tourTimerInterval);
+            timerEl.innerText = "🔴 SEDANG BERLANGSUNG / SELESAI";
+            timerEl.style.color = "var(--danger)";
+            timerEl.style.textShadow = "0 0 10px var(--danger)";
+            return;
+        }
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        let display = "";
+        if (days > 0) display += `${days} Hari : `;
+        display += `${String(hours).padStart(2, '0')} Jam : ${String(minutes).padStart(2, '0')} Mnt : ${String(seconds).padStart(2, '0')} Dtk`;
+        
+        timerEl.innerText = display;
+        timerEl.style.color = "var(--cyan)";
+        timerEl.style.textShadow = "0 0 10px var(--cyan)";
+
+    }, 1000);
+}
 </script>
 </body>
                </html>
