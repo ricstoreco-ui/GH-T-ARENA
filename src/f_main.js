@@ -1,12 +1,14 @@
-// GH-T ARENA Bot — f_main.js: Dashboard, Pengaturan, Monitoring, Tabel Poin, Turnamen, Pendaftaran, Pengumuman, Display, Persentase Hadiah
+// GH-T ARENA Bot — f_main.js: Dashboard, Pengaturan, Monitoring, Tabel Poin, Turnamen, Pendaftaran, Pengumuman, Display, Hadiah Rupiah
 import {
   esc, wib, rp, UUID, tg, rpc, sb, count, setSetting, getSetting, audit, notify, notifyRegistrants, notifNote,
   getState, setState, clearState, b, BACK, show, ST, stLabel, FINAL, getT, patchT, withRegLock, parseWib, parsePairs,
   sbHeaders, kbRows, notifyOwners,
+  MAXIMG, EXT, downloadTg, storageUpload, storageDelete, publicUrl, ourPath, regUpsert, dropOld,
 } from './core.js';
 
 export const H = {};
 export const T = {};
+export const U = {};
 
 async function recalcWaitlist(env, tid) {
   try { await rpc(env, 'sys_process_waitlist', { p_tournament: tid }); return '✅ Waiting List dihitung ulang.'; }
@@ -174,6 +176,7 @@ async function tList(env) {
 export async function tDetail(env, id, notice) {
   const t = await getT(env, id);
   const filled = await count(env, `registrations?tournament_id=eq.${id}&status=eq.resmi_terdaftar&select=id`);
+  const prizes = (await sb(env, 'GET', `tournament_prizes?tournament_id=eq.${id}&select=place,amount&order=place.asc`)) || [];
   const L = [
     `<b>🏆 ${esc(t.name)}</b>`, `Format: ${t.format === 'BR' ? '🎯 BR' : '⚔️ CS'} (${t.is_offline ? '📍 OFFLINE' : '🌐 ONLINE'})`, `Status: ${stLabel(t.status)}`,
     `Slot terisi: <b>${filled}/${t.total_slots}</b>`,
@@ -182,9 +185,13 @@ export async function tDetail(env, id, notice) {
   ];
   if (t.is_offline) L.push(`Lokasi: ${esc(t.location_name || '-')}`);
   if (t.stream_url) L.push(`🔴 Live Stream: ${esc(t.stream_url)}`);
-  
+  if (prizes.length) {
+    L.push(`<b>Pembagian Hadiah:</b>\n` + prizes.map((p) => `#${p.place}: ${rp(p.amount)}`).join('\n'));
+  } else if (Number(t.prize_pool) > 0) {
+    L.push(`⚠️ Pembagian hadiah belum diatur. Set lewat Edit → Hadiah per Posisi.`);
+  }
+
   const kb = [];
-  // QUICK ACTION DI DETAIL TURNAMEN
   if (!FINAL.includes(t.status)) {
     kb.push([b('⚡ Aksi Cepat (Match/Timer)', 'm:adm:q_t:' + id)]);
     kb.push([b('🔁 Ubah Status', 'm:t:s:' + id), b(t.registration_enabled ? '🔴 Registrasi OFF' : '🟢 Registrasi ON', 'm:t:r:' + id)]);
@@ -193,10 +200,9 @@ export async function tDetail(env, id, notice) {
     kb.push([b('✏️ Edit', 'm:te:m:' + id), b('🚫 Batalkan Turnamen', 'm:cc:s:' + id)]);
   }
   if (['segera_hadir', 'dibatalkan'].includes(t.status)) kb.push([b('🗑️ Hapus Permanen', 'm:t:del:' + id)]);
-  
   kb.push([b(t.format === 'BR' ? '🎯 Kelola BR' : '⚔️ Kelola CS', (t.format === 'BR' ? 'm:br:t:' : 'm:cs:t:') + id), b('📝 Pendaftaran', 'm:rg:t:' + id)]);
   kb.push([b('🏅 Hasil & Peringkat', 'm:lb:t:' + id), b('🔑 Room ID', 'm:rm:t:' + id)]);
-  kb.push([b('🔴 Atur Live Stream', 'm:adm:stream_t:' + id), b('📺 Display Proyektor', 'm:t:disp:' + id)]); 
+  kb.push([b('🔴 Atur Live Stream', 'm:adm:stream_t:' + id), b('📺 Display Proyektor', 'm:t:disp:' + id)]);
   kb.push([b('🔄 Segarkan', 'm:t:v:' + id), b('⬅️ Daftar', 'm:t')]);
   return { text: (notice ? notice + '\n\n' : '') + L.join('\n'), markup: { inline_keyboard: kb } };
 }
@@ -208,9 +214,8 @@ H.t = async (env, chat, mid, p) => {
   if (!a) return sh(env, chat, mid, await tList(env));
   if (a === 'new') return wizStart(env, chat, mid);
   if (a === 'v') return sh(env, chat, mid, await tDetail(env, id));
-  
   if (a === 'disp') {
-    return show(env, chat, mid, `<b>📺 Kontrol Display Proyektor</b>\nPilih mode layar yang ingin ditampilkan di laptop proyektor:`, {
+    return show(env, chat, mid, `<b>📺 Kontrol Display Proyektor</b>\nPilih mode layar:`, {
       inline_keyboard: [
         [b('🟢 Standby / Countdown', `m:t:dis:cd:${id}`)],
         [b('📊 Leaderboard BR', `m:t:dis:br:${id}`), b('⚔️ Bracket CS', `m:t:dis:cs:${id}`)],
@@ -222,19 +227,17 @@ H.t = async (env, chat, mid, p) => {
   }
   if (a === 'dis') {
     const mode = p[3];
-    const baseUrl = 'https://gh-t-arena-web.pages.dev/display'; 
+    const baseUrl = 'https://gh-t-arena-web.pages.dev/display';
     const url = `${baseUrl}?view=${mode}&t=${id}`;
-    return show(env, chat, mid, `<b>✅ LINK DISPLAY SIAP</b>\nCopy link di bawah ini, lalu buka di Chrome laptop proyektor:\n\n<code>${url}</code>\n\n<i>Tips: Tekan F11 di laptop untuk Fullscreen.</i>`, { inline_keyboard: [[b('⬅️ Kembali', 'm:t:disp:' + id)]] });
+    return show(env, chat, mid, `<b>✅ LINK DISPLAY SIAP</b>\nCopy link di bawah ini, buka di Chrome laptop proyektor:\n\n<code>${url}</code>\n\n<i>Tips: Tekan F11 untuk Fullscreen.</i>`, { inline_keyboard: [[b('⬅️ Kembali', 'm:t:disp:' + id)]] });
   }
   if (a === 'rt') {
     await setState(env, chat, 't_rt', { tid: id });
     return show(env, chat, mid, `<b>📝 Ubah Running Text</b>\nKetik teks berjalan di bawah layar proyektor:`, { inline_keyboard: [[b('✖️ Batal', 'm:t:disp:' + id)]] });
   }
-
   if (a === 's') return sh(env, chat, mid, await tStatusMenu(env, id));
   if (a === 'ss' || a === 'sy') return sh(env, chat, mid, await tSetStatus(env, id, Number(p[4]), a === 'sy'));
   if (a === 'r') return sh(env, chat, mid, await tToggleReg(env, id));
-  
   if (a === 'del') {
     const t = await getT(env, id);
     return show(env, chat, mid, `<b>🗑️ Hapus Permanen?</b>\nTurnamen <b>${esc(t.name)}</b> akan dihapus!`, { inline_keyboard: [[b('🗑️ Ya, Hapus', 'm:t:dely:' + id), b('✖️ Batal', 'm:t:v:' + id)]] });
@@ -244,7 +247,6 @@ H.t = async (env, chat, mid, p) => {
     await sb(env, 'DELETE', `tournaments?id=eq.${id}`);
     return show(env, chat, mid, `🗑️ Turnamen dihapus.`, { inline_keyboard: [[b('⬅️ Daftar Turnamen', 'm:t')], ...BACK] });
   }
-  
   if (a === 'p') {
     const t = await getT(env, id);
     await setState(env, chat, 'tp', { tid: id });
@@ -339,24 +341,25 @@ T.tj = async (env, chat, st, text) => {
   return sh(env, chat, null, await tDetail(env, id, `✅ Jadwal lanjutan: ${wib(p.iso)}`));
 };
 
-// ----- Wizard Buat Turnamen -----
+// ----- Wizard Buat Turnamen (DENGAN HADIAH RUPIAH) -----
 function wizNext(d) {
-  if (!d.game_id) return 'game'; 
-  if (!d.name) return 'name'; 
+  if (!d.game_id) return 'game';
+  if (!d.name) return 'name';
   if (!d.format) return 'format';
-  if (d.is_offline === undefined) return 'is_offline'; 
-  if (d.is_offline && !d.location_name) return 'loc_name'; 
+  if (d.is_offline === undefined) return 'is_offline';
+  if (d.is_offline && !d.location_name) return 'loc_name';
   if (d.is_offline && !d.location_address) return 'loc_addr';
   if (d.is_offline && d.location_maps === undefined) return 'loc_maps';
-  if (d.total_slots == null) return 'slots'; 
+  if (d.total_slots == null) return 'slots';
   if (d.starters_per_team == null) return 'starters';
   if (d.format === 'BR' && d.match_count == null) return 'matches';
-  if (d.format === 'CS' && !d.cs_elimination) return 'elim'; 
+  if (d.format === 'CS' && !d.cs_elimination) return 'elim';
   if (d.format === 'CS' && !d.cs_draw_method) return 'draw';
-  if (d.entry_fee == null) return 'fee'; 
-  if (d.prize_pool == null) return 'prize'; 
+  if (d.entry_fee == null) return 'fee';
+  if (d.prize_pool == null) return 'prize';
   if (d.winner_positions == null) return 'winners';
-  if (d.schedule_at === undefined) return 'schedule'; 
+  if (Number(d.prize_pool) > 0 && d.prizes_amounts == null) return 'prizes';
+  if (d.schedule_at === undefined) return 'schedule';
   if (d.registration_deadline === undefined) return 'deadline';
   return 'confirm';
 }
@@ -366,7 +369,11 @@ function wizSummary(d) {
   const l = ['<b>Ringkasan turnamen baru</b>', `Nama: ${esc(d.name)}`, `Game: ${esc(d.game_name || '-')}`, `Format: ${d.format} (${d.is_offline ? 'Offline' : 'Online'})`];
   if (d.is_offline) l.push(`Lokasi: ${esc(d.location_name)}`);
   l.push(`Slot: ${d.total_slots} · Pemain utama: ${d.starters_per_team}`);
-  l.push(`Biaya: ${rp(d.entry_fee)} · Hadiah: ${rp(d.prize_pool)}`, `Jadwal: ${wib(d.schedule_at)}`, 'Status awal: ⏳ Segera Hadir');
+  l.push(`Biaya: ${rp(d.entry_fee)} · Total Hadiah: ${rp(d.prize_pool)}`);
+  if (d.prizes_amounts && Object.keys(d.prizes_amounts).length) {
+    l.push('<b>Pembagian Hadiah:</b>\n' + Object.entries(d.prizes_amounts).map(([pl, amt]) => `#${pl}: ${rp(amt)}`).join('\n'));
+  }
+  l.push(`Jadwal: ${wib(d.schedule_at)}`, 'Status awal: ⏳ Segera Hadir');
   return l.join('\n');
 }
 function wizPrompt(d, step) {
@@ -376,7 +383,7 @@ function wizPrompt(d, step) {
     case 'name': return one('<b>➕ Buat Turnamen</b>\nKetik <b>nama turnamen</b>:');
     case 'format': return { text: 'Pilih <b>format</b>:', markup: { inline_keyboard: [[b('🎯 Battle Royale', 'm:w:f:BR'), b('⚔️ Clash Squad', 'm:w:f:CS')], CW] } };
     case 'is_offline': return { text: 'Turnamen ini diadakan di mana?', markup: { inline_keyboard: [[b('🌐 Online (Bisa dari rumah)', 'm:w:off:0'), b('📍 Offline (Kopdar/Event)', 'm:w:off:1')], CW] } };
-    case 'loc_name': return one('Ketik <b>Nama Tempat/Lokasi</b> event (contoh: Cafe Kopi Senja):');
+    case 'loc_name': return one('Ketik <b>Nama Tempat/Lokasi</b> event:');
     case 'loc_addr': return one('Ketik <b>Alamat Lengkap</b> event:');
     case 'loc_maps': return one('Ketik <b>Link Google Maps</b> (atau ketik - jika tidak ada):');
     case 'slots': return one(d.format === 'BR' ? 'Ketik <b>jumlah slot</b> tim (2 sampai 12):' : 'Ketik <b>jumlah slot</b> tim (minimal 2):');
@@ -387,6 +394,10 @@ function wizPrompt(d, step) {
     case 'fee': return one('Ketik <b>biaya pendaftaran</b> (Rp, angka saja, 0 = gratis):');
     case 'prize': return one('Ketik <b>total hadiah</b> (Rp, angka saja, 0 jika tidak ada):');
     case 'winners': return one(`Ketik <b>jumlah posisi pemenang</b> (1 sampai ${Math.min(12, d.total_slots)}):`);
+    case 'prizes': {
+      const example = Array.from({ length: d.winner_positions }, (_, i) => `${i + 1}=${Math.round(Number(d.prize_pool) * (d.winner_positions - i) / (d.winner_positions * (d.winner_positions + 1) / 2))}`).join(', ');
+      return one(`<b>Pembagian Hadiah (Rupiah)</b>\nJuara: ${d.winner_positions} · Total Pool: ${rp(d.prize_pool)}\n\nKetik nominal per juara, dipisah koma. Total harus = ${rp(d.prize_pool)}.\nContoh:\n<code>${example}</code>\n\nAtau ketik <code>-</code> untuk mengosongkan (isi nanti via Edit).`);
+    }
     case 'schedule': return one('Ketik <b>jadwal turnamen</b> (WIB):\n<code>2026-11-25 19:00</code>\nKetik <code>-</code> kalau belum ada.');
     case 'deadline': return one('Ketik <b>batas pendaftaran</b> (WIB):\n<code>2026-11-25 18:00</code>\nKetik <code>-</code> kalau belum ada.');
     default: return { text: wizSummary(d), markup: { inline_keyboard: [[b('✅ Simpan', 'm:w:ok'), b('✖️ Batal', 'm:w:x')]] } };
@@ -410,20 +421,32 @@ T.w = async (env, chat, st, text) => {
   const num = (s) => { const x = String(s).replace(/[.,\s]/g, ''); return /^\d{1,9}$/.test(x) ? parseInt(x, 10) : null; };
   let err = null;
   if (BTN_STEPS.includes(step)) err = 'Pilih lewat tombol.';
-  else if (step === 'name') { if (text.length < 3 || text.length > 80) err = 'Nama 3 sampai 80 karakter.'; else d.name = text; }
+  else if (step === 'name') { if (text.length < 3 || text.length > 80) err = 'Nama 3-80 karakter.'; else d.name = text; }
   else if (step === 'loc_name') { if (text.length < 3) err = 'Terlalu pendek.'; else d.location_name = text; }
   else if (step === 'loc_addr') { if (text.length < 5) err = 'Terlalu pendek.'; else d.location_address = text; }
   else if (step === 'loc_maps') { d.location_maps = text === '-' ? null : text; }
-  else if (step === 'slots') { const n = num(text); const max = d.format === 'BR' ? 12 : 32767; if (n === null || n < 2 || n > max) err = `Slot harus 2 sampai ${max}.`; else d.total_slots = n; }
-  else if (step === 'starters') { const n = num(text); if (n === null || n < 1 || n > 20) err = 'Angka 1 sampai 20.'; else d.starters_per_team = n; }
-  else if (step === 'matches') { const n = num(text); if (n === null || n < 1 || n > 100) err = 'Angka 1 sampai 100.'; else d.match_count = n; }
+  else if (step === 'slots') { const n = num(text); const max = d.format === 'BR' ? 12 : 32767; if (n === null || n < 2 || n > max) err = `Slot 2-${max}.`; else d.total_slots = n; }
+  else if (step === 'starters') { const n = num(text); if (n === null || n < 1 || n > 20) err = 'Angka 1-20.'; else d.starters_per_team = n; }
+  else if (step === 'matches') { const n = num(text); if (n === null || n < 1 || n > 100) err = 'Angka 1-100.'; else d.match_count = n; }
   else if (step === 'fee') { const n = num(text); if (n === null) err = 'Ketik angka saja.'; else d.entry_fee = n; }
   else if (step === 'prize') { const n = num(text); if (n === null) err = 'Ketik angka saja.'; else d.prize_pool = n; }
-  else if (step === 'winners') { const n = num(text); const mx = Math.min(12, d.total_slots); if (n === null || n < 1 || n > mx) err = `Angka 1 sampai ${mx}.`; else d.winner_positions = n; }
+  else if (step === 'winners') { const n = num(text); const mx = Math.min(12, d.total_slots); if (n === null || n < 1 || n > mx) err = `Angka 1-${mx}.`; else d.winner_positions = n; }
+  else if (step === 'prizes') {
+    if (text === '-') { d.prizes_amounts = {}; }
+    else {
+      const p = parsePairs(text, d.winner_positions);
+      if (p.err) err = p.err;
+      else {
+        const sum = Object.values(p.out).reduce((a, b) => a + b, 0);
+        if (sum !== Number(d.prize_pool)) err = `Total hadiah (${rp(sum)}) ≠ total pool (${rp(d.prize_pool)}).`;
+        else d.prizes_amounts = p.out;
+      }
+    }
+  }
   else if (step === 'schedule') { if (text === '-') d.schedule_at = null; else { const p = parseWib(text); if (!p) err = 'Format salah. Contoh: 2026-11-25 19:00'; else d.schedule_at = p.iso; } }
   else if (step === 'deadline') {
     if (text === '-') d.registration_deadline = null;
-    else { const p = parseWib(text); if (!p) err = 'Format salah. Contoh: 2026-11-25 18:00'; else if (d.schedule_at && new Date(p.iso) > new Date(d.schedule_at)) err = 'Batas daftar tidak boleh setelah jadwal.'; else d.registration_deadline = p.iso; }
+    else { const p = parseWib(text); if (!p) err = 'Format salah. Contoh: 2026-11-25 18:00'; else if (d.schedule_at && new Date(p.iso) > new Date(d.schedule_at)) err = 'Batas daftar > jadwal.'; else d.registration_deadline = p.iso; }
   }
   return wizShow(env, chat, null, d, err);
 };
@@ -443,19 +466,25 @@ H.w = async (env, chat, mid, p) => {
     if (wizNext(d) !== 'confirm') return wizShow(env, chat, mid, d, 'Data belum lengkap.');
     const row = { game_id: d.game_id, name: d.name, format: d.format, entry_fee: d.entry_fee, prize_pool: d.prize_pool, winner_positions: d.winner_positions,
       total_slots: d.total_slots, starters_per_team: d.starters_per_team, schedule_at: d.schedule_at, registration_deadline: d.registration_deadline,
-      is_offline: d.is_offline, location_name: d.location_name, location_address: d.location_address, location_maps_url: d.location_maps };
+      is_offline: d.is_offline, location_name: d.location_name, location_address: d.location_address, location_maps_url: d.location_maps,
+      prizes_config: null };
     if (d.format === 'BR') row.match_count = d.match_count; else { row.cs_elimination = d.cs_elimination; row.cs_draw_method = d.cs_draw_method; }
     await clearState(env, chat);
     let created;
     try { created = await sb(env, 'POST', 'tournaments', row, 'return=representation'); }
     catch (e) { await setState(env, chat, 'w:confirm', d); throw e; }
     const id = created?.[0]?.id;
-    if (!id) { await setState(env, chat, 'w:confirm', d); throw new Error('Database tidak mengembalikan ID turnamen baru'); }
+    if (!id) { await setState(env, chat, 'w:confirm', d); throw new Error('DB tidak mengembalikan ID turnamen.'); }
+    if (d.prizes_amounts && Object.keys(d.prizes_amounts).length) {
+      const prizeRows = Object.entries(d.prizes_amounts).map(([pl, amt]) => ({ tournament_id: id, place: Number(pl), amount: amt }));
+      try { await sb(env, 'POST', 'tournament_prizes', prizeRows, 'return=minimal'); }
+      catch (e) { console.log('insert prizes failed:', e.message); }
+    }
     if (d.format === 'BR') {
       const ms = Array.from({ length: d.match_count }, (_, i) => ({ tournament_id: id, match_no: i + 1, status: 'belum_dimulai' }));
       try { await sb(env, 'POST', 'br_matches', ms, 'return=minimal'); }
       catch (e) {
-        const rolled = await sb(env, 'DELETE', `tournaments?id=eq.${id}`).then(() => true).catch(() => false);
+        await sb(env, 'DELETE', `tournaments?id=eq.${id}`).catch(() => {});
         await setState(env, chat, 'w:confirm', d);
         throw new Error('Gagal membuat match BR: ' + e.message);
       }
@@ -465,10 +494,9 @@ H.w = async (env, chat, mid, p) => {
   }
   return wizShow(env, chat, mid, d);
 };
-
 // ----- Edit Turnamen -----
 const TE = [['name', 'Nama'], ['description', 'Deskripsi'], ['entry_fee', 'Biaya'], ['prize_pool', 'Total Hadiah'], ['total_slots', 'Jumlah Slot'],
-  ['starters_per_team', 'Pemain Utama/Tim'], ['winner_positions', 'Posisi Pemenang'], ['prizes_pct', 'Hadiah (%)'], ['schedule_at', 'Jadwal'], ['registration_deadline', 'Batas Daftar'], ['prizes', 'Hadiah per Posisi (Rp)']];
+['starters_per_team', 'Pemain Utama/Tim'], ['winner_positions', 'Posisi Pemenang'], ['schedule_at', 'Jadwal'], ['registration_deadline', 'Batas Daftar'], ['prizes', 'Hadiah per Posisi (Rp)']];
 const ACTIVE_REG = 'status=in.(menunggu_pembayaran,menunggu_verifikasi,data_belum_lengkap,resmi_terdaftar)';
 async function teMenu(env, tid) {
   const t = await getT(env, tid);
@@ -498,12 +526,9 @@ H.te = async (env, chat, mid, p) => {
     else if (k === 'total_slots') ask = `Sekarang: ${t.total_slots}\nKetik slot baru:`;
     else if (k === 'starters_per_team') ask = `Sekarang: ${t.starters_per_team}\nKetik jumlah pemain utama/tim (1-20).`;
     else if (k === 'winner_positions') ask = `Sekarang: ${t.winner_positions}\nKetik jumlah posisi pemenang:`;
-    else if (k === 'prizes_pct') ask = `Ketik persentase hadiah (Total harus 100).\nContoh untuk 3 juara: <code>50, 30, 20</code>\n\nIngat! Jumlah persen harus sesuai dengan jumlah Posisi Pemenang (${t.winner_positions}).`;
     else if (k === 'schedule_at') ask = `Sekarang: ${wib(t.schedule_at)}\nKetik jadwal baru (WIB).`;
     else if (k === 'registration_deadline') ask = `Sekarang: ${wib(t.registration_deadline)}\nKetik batas daftar baru (WIB).`;
-    else {
-      ask = `Ketik SEMUA posisi (1 sampai ${t.winner_positions}), contoh:\n<code>1=100000, 2=50000, 3=25000</code>`;
-    }
+    else ask = `Ketik SEMUA posisi (1 sampai ${t.winner_positions}), contoh:\n<code>1=100000, 2=50000, 3=25000</code>`;
     return show(env, chat, mid, `<b>✏️ ${esc(item[1])}</b>\n${ask}`, { inline_keyboard: [[b('✖️ Batal', 'm:te:m:' + tid)]] });
   }
 };
@@ -514,7 +539,7 @@ T.te = async (env, chat, st, text) => {
   const num = (s) => { const x = String(s).replace(/[.,\s]/g, ''); return /^\d{1,12}$/.test(x) ? Number(x) : null; };
   const filled = Number(await count(env, `registrations?tournament_id=eq.${tid}&status=eq.resmi_terdaftar&select=id`)) || 0;
   let patch = null, err = null, prizeRows = null, notice = '', sched = false;
-  
+
   if (k === 'name') { if (text.length < 3 || text.length > 80) err = 'Nama 3 sampai 80 karakter.'; else patch = { name: text }; }
   else if (k === 'description') { if (text !== '-' && text.length > 1000) err = 'Maksimal 1000 karakter.'; else patch = { description: text === '-' ? null : text }; }
   else if (k === 'entry_fee' || k === 'prize_pool') { const n = num(text); if (n === null) err = 'Ketik angka saja.'; else patch = { [k]: n }; }
@@ -526,13 +551,16 @@ T.te = async (env, chat, st, text) => {
   } else if (k === 'starters_per_team') {
     const n = num(text); const active = Number(await count(env, `registrations?tournament_id=eq.${tid}&${ACTIVE_REG}&select=id`)) || 0;
     if (n === null || n < 1 || n > 20) err = 'Angka 1 sampai 20.'; else if (active > 0) err = `Sudah ada ${active} pendaftaran aktif.`; else patch = { starters_per_team: n };
-  } else if (k === 'winner_positions') { const n = num(text); const mx = Math.min(12, t.total_slots); if (n === null || n < 1 || n > mx) err = `Angka 1 sampai ${mx}.`; else patch = { winner_positions: n }; }
-  else if (k === 'prizes_pct') {
-    const pcts = text.split(/[,;\s]+/).filter(Boolean).map(Number);
-    if (pcts.length !== t.winner_positions) err = `Jumlah persen (${pcts.length}) tidak sesuai dengan Posisi Pemenang (${t.winner_positions}).`;
-    else if (pcts.some(isNaN)) err = 'Ketik angka saja.';
-    else if (pcts.reduce((a,b)=>a+b, 0) !== 100) err = 'Total persentase harus 100.';
-    else patch = { prizes_config: pcts };
+  } else if (k === 'winner_positions') {
+    const n = num(text); const mx = Math.min(12, t.total_slots);
+    if (n === null || n < 1 || n > mx) err = `Angka 1 sampai ${mx}.`;
+    else {
+      patch = { winner_positions: n };
+      if (n !== t.winner_positions) {
+        await sb(env, 'DELETE', `tournament_prizes?tournament_id=eq.${tid}&place=gt.${n}`, 'return=minimal').catch(() => {});
+        notice = '⚠️ Jumlah juara berubah. Cek ulang "Hadiah per Posisi (Rp)".\n';
+      }
+    }
   }
   else if (k === 'schedule_at') {
     if (text === '-') patch = { schedule_at: null };
@@ -544,7 +572,7 @@ T.te = async (env, chat, st, text) => {
     const p = parsePairs(text, t.winner_positions);
     if (p.err) err = p.err; else prizeRows = Object.entries(p.out).map(([pl, amt]) => ({ tournament_id: tid, place: Number(pl), amount: amt }));
   } else err = 'Sesi tidak valid.';
-  
+
   if (err) return show(env, chat, null, '❌ ' + err + '\nKetik lagi atau /batal.', { inline_keyboard: [[b('✖️ Batal', 'm:te:m:' + tid)]] });
   if (prizeRows) {
     await withRegLock(env, t, async () => {
@@ -552,12 +580,12 @@ T.te = async (env, chat, st, text) => {
       await sb(env, 'DELETE', `tournament_prizes?tournament_id=eq.${tid}&place=not.in.(${prizeRows.map((r) => r.place).join(',')})`);
     });
     await clearState(env, chat);
-    notice = '✅ Hadiah per posisi disimpan.';
+    notice = (notice || '') + '✅ Hadiah per posisi disimpan.';
   } else {
     const important = ['entry_fee', 'prize_pool', 'schedule_at', 'registration_deadline', 'total_slots', 'winner_positions'].includes(k);
     if (important) await withRegLock(env, t, () => patchT(env, tid, patch)); else await patchT(env, tid, patch);
     await clearState(env, chat);
-    notice = `✅ Diperbarui.`;
+    notice = (notice || '') + `✅ Diperbarui.`;
     if (sched && patch.schedule_at) {
       const n = await notifyRegistrants(env, tid, 'jadwal', 'Jadwal diperbarui', `Jadwal baru: ${wib(patch.schedule_at)}`);
       notice += '\n' + notifNote(n);
@@ -771,4 +799,41 @@ T.an_body = async (env, chat, st, text) => {
   let who = '🌐 Umum (website saja, tanpa notifikasi)';
   if (d.tid) { const n = await count(env, `registrations?tournament_id=eq.${d.tid}&status=eq.resmi_terdaftar&select=id`); who = `🏆 ${esc(d.tname)}\nNotifikasi ke ${n} tim Resmi Terdaftar`; }
   return show(env, chat, null, `<b>Konfirmasi pengumuman</b>\nUntuk: ${who}\n\n<b>${esc(d.title)}</b>\n${esc(d.body)}\n\nKirim?`, { inline_keyboard: [[b('✅ Kirim', 'm:an:ok'), b('✖️ Batal', 'm:an:x')]] });
+};
+
+// ================= UPLOAD BANNER TURNAMEN (BARU) =================
+U.tb_up = async (env, chat, st, img) => {
+  const tid = st.data?.tid;
+  if (!tid || !UUID.test(tid)) throw new Error('Sesi tidak valid');
+  const kb = { inline_keyboard: [[b('✖️ Batal', 'm:te:m:' + tid)]] };
+
+  if (img.bad) return show(env, chat, null, '❌ Kirim sebagai foto, atau file JPG / PNG / WEBP.', kb);
+  if (img.size > MAXIMG) return show(env, chat, null, '❌ Ukuran file maksimal 10 MB.', kb);
+
+  const t = await getT(env, tid);
+  const bytes = await downloadTg(env, img.file_id);
+  if (bytes.byteLength > MAXIMG) throw new Error('Ukuran file lebih dari 10 MB');
+
+  const ext = EXT[img.mime];
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const path = `tournament-banners/${tid}-${stamp}.${ext}`;
+  const bucket = 'site-assets';
+
+  await storageUpload(env, bucket, path, bytes, img.mime);
+  const url = publicUrl(env, bucket, path);
+
+  try { await patchT(env, tid, { banner_url: url }); }
+  catch (e) { await storageDelete(env, bucket, path); throw e; }
+
+  const okReg = await regUpsert(env, { bucket, path, kind: 'tournament-banner', tournament_id: tid, ref_table: 'tournaments', ref_id: tid, size_bytes: bytes.byteLength });
+  const oldPath = ourPath(env, t.banner_url, bucket);
+  if (oldPath && oldPath !== path) await dropOld(env, bucket, oldPath);
+
+  await clearState(env, chat);
+  await audit(env, 'ganti_banner_turnamen', 'tournaments', t.name, tid, { banner_url: t.banner_url }, { banner_url: url });
+
+  return show(env, chat, null,
+    '✅ Banner turnamen berhasil diganti.' + (okReg ? '' : '\n⚠️ Gagal mencatat ke file_registry.'),
+    { inline_keyboard: [[b('🏆 Lihat Turnamen', 'm:t:v:' + tid)], [b('⬅️ Edit', 'm:te:m:' + tid)]] }
+  );
 };
