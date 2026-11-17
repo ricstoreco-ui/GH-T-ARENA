@@ -320,6 +320,17 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
 
         <!-- VIEW: DASHBOARD -->
         <div id="v-dash" class="view hidden">
+           <!-- VIEW: DASHBOARD -->
+<div id="v-dash" class="view hidden">
+<h2 class="title">Dashboard Captain</h2>
+
+<!-- TOMBOL DOWNLOAD APLIKASI -->
+<button id="btn-install-app" class="btn" style="display:none; margin-bottom:20px; background: var(--cyan); color:#000;" onclick="installPWA()">
+    <i class="fa-solid fa-download"></i> Download Aplikasi GH-T Arena
+</button>
+
+<div class="id-card" id="tilt-card">
+...
         <h2 class="title">Dashboard Captain</h2>
         <div class="id-card" id="tilt-card">
             <div class="id-head">
@@ -1774,6 +1785,49 @@ function skipIntro() {
         initAuth();
     }, 500); // Jeda setengah detik agar mulus
 }
+   // =========================================
+// FITUR DOWNLOAD WEBSITE JADI APLIKASI (PWA)
+// =========================================
+let deferredPrompt;
+
+// 1. Tangkap event browser saat aplikasi siap di-install
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Cegah browser memunculkan pop-up mini otomatis
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Tampilkan tombol download kita
+    const installBtn = document.getElementById('btn-install-app');
+    if (installBtn) installBtn.style.display = 'flex';
+});
+
+// 2. Fungsi saat tombol download diklik
+async function installPWA() {
+    if (!deferredPrompt) {
+        // Jika browser tidak mendukung (misal pakai Safari iOS)
+        toast('Buka menu browser (titik 3) lalu pilih "Add to Home Screen"', 'info');
+        return;
+    }
+
+    // Tampilkan pop-up install bawaan browser
+    deferredPrompt.prompt();
+
+    // Cek pilihan user (Install atau Batal)
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+        toast('Aplikasi berhasil di-install!', 'success');
+        document.getElementById('btn-install-app').style.display = 'none';
+    }
+    
+    // Reset prompt
+    deferredPrompt = null;
+}
+
+// 3. Sembunyikan tombol kalau aplikasi sudah terinstall
+window.addEventListener('appinstalled', () => {
+    const installBtn = document.getElementById('btn-install-app');
+    if (installBtn) installBtn.style.display = 'none';
+});
 </script>
 </body>
                </html>
