@@ -946,12 +946,16 @@ async function openDetail(mode, id) {
   if (error || !data) return toast('Turnamen tidak ditemukan', 'danger');
   curTourData = data;
 
-  // 🔥 AMBIL DATA HADIAH RUPIAH DARI TABEL
+  // Ambil data hadiah Rupiah dari tabel
   const { data: prizesData } = await sb.from('tournament_prizes').select('place, amount').eq('tournament_id', id).order('place');
 
   $('det-title').innerText = data.name;
   $('det-img').src = data.banner_url || 'https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg';
   $('det-status').innerText = (data.status || '').toUpperCase().replace('_', ' ');
+  
+  // 🔥 TAMBAHAN UNTUK DESKRIPSI
+  $('det-desc').innerText = data.description || 'Tidak ada deskripsi untuk turnamen ini.';
+
   $('det-prize').innerText = rp(data.prize_pool);
   $('det-fee').innerText = rp(data.entry_fee);
   $('det-slots').innerText = `${data.filled_slots} / ${data.total_slots} Tim`;
@@ -971,7 +975,7 @@ async function openDetail(mode, id) {
     $('det-offline').classList.add('hidden');
   }
 
-  // 🔥 KIRIM DATA PRIZES KE FUNGSI RENDER
+  // Kirim data prizes ke fungsi renderPodium
   renderPodium(Number(data.prize_pool), data.winner_positions, prizesData, data.prizes_config);
   
   $('det-br').classList.toggle('hidden', mode !== 'BR');
