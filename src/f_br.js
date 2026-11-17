@@ -83,7 +83,7 @@ async function matchDetail(env, mid, notice) {
   } else {
     kb.push([b('↩️ Batalkan Konfirmasi', 'm:br:unc:' + mid)]);
   }
-  kb.push([b('🔑 Room ID', 'm:rm:b:' + mid)], [b('🔄 Segarkan', 'm:br:m:' + mid), b('⬅️ Match Lain', 'm:br:t:' + t.id)]);
+kb.push([b('🔑 Room ID', 'm:rm:b:' + mid + ':BR')], [b('🔄 Segarkan', 'm:br:m:' + mid), b('⬅️ Match Lain', 'm:br:t:' + t.id)]);
   return { text: (notice ? notice + '\n\n' : '') + L.join('\n'), markup: { inline_keyboard: kb } };
 }
 
