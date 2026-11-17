@@ -69,7 +69,7 @@ async function csMatchDetail(env, mid, notice) {
   if (m.status === 'selesai') {
     kb.push([b('↩️ Batalkan Hasil', 'm:cs:unc:' + m.id)]);
   }
-
+kb.push([b('🔑 Room ID', 'm:rm:b:' + m.id + ':CS')]);
   kb.push([b('⬅️ Kembali', 'm:cs:t:' + m.tournament_id)]);
   return { text: (notice ? notice + '\n\n' : '') + text, markup: { inline_keyboard: kb } };
 }
