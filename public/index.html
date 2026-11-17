@@ -200,9 +200,9 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
         <!-- VIEW: HOME -->
 <div id="v-home" class="view hidden">
 
-<!-- VIDEO IKLAN PENGGANTI TEKS -->
+<!-- VIDEO IKLAN BERGANDA (KOSONGKAN SRC-NYA) -->
 <div style="width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 0 15px var(--glow);">
-    <video src="https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/GH-TOPUP-Beyond-The-Game.mp4" autoplay loop muted playsinline style="width: 100%; height: auto; display: block; object-fit: cover; max-height: 250px;"></video>
+    <video id="home-video" autoplay muted playsinline style="width: 100%; height: auto; display: block; object-fit: cover; max-height: 250px;"></video>
 </div>
 
 <div class="hero" id="hero" style="height: 200px;"></div>
@@ -1687,6 +1687,32 @@ function nav(v) {
   if (v === 'scrim') loadScrims();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+   // =========================================
+// LOGIKA VIDEO BERGANTIAN (HOME)
+// =========================================
+const daftarVideoHome = [
+    "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/GH-TOPUP-Beyond-The-Game.mp4",
+    "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/GH_TopUp_to_T-Arena_Intro_16s_v2.mp4",
+    "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/GH_TOPUP_Ad_60s_1080p.mp4"
+];
+
+let urutanVideo = 0;
+const elemenVideo = document.getElementById('home-video');
+
+function putarVideoHome() {
+    elemenVideo.src = daftarVideoHome[urutanVideo];
+    elemenVideo.play().catch(e => console.log("Video gagal diputar otomatis", e));
+}
+
+elemenVideo.addEventListener('ended', () => {
+    urutanVideo++;
+    if (urutanVideo >= daftarVideoHome.length) {
+        urutanVideo = 0; 
+    }
+    putarVideoHome(); 
+});
+
+putarVideoHome();
 </script>
 </body>
                </html>
