@@ -301,6 +301,10 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
             </div>
             <button class="btn" style="margin-top:20px" id="btn-reg" onclick="openRegister()">Daftar Sekarang</button>
             <button class="btn btn-sec hidden" style="margin-top:10px" id="btn-wait" onclick="joinWaitlist()">Masuk Waiting List</button>
+           <!-- TOMBOL SHARE WHATSAPP -->
+<button class="btn" style="margin-top:10px; background: #25D366; color: #fff; border: none; box-shadow: 0 4px 15px rgba(37,211,102,0.3);" onclick="shareToWA()">
+    <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> Bagikan ke WhatsApp
+</button>
         </div>
         </div>
 
@@ -1713,6 +1717,31 @@ elemenVideo.addEventListener('ended', () => {
 });
 
 putarVideoHome();
+   // =========================================
+// FUNGSI SHARE KE WHATSAPP
+// =========================================
+function shareToWA() {
+    if (!curTourData) {
+        toast('Data turnamen belum siap', 'warning');
+        return;
+    }
+
+    const title = curTourData.name;
+    const prize = rp(curTourData.prize_pool);
+    const fee = rp(curTourData.entry_fee);
+    const websiteUrl = window.location.origin; 
+
+    const pesan = `🔥 *TURNAMEN ${title.toUpperCase()}* 🔥\n\n` +
+                  `💰 *Total Hadiah:* ${prize}\n` +
+                  `🎟️ *Biaya Masuk:* ${fee}\n` +
+                  `🎮 *Game:* Free Fire\n\n` +
+                  `Ayo daftarkan tim kamu dan jadilah juara di GH-T Arena!\n` +
+                  `Slot terbatas, daftar sekarang di:\n${websiteUrl}\n\n` +
+                  `_GHT Arena - Play, Compete, Be The Champion!_`;
+
+    const encodedPesan = encodeURIComponent(pesan);
+    window.open(`https://wa.me/?text=${encodedPesan}`, '_blank');
+}
 </script>
 </body>
                </html>
