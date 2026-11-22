@@ -1086,8 +1086,21 @@ function renderPodium(totalPrize, winnerPos, prizesTable, prizesConfig) {
 
 function openStream() {
   if (curTourData && curTourData.stream_url) {
-    let embedUrl = curTourData.stream_url.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/").split('&')[0];
-    window.open(embedUrl + "?autoplay=1", '_blank');
+    let rawUrl = curTourData.stream_url.trim();
+    let embedUrl = rawUrl;
+
+    // 1. Deteksi YouTube
+    if (rawUrl.includes("youtube.com/watch") || rawUrl.includes("youtu.be")) {
+        embedUrl = rawUrl.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/").split('&')[0] + "?autoplay=1";
+    } 
+    // 2. Deteksi Twitch
+    else if (rawUrl.includes("twitch.tv")) {
+        const channel = rawUrl.split('/').filter(Boolean).pop().split('?')[0];
+        const parent = window.location.hostname || 'gh-t-arena-web.pages.dev';
+        embedUrl = `https://player.twitch.tv/?channel=${channel}&parent=${parent}&autoplay=true`;
+    }
+
+    window.open(embedUrl, '_blank');
   } else {
     toast('Link Live Stream belum tersedia.', 'warning');
   }
