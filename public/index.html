@@ -1514,25 +1514,33 @@ async function loadRoom(tid) {
   if (error || !data || data.length === 0) { box.innerHTML = '<p style="font-size:.75rem;color:var(--danger)">🔒 Room ID belum dipublikasikan.</p>'; return; }
   box.innerHTML = data.map(room => `<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222;padding:5px 0"><div><div style="font-size:.7rem;color:var(--silver)">Room ID: <b style="color:var(--chrome)">${room.room_id || '-'}</b></div><div style="font-size:.7rem;color:var(--silver)">Pass: <b style="color:var(--chrome)">${room.room_password || '-'}</b></div></div><button class="btn btn-sm btn-sec" onclick="copyText('${room.room_id} ${room.room_password}')"><i class="fa-solid fa-copy"></i></button></div>`).join('');
 }
-
 async function showTicket(regId) {
-  console.log("Membuka tiket untuk ID:", regId);
+  console.log("Mencoba buka tiket ID:", regId);
   
-  // Pakai maybeSingle biar ga crash kalau datanya aneh
+  // Coba tarik data tiket
   const { data: tk, error: errTk } = await sb.from('etickets').select('*').eq('registration_id', regId).maybeSingle();
-  const { data: reg, error: errReg } = await sb.from('registrations').select('team_name, tournaments(name)').eq('id', regId).maybeSingle();
+  
+  // Kalau ada error dari Supabase (misal kena RLS), tampilkan di layar!
+  if (errTk) {
+      console.error("ERROR TIKET:", errTk);
+      return toast('Gagal ambil tiket: ' + errTk.message, 'danger');
+  }
+  
+  if (!tk) {
+      // Kalau datanya beneran ga ada, kita coba panggil ulang tanpa maybeSingle
+      const { data: cek } = await sb.from('etickets').select('*').eq('registration_id', regId);
+      console.log("Hasil cek ulang:", cek);
+      return toast('Tiket masih kosong (DB bilang null).', 'warning');
+  }
 
-  if (errTk) console.error("Error ambil tiket:", errTk);
-  if (errReg) console.error("Error ambil reg:", errReg);
-
-  if (!tk) return toast('Tiket belum dibuat sistem (DB Kosong).', 'warning');
-  if (!reg) return toast('Data tim tidak ditemukan.', 'warning');
+  // Kalau lolos sampai sini, berarti tiket ketemu!
+  const { data: reg } = await sb.from('registrations').select('team_name, tournaments(name)').eq('id', regId).maybeSingle();
 
   $('ticket-content').innerHTML = `
     <div class="ticket-wrap">
       <div class="t-left">
-        <h4 style="font-family:'Orbitron';color:var(--chrome);margin-bottom:10px;">${reg.tournaments?.name || 'Turnamen'}</h4>
-        <p style="font-size:1.2rem;font-weight:bold;color:#fff;margin-bottom:5px;">${reg.team_name}</p>
+        <h4 style="font-family:'Orbitron';color:var(--chrome);margin-bottom:10px;">${reg?.tournaments?.name || 'Turnamen'}</h4>
+        <p style="font-size:1.2rem;font-weight:bold;color:#fff;margin-bottom:5px;">${reg?.team_name || 'Tim'}</p>
         <p style="font-size:0.7rem;color:var(--silver);">Status: ${tk.is_checked_in ? '<span style="color:var(--success)">SUDAH CHECK-IN</span>' : '<span style="color:var(--danger)">BELUM CHECK-IN</span>'}</p>
       </div>
       <div class="t-right">
@@ -1544,7 +1552,6 @@ async function showTicket(regId) {
   `;
   openModal('m-ticket');
 }
-
 function openWdTour(regId) { wdRegId = regId; $('wd-reason').value = ''; openModal('m-wd-tour'); }
 async function submitWdTour(btn) {
   if (!wdRegId) return;
