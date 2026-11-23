@@ -324,7 +324,28 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
 </button>
         </div>
         </div>
-
+<!-- VIEW: CHECK-IN MANDIRI -->
+<div id="v-checkin" class="view hidden">
+    <div style="text-align:center; margin: 20px 0;">
+        <h2 class="title" style="justify-content:center; border:none;">Absensi Turnamen</h2>
+        <p style="color:var(--muted); font-size:0.85rem;">Scan QR Code dari layar proyektor</p>
+    </div>
+    <div class="glass" style="text-align:center; padding: 30px 20px;">
+        <div id="checkin-loading" style="color: var(--muted);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data tim...</div>
+        
+        <div id="checkin-content" class="hidden">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(0,229,255,0.1); border: 2px solid var(--cyan); display: flex; justify-content: center; align-items: center; margin: 0 auto 15px;">
+                <i class="fa-solid fa-ticket" style="font-size: 2.5rem; color: var(--cyan); filter: drop-shadow(0 0 10px var(--cyan));"></i>
+            </div>
+            <h3 style="font-family: 'Orbitron'; font-size: 1.2rem; color: #fff; margin-bottom: 5px;" id="chk-team-name">Nama Tim</h3>
+            <p style="color: var(--silver); font-size: 0.9rem; margin-bottom: 25px; font-family:'Rajdhani'; font-weight:700;" id="chk-tour-name">Turnamen</p>
+            
+            <button class="btn" id="btn-checkin" style="max-width: 300px; margin: 0 auto; padding: 15px;"><i class="fa-solid fa-check-circle"></i> ABSEN SEKARANG</button>
+        </div>
+        
+        <div id="checkin-error" class="hidden" style="color: var(--danger); font-size: 0.9rem; margin-top: 15px;"></div>
+    </div>
+</div>
         <!-- VIEW: MY TOURNAMENTS -->
         <div id="v-my-tour" class="view hidden">
         <h2 class="title">Turnamen Saya</h2>
@@ -1616,7 +1637,101 @@ async function delNotif(id) {
   toast('Notif dihapus', 'success');
   loadNotifs();
 }
+// =========================================
+// LOGIKA CHECK-IN MANDIRI
+// =========================================
+async function loadCheckinPage() {
+    if (!user) { 
+        toast('Login dulu untuk absen!', 'warning');
+        nav('auth'); 
+        return; 
+    }
+    
+    $('#checkin-loading').classList.remove('hidden');
+    $('#checkin-content').classList.add('hidden');
+    $('#checkin-error').classList.add('hidden');
+    $('#btn-checkin').disabled = true;
+    
+    try {
+        // 1. Cari turnamen offline yang aktif
+        const { data: activeTour } = await sb.from('tournaments').select('id, name').eq('is_offline', true).in('status', ['berlangsung', 'pendaftaran_dibuka']).order('created_at', { ascending: false }).limit(1).maybeSingle();
+        
+        if (!activeTour) throw new Error('Tidak ada turnamen offline yang sedang aktif.');
+        
+        // 2. Cari tim user di turnamen ini
+        const { data: reg, error: regErr } = await sb.from('registrations')
+            .select('id, team_name, etickets(is_checked_in)')
+            .eq('tournament_id', activeTour.id)
+            .eq('owner_id', user.id)
+            .eq('status', 'resmi_terdaftar')
+            .maybeSingle();
+            
+        if (regErr) throw regErr;
+        if (!reg) throw new Error('Kamu belum terdaftar sebagai peserta di turnamen ini.');
+        
+        // 3. Tampilkan UI
+        $('#checkin-loading').classList.add('hidden');
+        $('#checkin-content').classList.remove('hidden');
+        $('#chk-team-name').textContent = reg.team_name;
+        $('#chk-tour-name').textContent = activeTour.name;
+        
+        const btn = $('#btn-checkin');
+        // Supabase join mengembalikan array, ambil data pertama
+        const eticket = Array.isArray(reg.etickets) ? reg.etickets[0] : reg.etickets;
+        
+        if (eticket && eticket.is_checked_in) {
+            btn.innerHTML = '<i class="fa-solid fa-check-double"></i> SUDAH ABSEN';
+            btn.style.background = 'var(--success)';
+            btn.style.color = '#fff';
+            btn.disabled = true;
+        } else {
+            btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> ABSEN SEKARANG';
+            btn.style.background = ''; 
+            btn.style.color = '';
+            btn.disabled = false;
+            // Simpan ID registrasi ke tombol
+            btn.onclick = () => prosesCheckin(reg.id, btn);
+        }
+        
+    } catch (err) {
+        $('#checkin-loading').classList.add('hidden');
+        $('#checkin-error').classList.remove('hidden');
+        $('#checkin-error').innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${err.message}`;
+    }
+}
 
+async function prosesCheckin(regId, btn) {
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MEMPROSES...';
+    btn.disabled = true;
+    
+    try {
+        // Cek tiket dulu
+        const { data: ticket } = await sb.from('etickets').select('id').eq('registration_id', regId).maybeSingle();
+        
+        let error;
+        if (ticket) {
+            // Update jika sudah ada
+            const res = await sb.from('etickets').update({ is_checked_in: true, checked_in_at: new Date().toISOString() }).eq('id', ticket.id);
+            error = res.error;
+        } else {
+            // Insert jika belum ada tiket
+            const res = await sb.from('etickets').insert({ registration_id: regId, is_checked_in: true, checked_in_at: new Date().toISOString() });
+            error = res.error;
+        }
+        
+        if (error) throw error;
+        
+        toast('Absensi Berhasil! Silakan lihat layar proyektor.', 'success');
+        btn.innerHTML = '<i class="fa-solid fa-check-double"></i> SUDAH ABSEN';
+        btn.style.background = 'var(--success)';
+        btn.style.color = '#fff';
+        
+    } catch (err) {
+        toast('Gagal absen: ' + err.message, 'danger');
+        btn.innerHTML = 'COBA LAGI';
+        btn.disabled = false;
+    }
+   }
 async function loadScrims() {
   const list = $('scrim-list');
   const { data, error } = await sb.from('scrim_matches')
@@ -1737,7 +1852,7 @@ async function initAuth() {
 }
 
 function nav(v) {
-  ['home','detail','my-tour','dash','reg','notif','auth','404', 'scrim'].forEach(id => { const el = $('v-' + id); if (el) el.classList.add('hidden'); });
+  ['home','detail','my-tour','dash','reg','notif','auth','404', 'scrim','checkin'].forEach(id => { const el = $('v-' + id); if (el) el.classList.add('hidden'); });
   const el = $('v-' + v); if (el) el.classList.remove('hidden');
   document.querySelectorAll('.btm-nav button').forEach(b => b.classList.remove('active'));
   const btn = document.querySelector(`.btm-nav button[data-v="${v}"]`); if (btn) btn.classList.add('active');
@@ -1747,6 +1862,7 @@ function nav(v) {
   if (v === 'notif') loadNotifs();
   if (v === 'my-tour') loadMyTour();
   if (v === 'scrim') loadScrims();
+   if (v === 'checkin') loadCheckinPage();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
    // =========================================
