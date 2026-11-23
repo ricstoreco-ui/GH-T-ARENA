@@ -1515,37 +1515,65 @@ async function loadRoom(tid) {
   box.innerHTML = data.map(room => `<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222;padding:5px 0"><div><div style="font-size:.7rem;color:var(--silver)">Room ID: <b style="color:var(--chrome)">${room.room_id || '-'}</b></div><div style="font-size:.7rem;color:var(--silver)">Pass: <b style="color:var(--chrome)">${room.room_password || '-'}</b></div></div><button class="btn btn-sm btn-sec" onclick="copyText('${room.room_id} ${room.room_password}')"><i class="fa-solid fa-copy"></i></button></div>`).join('');
 }
 async function showTicket(regId) {
-  console.log("Mencoba buka tiket ID:", regId);
-  
   const { data: tk, error: errTk } = await sb.from('etickets').select('*').eq('registration_id', regId).maybeSingle();
-  
-  if (errTk) {
-      console.error("ERROR TIKET:", errTk);
-      // Tampilkan Pop-up biar lu bisa baca pesan errornya
-      alert('GAGAL AMBIL TIKET\n\nPesan: ' + errTk.message + '\nDetail: ' + (errTk.details || '-') + '\nKode: ' + (errTk.code || '-'));
-      return; 
-  }
-  
-  if (!tk) {
-      alert('TIKET KOSONG (NULL)\n\nWeb ngirim ID Registrasi: ' + regId);
-      return;
-  }
-
   const { data: reg } = await sb.from('registrations').select('team_name, tournaments(name)').eq('id', regId).maybeSingle();
 
+  if (errTk) return toast('Gagal: ' + errTk.message, 'danger');
+  if (!tk) return toast('Tiket belum dibuat sistem.', 'warning');
+
+  const logoGH = "https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png";
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${tk.ticket_code}`;
+
+  // Desain Tiket Baru
   $('ticket-content').innerHTML = `
-    <div class="ticket-wrap">
-      <div class="t-left">
-        <h4 style="font-family:'Orbitron';color:var(--chrome);margin-bottom:10px;">${reg?.tournaments?.name || 'Turnamen'}</h4>
-        <p style="font-size:1.2rem;font-weight:bold;color:#fff;margin-bottom:5px;">${reg?.team_name || 'Tim'}</p>
-        <p style="font-size:0.7rem;color:var(--silver);">Status: ${tk.is_checked_in ? '<span style="color:var(--success)">SUDAH CHECK-IN</span>' : '<span style="color:var(--danger)">BELUM CHECK-IN</span>'}</p>
+    <style>
+      .tk-premium { background: linear-gradient(145deg, #111, #050505); border: 2px solid var(--cyan); border-radius: 16px; padding: 20px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,229,255,0.15); margin-bottom: 15px; }
+      .tk-premium::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--cyan), var(--gold), var(--cyan)); }
+      .tk-header { text-align: center; border-bottom: 1px dashed #333; padding-bottom: 15px; margin-bottom: 15px; }
+      .tk-header h2 { font-family: 'Orbitron', sans-serif; color: var(--cyan); font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 5px; }
+      .tk-header p { font-size: 0.75rem; color: var(--muted); }
+      .tk-body { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+      .tk-info { flex: 1; }
+      .tk-info .label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; }
+      .tk-info .value { font-family: 'Orbitron', sans-serif; color: #fff; font-size: 1.1rem; margin-bottom: 12px; font-weight: bold; }
+      .tk-info .status { font-size: 0.7rem; padding: 3px 8px; border-radius: 4px; display: inline-block; font-family: 'Rajdhani', sans-serif; font-weight: bold; }
+      .tk-qr-wrap { position: relative; width: 110px; height: 110px; background: #fff; padding: 5px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,229,255,0.3); }
+      .tk-qr-wrap img.qr { width: 100%; height: 100%; object-fit: contain; }
+      .tk-qr-wrap img.logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 28px; height: 28px; background: #fff; border-radius: 50%; padding: 2px; border: 1px solid #ddd; object-fit: contain; }
+      .tk-code { text-align: center; margin-top: 10px; font-family: 'Orbitron', sans-serif; font-size: 1.2rem; color: var(--gold); letter-spacing: 3px; background: rgba(255,215,0,0.1); padding: 5px; border-radius: 4px; border: 1px dashed rgba(255,215,0,0.5); }
+      .tk-cutout { position: absolute; width: 20px; height: 20px; background: #0f0f11; border-radius: 50%; border: 2px solid var(--cyan); top: 50%; margin-top: -10px; }
+      .tk-cutout.left { left: -12px; border-right-color: transparent; transform: rotate(-45deg); }
+      .tk-cutout.right { right: -12px; border-left-color: transparent; transform: rotate(45deg); }
+    </style>
+    
+    <div class="tk-premium" id="ticket-visual">
+      <div class="tk-header">
+        <h2>E-TICKET</h2>
+        <p>GH-T ARENA OFFICIAL</p>
       </div>
-      <div class="t-right">
-        <div class="t-code-lbl">KODE UNIK</div>
-        <div class="t-code">${tk.ticket_code}</div>
-        <div class="t-qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${tk.ticket_code}"></div>
+      <div class="tk-body">
+        <div class="tk-info">
+          <div class="label">Turnamen</div>
+          <div class="value">${reg?.tournaments?.name || 'Turnamen'}</div>
+          <div class="label">Nama Tim</div>
+          <div class="value">${reg?.team_name || 'Tim'}</div>
+          <div class="label">Status</div>
+          <div class="status" style="background:${tk.is_checked_in ? 'rgba(67,160,71,0.2)' : 'rgba(229,57,53,0.2)'}; color:${tk.is_checked_in ? 'var(--success)' : 'var(--danger)'}; border: 1px solid ${tk.is_checked_in ? 'var(--success)' : 'var(--danger)'};">
+            ${tk.is_checked_in ? 'SUDAH CHECK-IN' : 'BELUM CHECK-IN'}
+          </div>
+        </div>
+        <div class="tk-qr-wrap">
+          <img class="qr" crossorigin="anonymous" src="${qrUrl}">
+          <img class="logo" crossorigin="anonymous" src="${logoGH}">
+        </div>
       </div>
+      <div class="tk-code">${tk.ticket_code}</div>
+      <div class="tk-cutout left"></div>
+      <div class="tk-cutout right"></div>
     </div>
+
+    <button class="btn" style="margin-top:5px;" onclick="downloadTicket('${reg?.team_name || 'Tim'}')"><i class="fa-solid fa-download"></i> Simpan ke Galeri</button>
+    <button class="btn btn-sec" style="margin-top:10px" onclick="closeModal('m-ticket')">Tutup</button>
   `;
   openModal('m-ticket');
 }
