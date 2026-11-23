@@ -1517,23 +1517,20 @@ async function loadRoom(tid) {
 async function showTicket(regId) {
   console.log("Mencoba buka tiket ID:", regId);
   
-  // Coba tarik data tiket
   const { data: tk, error: errTk } = await sb.from('etickets').select('*').eq('registration_id', regId).maybeSingle();
   
-  // Kalau ada error dari Supabase (misal kena RLS), tampilkan di layar!
   if (errTk) {
       console.error("ERROR TIKET:", errTk);
-      return toast('Gagal ambil tiket: ' + errTk.message, 'danger');
+      // Tampilkan Pop-up biar lu bisa baca pesan errornya
+      alert('GAGAL AMBIL TIKET\n\nPesan: ' + errTk.message + '\nDetail: ' + (errTk.details || '-') + '\nKode: ' + (errTk.code || '-'));
+      return; 
   }
   
   if (!tk) {
-      // Kalau datanya beneran ga ada, kita coba panggil ulang tanpa maybeSingle
-      const { data: cek } = await sb.from('etickets').select('*').eq('registration_id', regId);
-      console.log("Hasil cek ulang:", cek);
-      return toast('Tiket masih kosong (DB bilang null).', 'warning');
+      alert('TIKET KOSONG (NULL)\n\nWeb ngirim ID Registrasi: ' + regId);
+      return;
   }
 
-  // Kalau lolos sampai sini, berarti tiket ketemu!
   const { data: reg } = await sb.from('registrations').select('team_name, tournaments(name)').eq('id', regId).maybeSingle();
 
   $('ticket-content').innerHTML = `
