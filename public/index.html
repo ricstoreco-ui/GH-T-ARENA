@@ -1516,14 +1516,22 @@ async function loadRoom(tid) {
 }
 
 async function showTicket(regId) {
-  const { data: tk } = await sb.from('etickets').select('*').eq('registration_id', regId).single();
-  const { data: reg } = await sb.from('registrations').select('team_name, tournaments(name)').eq('id', regId).single();
-  if (!tk) return toast('Tiket belum dibuat sistem.', 'warning');
+  console.log("Membuka tiket untuk ID:", regId);
+  
+  // Pakai maybeSingle biar ga crash kalau datanya aneh
+  const { data: tk, error: errTk } = await sb.from('etickets').select('*').eq('registration_id', regId).maybeSingle();
+  const { data: reg, error: errReg } = await sb.from('registrations').select('team_name, tournaments(name)').eq('id', regId).maybeSingle();
+
+  if (errTk) console.error("Error ambil tiket:", errTk);
+  if (errReg) console.error("Error ambil reg:", errReg);
+
+  if (!tk) return toast('Tiket belum dibuat sistem (DB Kosong).', 'warning');
+  if (!reg) return toast('Data tim tidak ditemukan.', 'warning');
 
   $('ticket-content').innerHTML = `
     <div class="ticket-wrap">
       <div class="t-left">
-        <h4 style="font-family:'Orbitron';color:var(--chrome);margin-bottom:10px;">${reg.tournaments.name}</h4>
+        <h4 style="font-family:'Orbitron';color:var(--chrome);margin-bottom:10px;">${reg.tournaments?.name || 'Turnamen'}</h4>
         <p style="font-size:1.2rem;font-weight:bold;color:#fff;margin-bottom:5px;">${reg.team_name}</p>
         <p style="font-size:0.7rem;color:var(--silver);">Status: ${tk.is_checked_in ? '<span style="color:var(--success)">SUDAH CHECK-IN</span>' : '<span style="color:var(--danger)">BELUM CHECK-IN</span>'}</p>
       </div>
