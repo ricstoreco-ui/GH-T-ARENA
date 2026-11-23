@@ -624,14 +624,33 @@ function renderStandby() {
         </div>
     `).join('');
 }
-
-function simulateCheckIn(name, initial) {
+function triggerCheckInSuccess(name, logoUrl) {
     const overlay = document.getElementById('overlay-success');
+    const logoEl = document.getElementById('suc-logo');
+    
     document.getElementById('suc-name').textContent = name;
-    document.getElementById('suc-logo').textContent = initial;
+    
+    // Set Logo Tim (Gambar) atau huruf depan (kalau ga ada logo)
+    if (logoUrl) {
+        logoEl.innerHTML = `<img src="${logoUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        logoEl.style.fontSize = '0'; 
+    } else {
+        logoEl.innerHTML = name.charAt(0).toUpperCase();
+        logoEl.style.fontSize = '5cqw';
+    }
+
+    // Munculkan Overlay Fullscreen
     overlay.classList.add('active');
-    const team = checkinData.find(t => t.name === name); if(team) team.checked = true; renderStandby();
-    setTimeout(() => { overlay.classList.remove('active'); }, 5000);
+
+    // Update list absen di layar standby
+    const team = checkinData.find(t => t.name === name); 
+    if(team) team.checked = true; 
+    renderStandby();
+
+    // Sembunyikan lagi setelah 5 detik
+    setTimeout(() => { 
+        overlay.classList.remove('active'); 
+    }, 5000);
 }
 
 // -- BR & PREDATOR --
@@ -852,14 +871,23 @@ function setupRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'br_matches' }, () => fetchData())
     .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => fetchData())
     .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => fetchData())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'etickets' }, (payload) => {
-        // Logika Checkin Realtime (Simulasi)
-        if(payload.new.is_checked_in === true) {
-            // Butuh relasi nama tim, tapi ini simulasi
-            simulateCheckIn('TIM CHECK-IN', 'T');
+.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'etickets' }, async (payload) => {
+    // Cek apakah update ini mengubah status menjadi 'sudah check-in'
+    if(payload.new && payload.new.is_checked_in === true && payload.old && payload.old.is_checked_in === false) {
+        console.log("Ada tim check-in realtime...", payload.new);
+        
+        // Tarik data nama tim & logo dari database
+        const { data: reg } = await sb.from('registrations')
+            .select('team_name, logo_url')
+            .eq('id', payload.new.registration_id)
+            .maybeSingle();
+            
+        if (reg) {
+            // Panggil fungsi pop-up yang baru kita buat di atas
+            triggerCheckInSuccess(reg.team_name, reg.logo_url);
         }
-    }).subscribe();
-}
+    }
+}).subscribe();
 
 // =========================================
 // PANEL KONTROL & TRANSISI
