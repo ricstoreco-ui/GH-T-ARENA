@@ -810,7 +810,9 @@ async function doLogin(btn) {
   if (error) { toast(translateError(error.message), 'danger'); btn.disabled = false; btn.innerText = 'Masuk'; return; }
   user = data.user;
   await initProfile(); await loadSettings(); setupRealtime(); updateAuthUI();
-  toast('Login Berhasil!', 'success'); nav('home');
+  toast('Login Berhasil!', 'success'); 
+const hash = window.location.hash.replace('#', '');
+nav(hash === 'checkin' ? 'checkin' : 'home');
 }
 
 async function doRegister(btn) {
@@ -1847,7 +1849,9 @@ if (tc) { tc.addEventListener('mousemove', e => { const r = tc.getBoundingClient
 async function initAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
-    user = session.user; await initProfile(); await loadSettings(); setupRealtime(); updateAuthUI(); nav('home');
+    user = session.user; await initProfile(); await loadSettings(); setupRealtime(); updateAuthUI(); 
+    const hash = window.location.hash.replace('#', '');
+    nav(hash === 'checkin' ? 'checkin' : 'home');
   } else { updateAuthUI(); nav('auth'); }
 }
 
@@ -2034,6 +2038,12 @@ function startTournamentTimer(targetDateStr) {
 
     }, 1000);
 }
+   // Listener untuk deteksi URL #checkin
+window.addEventListener('hashchange', () => {
+  const hash = window.location.hash.replace('#', '');
+  if (hash === 'checkin') nav('checkin');
+  else if (hash === 'home' || hash === '') nav('home');
+});
 </script>
 </body>
                </html>
