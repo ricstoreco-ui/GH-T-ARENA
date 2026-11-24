@@ -7,14 +7,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&family=Poppins:wght@400;600;700&family=Teko:wght@600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-<!-- ═══ PATCH 1: Supabase CDN dengan fallback ke file lokal ═══ -->
+<!-- ═══ MULTI-FALLBACK CDN SUPABASE (ANTI BLOKIR) ═══ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // Fallback: kalau CDN jsdelivr diblokir/gagal, pakai file lokal /supabase.js
-  if (typeof supabase === 'undefined' || !supabase || typeof supabase.createClient !== 'function') {
-    console.warn('⚠️ CDN Supabase gagal, fallback ke /supabase.js lokal...');
-    document.write('<script src="/supabase.js"><\/script>');
-  }
+  if (!window.supabase) document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>');
+</script>
+<script>
+  if (!window.supabase) document.write('<script src="https://cdn.skypack.dev/@supabase/supabase-js"><\/script>');
 </script>
 
 <style>
@@ -295,7 +294,6 @@
 </head>
 <body class="theme-default">
 
-<!-- ═══ PATCH 2: onclick diubah ke startDisplaySafe ═══ -->
 <div id="start-screen" onclick="startDisplaySafe()">
     <h1>GH-T ARENA</h1>
     <p>KLIK DI MANA SAJA UNTUK MASUK FULLSCREEN</p>
@@ -483,17 +481,13 @@
     </div>
 </div>
 
-<!-- ═══ PATCH 3: SAFETY SCRIPT — anti crash, start button selalu responsif ═══ -->
 <script>
 window.startDisplaySafe = function() {
-    // 1. Sembunyikan start screen — PASTI jalan
     var el = document.getElementById('start-screen');
     if (el) {
         el.style.opacity = '0';
         setTimeout(function() { el.style.display = 'none'; }, 500);
     }
-
-    // 2. Fullscreen — dibungkus try-catch
     try {
         if (document.documentElement.requestFullscreen) {
             var p = document.documentElement.requestFullscreen();
@@ -501,24 +495,13 @@ window.startDisplaySafe = function() {
         }
     } catch(e) { console.warn('Fullscreen exception:', e); }
 
-    // 3. Kalau library supabase belum ada → beri peringatan jelas
-    if (typeof supabase === 'undefined' || !supabase || typeof supabase.createClient !== 'function') {
-        console.error('❌ Library Supabase gagal dimuat (CDN & lokal).');
-        var err = document.createElement('div');
-        err.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#e53935;color:#fff;padding:15px 25px;border-radius:8px;z-index:999999;font-family:sans-serif;font-size:14px;max-width:90%;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
-        err.innerHTML = '⚠️ <b>Library Supabase gagal dimuat.</b><br>Coba refresh halaman atau ganti jaringan.<br>Data turnamen tidak akan muncul.';
-        document.body.appendChild(err);
-        return;
-    }
-
-    // 4. Panggil startDisplay asli (fetch data & play BGM)
     if (typeof window.startDisplay === 'function') {
         try { window.startDisplay(); }
         catch(e) {
             console.error('startDisplay error:', e);
             var err2 = document.createElement('div');
             err2.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#ff9800;color:#000;padding:15px 25px;border-radius:8px;z-index:999999;font-family:sans-serif;font-size:14px;max-width:90%;text-align:center;';
-            err2.innerHTML = '⚠️ <b>Error saat memuat data:</b><br>' + String(e.message || e).slice(0,150) + '<br>Buka Console (F12) untuk detail.';
+            err2.innerHTML = '⚠️ <b>Error saat memuat data:</b><br>' + String(e.message || e).slice(0,150);
             document.body.appendChild(err2);
         }
     }
@@ -538,9 +521,17 @@ const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
 
 let sb = null;
 try {
+    if (!window.supabase) throw new Error("Library Supabase tidak ada sama sekali. Cek koneksi internet.");
     sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 } catch(e) {
     console.error('❌ createClient gagal:', e);
+    document.body.innerHTML = `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.95);color:#fff;z-index:999999;display:flex;justify-content:center;align-items:center;text-align:center;padding:20px;font-family:sans-serif;">
+        <div>
+            <h2 style="color:#e53935;margin-bottom:10px;">⚠️ Gagal Konek Database</h2>
+            <p>Library Supabase gagal dimuat atau internet tidak stabil.</p>
+            <p style="font-size:12px;color:#aaa;margin-top:10px;">Error: ${e.message}</p>
+        </div>
+    </div>` + document.body.innerHTML;
 }
 
 let TOURNAMENT_ID = new URLSearchParams(window.location.search).get('t') || null;
@@ -549,7 +540,6 @@ let brData = []; let predatorData = []; let mapData = []; let chatData = []; let
 let csData = []; let killFeedData = []; let juaraData = []; let checkinData = [];
 let manualTimerInterval = null;
 
-// ═══ PATCH 4: startDisplay jadi global + tidak hide/fullscreen (sudah dihandle Safe) ═══
 window.startDisplay = function() {
     if (bgmAudio.src) bgmAudio.play().catch(e => console.log('BGM:', e));
     fetchData();
@@ -559,7 +549,7 @@ window.startDisplay = function() {
 // FETCH DATA
 // =========================================
 async function fetchData() {
-    if (!sb) { console.error('Supabase client tidak tersedia'); return; }
+    if (!sb) return;
     try {
         if (!TOURNAMENT_ID) {
             const { data: activeTour } = await sb.from('tournaments').select('id').in('status', ['berlangsung', 'pendaftaran_dibuka']).order('created_at', { ascending: false }).limit(1).maybeSingle();
@@ -718,13 +708,17 @@ function renderLive() {
     }
     const c = $('#chat');
     if(chatData.length > 0) { c.innerHTML = chatData.map(x => `<p><b>${esc(x.username)}</b> ${esc(x.message)}</p>`).join(''); c.scrollTop = c.scrollHeight; }
-    $('#maps').innerHTML = mapData.map(m => `
+    
+    const L = $('#maps');
+    if (mapData.length === 0) L.innerHTML = '<div style="text-align:center; color:var(--muted); padding: 2cqw; font-size: 1.2cqw;">Belum ada map/match.</div>';
+    else L.innerHTML = mapData.map(m => `
         <div class="mp">
             <img src="${esc(m.game_maps?.image_url || '')}" onerror="this.src='https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg'">
             <div class="mp-info"><div class="mp-name">${esc(m.game_maps?.name || 'Map')}</div><div class="mp-match">Match ${m.match_no}</div></div>
             <em class="${m.status === 'selesai' ? 'selesai' : (m.status === 'berlangsung' ? 'live' : 'next')}">${m.status ? m.status.toUpperCase() : 'NEXT'}</em>
         </div>
     `).join('');
+    
     const ov = $('#chat-overlay'); ov.innerHTML = ''; const lastMsgs = chatData.slice(-6); lastMsgs.forEach(msg => addOverlayChat(msg.username, msg.message, false));
 }
 
