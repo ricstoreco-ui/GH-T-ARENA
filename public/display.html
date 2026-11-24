@@ -13,7 +13,7 @@
   if (!window.supabase) document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>');
 </script>
 <script>
-  if (!window.supabase) document.write('<script src="https://cdn.skypack.dev/@supabase/supabase-js"><\/script>');
+  if (!window.supabase) document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.45.4/umd/supabase.min.js"><\/script>');
 </script>
 
 <style>
@@ -310,11 +310,28 @@
     @keyframes floatLeft { 0%, 100% { transform: translateY(0) translateZ(50px) rotateY(15deg); } 50% { transform: translateY(-2cqw) translateZ(80px) rotateY(5deg); } }
     @keyframes floatRight { 0%, 100% { transform: translateY(0) translateZ(50px) rotateY(-15deg); } 50% { transform: translateY(-2cqw) translateZ(80px) rotateY(-5deg); } }
     @keyframes pulseVS { 0% { transform: scale(1); filter: brightness(1); } 100% { transform: scale(1.05); filter: brightness(1.3); } }
+
+    /* ==== v4 ADDITIONS ==== */
+    #br-wrap, #br-tbl { min-height: 0; }
+    #br-list { flex: 1; min-height: 0; overflow-y: auto; }
+    #br-list::-webkit-scrollbar { width: 0; }
+    .row.compact { height: 2.5cqw; font-size: 1.15cqw; }
+    .row.compact .tm { font-size: 1.15cqw; gap: 0.7cqw; }
+    .row.compact .lg { width: 1.8cqw; height: 1.8cqw; font-size: 0.9cqw; }
+    .row.compact .rk { font-size: 1.2cqw; }
+    #scene-cs .schedule-list { min-height: 0; }
+    .schedule-list, .absen-list, #chat, .map-list { scrollbar-width: thin; }
+    #conn { position: absolute; left: 1cqw; bottom: 4cqw; z-index: 9000; font-family: 'Rajdhani'; font-weight: 700; font-size: 1cqw; padding: 0.2cqw 0.8cqw; border-radius: 0.5cqw; }
+    #conn:empty { display: none; }
+    #conn.ok { color: #43a047; background: rgba(0,0,0,0.5); }
+    #conn.bad { color: #000; background: #ffb300; }
+    #tap-hint { position: absolute; left: 50%; bottom: 4.5cqw; transform: translateX(-50%); z-index: 9500; font-family: 'Rajdhani'; font-weight: 700; font-size: 1.1cqw; letter-spacing: 0.1cqw; color: var(--cyan); background: rgba(0,0,0,0.75); border: 1px solid var(--cyan); padding: 0.5cqw 1.6cqw; border-radius: 2cqw; cursor: pointer; animation: pulse 2s infinite; }
+    .btn.auto-btn { background: var(--success); color: #000; border-color: var(--success); }
 </style>
 </head>
 <body class="theme-default">
 
-<div id="start-screen" onclick="startDisplaySafe()">
+<div id="start-screen" onclick="startDisplaySafe()" style="display:none;">
     <h1>GH-T ARENA</h1>
     <p>KLIK DI MANA SAJA UNTUK MASUK FULLSCREEN</p>
 </div>
@@ -326,6 +343,8 @@
 
 <div class="app-wrapper" id="app-wrapper">
     <video id="video-transisi" playsinline></video>
+    <div id="conn"></div>
+    <div id="tap-hint" onclick="startDisplaySafe()">🔊 KETUK UNTUK SUARA &amp; FULLSCREEN</div>
     
     <header>
         <div class="logo-area">
@@ -377,9 +396,7 @@
             <div id="br-wrap">
                 <div class="panel" id="br-tbl">
                     <div class="ph">BATTLE ROYALE LEADERBOARD</div>
-                    <div class="row h">
-                        <span style="text-align:left">TIM</span><span>M1</span><span>M2</span><span>M3</span><span>M4</span><span>M5</span><span>M6</span><span>TOTAL<br>KILL</span><span>TOTAL<br>POIN</span><span>RANK</span>
-                    </div>
+                    <div class="row h" id="br-head"></div>
                     <div id="br-list"><div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Memuat Data...</div></div>
                 </div>
                 <div class="panel" id="pred">
@@ -516,6 +533,7 @@
                 <button class="btn" data-s="live" style="flex:1;">LIVE</button>
                 <button class="btn" data-s="ads" style="flex:1;">IKLAN</button>
                 <button class="btn" data-s="juara" style="flex:1;">JUARA</button>
+                <button class="btn auto-btn" onclick="navAuto()" style="flex:1;">AUTO</button>
             </div>
         </div>
         <button class="btn full-btn" id="fv"><i class="fa-solid fa-expand"></i> FULLSCREEN</button>
@@ -524,83 +542,86 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// SAFETY: tombol start screen selalu responsif walau script crash
+// GH-T ARENA DISPLAY — v4 (auto-connect, auto-realtime)
+// Link dari bot:  /display.html?view=<mode>&t=<TOURNAMENT_UUID>
+// mode: cd | br | cs | live | call | ads | win | auto
 // ═══════════════════════════════════════════════════════════
-window.startDisplaySafe = function() {
+
+// ---------- SAFETY (tombol splash tetap hidup walau script error) ----------
+window.startDisplaySafe = function () {
     var el = document.getElementById('start-screen');
-    if (el) { el.style.opacity = '0'; setTimeout(function() { el.style.display = 'none'; }, 500); }
-    try {
-        if (document.documentElement.requestFullscreen) {
-            var p = document.documentElement.requestFullscreen();
-            if (p && p.catch) p.catch(function(e){ console.warn('Fullscreen:', e); });
-        }
-    } catch(e) { console.warn('Fullscreen err:', e); }
-    if (typeof window.startDisplay === 'function') {
-        try { window.startDisplay(); }
-        catch(e) {
-            console.error('startDisplay error:', e);
-            var err = document.createElement('div');
-            err.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#ff9800;color:#000;padding:15px 25px;border-radius:8px;z-index:999999;font-family:sans-serif;font-size:14px;max-width:90%;text-align:center;';
-            err.innerHTML = '⚠️ <b>Error saat memuat data:</b><br>' + String(e.message || e).slice(0,200);
-            document.body.appendChild(err);
-        }
-    }
+    if (el) { el.style.opacity = '0'; setTimeout(function () { el.style.display = 'none'; }, 400); }
+    goFullscreen();
+    unlockAudio();
 };
+function goFullscreen() {
+    try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            var p = document.documentElement.requestFullscreen();
+            if (p && p.catch) p.catch(function () {});
+        }
+    } catch (e) {}
+}
 
-// ═══════════════════════════════════════════════════════════
-// SETUP & STATE
-// ═══════════════════════════════════════════════════════════
-let bgmAudio = new Audio(); bgmAudio.loop = true; bgmAudio.volume = 0.5;
-const videoTransisi = document.getElementById('video-transisi');
-videoTransisi.src = "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/GH_TopUp_to_T-Arena_Intro_16s_v2.mp4";
-
+// ---------- CONFIG ----------
 const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
+const FALLBACK_MAP_IMG = 'https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg';
+const POLL_MS = 8000;          // polling cadence (jaring pengaman realtime)
+const AUTO_SCENE_MS = 25000;   // durasi tiap scene di mode auto
 
 const URL_PARAMS = new URLSearchParams(window.location.search);
-const TOURNAMENT_ID = URL_PARAMS.get('t') || null;
-const VIEW_PARAM = URL_PARAMS.get('view') || null;
+let TOURNAMENT_ID = (URL_PARAMS.get('t') || '').trim() || null;
+const VIEW_PARAM = (URL_PARAMS.get('view') || '').trim().toLowerCase() || null;
 const DEBUG_MODE = URL_PARAMS.get('debug') === '1';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const videoTransisi = document.getElementById('video-transisi');
+videoTransisi.src = 'https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/GH_TopUp_to_T-Arena_Intro_16s_v2.mp4';
+let bgmAudio = new Audio(); bgmAudio.loop = true; bgmAudio.volume = 0.5;
+let audioUnlocked = false;
 
 let sb = null;
 try {
-    if (!window.supabase) throw new Error("Library Supabase tidak ada. Cek internet.");
-    sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-} catch(e) {
-    console.error('❌ createClient gagal:', e);
-    if (DEBUG_MODE) {
-        const dbg = document.getElementById('debug-panel');
-        dbg.classList.add('show');
-        document.getElementById('debug-content').innerHTML = '<div class="dbg-err">FATAL: ' + e.message + '</div>';
-    }
+    if (!window.supabase) throw new Error('Library Supabase tidak termuat. Cek internet.');
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { realtime: { params: { eventsPerSecond: 5 } } });
+} catch (e) {
+    console.error('createClient gagal:', e);
 }
 
+// ---------- STATE ----------
 let siteSettings = {};
 let tournamentInfo = {};
-let matchList = [];
-let matchScores = {};
+let matchList = [];          // BR matches (+ map)
+let matchScores = {};        // { registration_id: { match_no: points } }
 let leaderboard = [];
 let predator = [];
 let csBracket = [];
-let csMatches = [];
 let killFeeds = [];
 let chatMessages = [];
 let sponsors = [];
-let checkinTeams = [];
+let checkinTeams = [];       // {id,name,logo,checked}
 let podiumData = [];
-let manualTimerInterval = null;
-let lastRenderTime = 0;
+let teamsById = {};          // registration_id -> {name, logo}
+let standbyInterval = null, callingInterval = null;
+let lastSig = {};
+let firstLoadDone = false;
+let refreshing = false, refreshQueued = false, refreshTimer = null;
+let rtStarted = false;
+let currentScene = 'standby';
+let autoMode = false, autoIdx = 0, autoTimer = null;
+let provisionalPodium = false;
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 const fmtRp = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+const stripQ = v => (v === null || v === undefined) ? '' : String(v).replace(/^"+|"+$/g, '').replace(/\\"/g, '"').trim();
+const prettyStatus = s => String(s || '').replace(/_/g, ' ').toUpperCase();
 
-// ═══════════════════════════════════════════════════════════
-// DEBUG LOGGER
-// ═══════════════════════════════════════════════════════════
-function dbg(msg, type = 'info') {
-    console.log('[DBG]', msg);
+// ---------- DEBUG ----------
+function dbg(msg, type) {
+    console.log('[DISPLAY]', msg);
     if (!DEBUG_MODE) return;
     const panel = document.getElementById('debug-panel');
     const content = document.getElementById('debug-content');
@@ -610,396 +631,604 @@ function dbg(msg, type = 'info') {
     line.className = 'dbg-line ' + cls;
     line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
     content.appendChild(line);
-    if (content.children.length > 30) content.removeChild(content.firstChild);
+    while (content.children.length > 40) content.removeChild(content.firstChild);
+}
+function setConn(ok, text) {
+    const el = document.getElementById('conn');
+    if (!el) return;
+    if (ok) { el.className = 'ok'; el.textContent = DEBUG_MODE ? ('● data ' + new Date().toLocaleTimeString('id-ID', { hour12: false })) : ''; }
+    else { el.className = 'bad'; el.textContent = '⚠ ' + (text || 'Koneksi data terputus, mencoba lagi...'); }
+}
+
+// safe query wrapper: tidak pernah melempar, selalu {data,error}
+async function Q(label, promise) {
+    try {
+        const r = await promise;
+        if (r.error) { dbg(label + ' ✗ ' + r.error.message, 'warn'); return { data: null, error: r.error }; }
+        return { data: r.data, error: null };
+    } catch (e) {
+        dbg(label + ' ✗ ' + (e.message || e), 'error');
+        return { data: null, error: e };
+    }
 }
 
 // ═══════════════════════════════════════════════════════════
-// START
+// RESOLVE TOURNAMENT — link bot salah/kosong tetap jalan
 // ═══════════════════════════════════════════════════════════
-window.startDisplay = function() {
-    if (bgmAudio.src) bgmAudio.play().catch(e => console.log('BGM:', e));
-    fetchData();
-};
+async function resolveTournament() {
+    if (TOURNAMENT_ID && UUID_RE.test(TOURNAMENT_ID)) {
+        const r = await Q('tournament by id', sb.from('tournaments').select('*').eq('id', TOURNAMENT_ID).maybeSingle());
+        if (r.data) return r.data;
+        dbg('Turnamen id ' + TOURNAMENT_ID + ' tidak ditemukan, pakai fallback', 'warn');
+    } else if (TOURNAMENT_ID) {
+        dbg('Parameter t="' + TOURNAMENT_ID + '" bukan UUID valid (link bot lama?), pakai fallback', 'warn');
+    }
+    // Fallback: turnamen offline aktif terbaru → turnamen berlangsung terbaru → turnamen terbaru
+    const tries = [
+        sb.from('tournaments').select('*').eq('is_offline', true).in('status', ['berlangsung', 'ditunda', 'pendaftaran_ditutup', 'pendaftaran_dibuka', 'segera_hadir']).order('created_at', { ascending: false }).limit(1),
+        sb.from('tournaments').select('*').eq('status', 'berlangsung').order('created_at', { ascending: false }).limit(1),
+        sb.from('tournaments').select('*').order('created_at', { ascending: false }).limit(1)
+    ];
+    for (const t of tries) {
+        const r = await Q('fallback tournament', t);
+        if (r.data && r.data.length) {
+            dbg('Fallback turnamen: ' + r.data[0].name, 'ok');
+            return r.data[0];
+        }
+    }
+    return null;
+}
 
 // ═══════════════════════════════════════════════════════════
-// FETCH DATA — FIX: stream_url from tournaments table
+// FETCH SEMUA DATA
 // ═══════════════════════════════════════════════════════════
-async function fetchData() {
-    if (!sb) { dbg('Supabase client tidak tersedia', 'error'); return; }
-    if (!TOURNAMENT_ID) { dbg('TOURNAMENT_ID kosong di URL', 'error'); renderAll(); return; }
-
-    dbg('Fetch dimulai, tid=' + TOURNAMENT_ID);
+async function refreshData() {
+    if (!sb) { setConn(false, 'Library Supabase gagal dimuat'); return; }
+    if (refreshing) { refreshQueued = true; return; }
+    refreshing = true;
     try {
-        // ⚠️ FIX: query tournaments langsung (punya stream_url), plus view untuk data publik
-        const { data: tourFull, error: tourErr } = await sb.from('tournaments')
-            .select('id,name,status,schedule_at,stream_url,format,prize_pool,entry_fee,total_slots,is_offline')
-            .eq('id', TOURNAMENT_ID).single();
+        const tour = await resolveTournament();
+        if (!tour) {
+            setConn(false, 'Turnamen tidak ditemukan. Buka display lewat link dari bot.');
+            if (!firstLoadDone) { $('#sb-tour-name').textContent = 'Turnamen tidak ditemukan'; renderAll(true); }
+            return;
+        }
+        if (TOURNAMENT_ID !== tour.id) {
+            TOURNAMENT_ID = tour.id;
+            try { const u = new URL(location.href); u.searchParams.set('t', tour.id); history.replaceState(null, '', u.toString()); } catch (e) {}
+        }
+        const tid = tour.id;
+        tournamentInfo = {
+            id: tour.id, name: tour.name, status: tour.status, format: tour.format,
+            schedule: tour.schedule_at, streamUrl: tour.stream_url,
+            prize_pool: tour.prize_pool, entry_fee: tour.entry_fee,
+            total_slots: tour.total_slots, is_offline: tour.is_offline,
+            match_count: tour.match_count, game_id: tour.game_id,
+            location_name: tour.location_name
+        };
 
-        if (tourErr) dbg('Query tournaments error: ' + tourErr.message, 'error');
-        dbg('Tournament: ' + (tourFull?.name || 'TIDAK ADA') + ' | stream: ' + (tourFull?.stream_url || 'KOSONG'), tourFull?.stream_url ? 'ok' : 'warn');
-
-        // Parallel fetch semua data
-        const [settings, brM, lb, pred, chat, sp, csM, csBr, kf, res, regs] = await Promise.all([
-            sb.from('site_settings').select('key, value'),
-            sb.from('br_matches').select('id, match_no, status, map_id, game_maps(name, image_url)').eq('tournament_id', TOURNAMENT_ID).order('match_no'),
-            sb.from('v_leaderboard_public').select('*').eq('tournament_id', TOURNAMENT_ID).order('rank_no'),
-            sb.from('v_predator_live').select('*').eq('tournament_id', TOURNAMENT_ID),
-            sb.from('tournament_chats').select('username, message, created_at').eq('tournament_id', TOURNAMENT_ID).order('created_at', { ascending: false }).limit(50),
-            sb.from('sponsors').select('*').eq('is_active', true).order('sort_order'),
-            sb.from('cs_matches').select('id, round_no, match_no, status, round_label, bracket, team_a, team_b, winner, score_a, score_b, bo').eq('tournament_id', TOURNAMENT_ID).order('round_no').order('match_no'),
-            sb.from('v_cs_bracket_public').select('*').eq('tournament_id', TOURNAMENT_ID).order('round_no'),
-            sb.from('kill_feeds').select('*').eq('tournament_id', TOURNAMENT_ID).order('created_at', { ascending: false }).limit(5),
-            sb.from('tournament_results').select('*, registrations(team_name, logo_url)').eq('tournament_id', TOURNAMENT_ID).order('final_rank', { ascending: true }),
-            sb.from('registrations').select('id, team_name, logo_url, status, etickets(is_checked_in)').eq('tournament_id', TOURNAMENT_ID).eq('status', 'resmi_terdaftar')
+        const [settings, brM, lb, pred, chatV, sp, csV, csRaw, kf, res, teamsV, scoresV] = await Promise.all([
+            Q('site_settings', sb.from('site_settings').select('key, value')),
+            Q('br_matches', sb.from('br_matches').select('id, match_no, status, map_id').eq('tournament_id', tid).order('match_no')),
+            Q('v_leaderboard_public', sb.from('v_leaderboard_public').select('*').eq('tournament_id', tid).order('rank_no')),
+            Q('v_predator_live', sb.from('v_predator_live').select('*').eq('tournament_id', tid)),
+            Q('chat view', sb.from('v_tournament_chat_public').select('username, message, created_at').eq('tournament_id', tid).order('created_at', { ascending: false }).limit(40)),
+            Q('sponsors', sb.from('sponsors').select('*').eq('is_active', true).order('sort_order')),
+            Q('v_cs_bracket_public', sb.from('v_cs_bracket_public').select('*').eq('tournament_id', tid).order('round_no')),
+            Q('cs_matches', sb.from('cs_matches').select('id, round_no, match_no, status, score_a, score_b, bo, started_at').eq('tournament_id', tid)),
+            Q('kill_feeds', sb.from('kill_feeds').select('*').eq('tournament_id', tid).order('created_at', { ascending: false }).limit(5)),
+            Q('tournament_results', sb.from('tournament_results').select('*').eq('tournament_id', tid).order('final_rank', { ascending: true })),
+            Q('teams view', sb.from('v_display_teams_public').select('*').eq('tournament_id', tid)),
+            Q('scores view', sb.from('v_br_match_scores_public').select('*').eq('tournament_id', tid))
         ]);
 
-        // Proses tournament info
-        if (tourFull) {
-            tournamentInfo = {
-                name: tourFull.name, status: tourFull.status, format: tourFull.format,
-                schedule: tourFull.schedule_at, streamUrl: tourFull.stream_url,
-                prize_pool: tourFull.prize_pool, entry_fee: tourFull.entry_fee,
-                total_slots: tourFull.total_slots, is_offline: tourFull.is_offline
-            };
+        // ---- settings
+        if (settings.data) {
+            settings.data.forEach(s => { siteSettings[s.key] = s.value; });
+            applyAudioSettings();
         }
 
-        // Settings
-        if (settings.data) {
-            settings.data.forEach(s => {
-                siteSettings[s.key] = s.value;
-                if (s.key === 'display_bgm_url' && s.value) bgmAudio.src = s.value.replace(/"/g, '');
-                if (s.key === 'display_bgm_volume') bgmAudio.volume = parseFloat(s.value) || 0.5;
+        // ---- chat (view → fallback table)
+        let chatRows = chatV.data;
+        if (!chatRows) {
+            const c2 = await Q('chat table', sb.from('tournament_chats').select('username, message, created_at').eq('tournament_id', tid).order('created_at', { ascending: false }).limit(40));
+            chatRows = c2.data || [];
+        }
+
+        // ---- teams (view → fallback registrations/etickets tanpa kolom logo)
+        let teamRows = teamsV.data;
+        if (!teamRows) {
+            const r2 = await Q('registrations', sb.from('registrations').select('id, team_name, team_id, status, etickets(is_checked_in)').eq('tournament_id', tid).eq('status', 'resmi_terdaftar'));
+            teamRows = (r2.data || []).map(r => {
+                const et = Array.isArray(r.etickets) ? r.etickets[0] : r.etickets;
+                return { registration_id: r.id, team_name: r.team_name, logo_url: null, is_checked_in: !!(et && et.is_checked_in) };
             });
         }
+        teamsById = {};
+        teamRows.forEach(t => { teamsById[t.registration_id] = { name: t.team_name, logo: t.logo_url || null }; });
+        const prevChecked = new Set(checkinTeams.filter(t => t.checked).map(t => t.id));
+        checkinTeams = teamRows.map(t => ({ id: t.registration_id, name: t.team_name, logo: t.logo_url || null, checked: !!t.is_checked_in }))
+            .sort((a, b) => a.name.localeCompare(b.name));
 
-        // Match list (BR)
+        // ---- maps (query terpisah, tidak bergantung FK embed)
+        const mapIds = [...new Set((brM.data || []).map(m => m.map_id).filter(Boolean))];
+        let mapsById = {};
+        if (mapIds.length) {
+            const gm = await Q('game_maps', sb.from('game_maps').select('id, name, image_url').in('id', mapIds));
+            (gm.data || []).forEach(g => { mapsById[g.id] = g; });
+        }
         matchList = (brM.data || []).map(m => ({
             id: m.id, match_no: m.match_no, status: m.status,
-            map_name: m.game_maps?.name || null,
-            map_image: m.game_maps?.image_url || null
+            map_name: mapsById[m.map_id]?.name || null,
+            map_image: mapsById[m.map_id]?.image_url || null
         }));
 
-        // ⚠️ FIX: Fetch per-match scores untuk BR leaderboard
-        matchScores = {};
-        if (matchList.length > 0) {
-            const matchIds = matchList.map(m => m.id);
-            const { data: brRes } = await sb.from('br_results')
-                .select('br_match_id, registration_id, total_points, kills')
-                .in('br_match_id', matchIds);
-            (brRes || []).forEach(r => {
-                const mn = matchList.find(m => m.id === r.br_match_id)?.match_no;
-                if (mn == null) return;
-                if (!matchScores[r.registration_id]) matchScores[r.registration_id] = {};
-                matchScores[r.registration_id][mn] = Number(r.total_points) || 0;
-            });
-            dbg('Match scores loaded: ' + Object.keys(matchScores).length + ' tim dengan data', 'ok');
+        // ---- per-match scores (view → fallback br_results langsung)
+        let scoreRows = scoresV.data;
+        if (!scoreRows && matchList.length) {
+            const br = await Q('br_results', sb.from('br_results').select('br_match_id, registration_id, total_points, kills').in('br_match_id', matchList.map(m => m.id)));
+            scoreRows = (br.data || []).map(r => ({
+                registration_id: r.registration_id,
+                match_no: matchList.find(m => m.id === r.br_match_id)?.match_no,
+                total_points: r.total_points, kills: r.kills
+            }));
         }
-
-        leaderboard = lb.data || [];
-        predator = pred.data || [];
-        chatMessages = (chat.data || []).reverse();
-        sponsors = sp.data || [];
-        csMatches = csM.data || [];
-        csBracket = csBr.data || [];
-        killFeeds = kf.data || [];
-        podiumData = res.data || [];
-        checkinTeams = (regs.data || []).map(r => {
-            const et = Array.isArray(r.etickets) ? r.etickets[0] : r.etickets;
-            return { name: r.team_name, logo: r.logo_url, checked: !!et?.is_checked_in };
+        matchScores = {};
+        (scoreRows || []).forEach(r => {
+            if (r.match_no == null) return;
+            (matchScores[r.registration_id] = matchScores[r.registration_id] || {})[r.match_no] = Number(r.total_points) || 0;
         });
 
-        dbg('Data loaded: ' + leaderboard.length + ' tim, ' + matchList.length + ' match, ' + csBracket.length + ' CS bracket', 'ok');
+        // ---- leaderboard (view → hitung sendiri dari skor kalau view kosong)
+        leaderboard = lb.data || [];
+        if (!leaderboard.length && scoreRows && scoreRows.length) {
+            const agg = {};
+            scoreRows.forEach(r => {
+                const a = agg[r.registration_id] = agg[r.registration_id] || { registration_id: r.registration_id, total_points: 0, total_kills: 0 };
+                a.total_points += Number(r.total_points) || 0; a.total_kills += Number(r.kills) || 0;
+            });
+            leaderboard = Object.values(agg)
+                .sort((a, b) => b.total_points - a.total_points || b.total_kills - a.total_kills)
+                .map((a, i) => ({ ...a, rank_no: i + 1, team_name: teamsById[a.registration_id]?.name || 'TIM', logo_url: teamsById[a.registration_id]?.logo || null }));
+            dbg('Leaderboard dihitung dari skor match (view kosong)', 'warn');
+        }
+        leaderboard.forEach(t => { if (!teamsById[t.registration_id]) teamsById[t.registration_id] = { name: t.team_name, logo: t.logo_url }; });
+        predator = pred.data || [];
+        chatMessages = (chatRows || []).slice().reverse();
+        sponsors = sp.data || [];
+        killFeeds = kf.data || [];
 
-        renderAll();
-        setupRealtime();
-        startStandbyCountdown();
-        autoNavigateFromUrl();
+        // ---- CS: gabung view bracket + skor dari cs_matches
+        const csScore = {};
+        (csRaw.data || []).forEach(m => { csScore[m.id] = m; });
+        csBracket = (csV.data || []).map(m => ({ ...m, ...(csScore[m.id] ? { score_a: csScore[m.id].score_a, score_b: csScore[m.id].score_b, raw_status: csScore[m.id].status, bo: csScore[m.id].bo ?? m.bo } : {}) }))
+            .sort((a, b) => (a.round_no - b.round_no) || (a.match_no - b.match_no));
 
-    } catch(err) {
-        dbg('fetchData error: ' + err.message, 'error');
-        console.error("Error Fetch:", err);
-        renderAll();
+        // ---- podium (tanpa join registrations.logo_url yang memang tidak ada)
+        provisionalPodium = false;
+        podiumData = (res.data || []).map(r => ({
+            ...r,
+            team_name: teamsById[r.registration_id]?.name || 'TEAM',
+            logo_url: teamsById[r.registration_id]?.logo || null
+        }));
+        if (!podiumData.length && leaderboard.length) {
+            provisionalPodium = true;
+            podiumData = leaderboard.slice(0, 6).map(t => ({
+                registration_id: t.registration_id, final_rank: t.rank_no, total_kills: t.total_kills,
+                total_points: t.total_points, prize_amount: 0, team_name: t.team_name, logo_url: t.logo_url
+            }));
+        }
+
+        // ---- popup check-in untuk tim yang baru absen
+        const newlyChecked = firstLoadDone ? checkinTeams.filter(t => t.checked && !prevChecked.has(t.id)) : [];
+
+        dbg('OK: ' + tournamentInfo.name + ' | LB ' + leaderboard.length + ' | BR match ' + matchList.length + ' | CS ' + csBracket.length + ' | stream ' + (tournamentInfo.streamUrl ? 'ada' : 'kosong'), 'ok');
+        setConn(true);
+        renderAll(false);
+        newlyChecked.forEach((t, i) => setTimeout(() => triggerCheckInSuccess(t.name, t.logo), i * 5500));
+
+        if (!firstLoadDone) {
+            firstLoadDone = true;
+            startRealtime();
+            applyInitialView();
+        }
+        if (autoMode) autoEvaluate();
+    } catch (err) {
+        dbg('refreshData error: ' + err.message, 'error');
+        console.error(err);
+        setConn(false);
+    } finally {
+        refreshing = false;
+        if (refreshQueued) { refreshQueued = false; scheduleRefresh(300); }
     }
+}
+function scheduleRefresh(ms) {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(refreshData, ms == null ? 500 : ms);
 }
 
 // ═══════════════════════════════════════════════════════════
-// AUTO-NAVIGATE dari ?view= parameter
+// AUDIO (BGM dikontrol dari site_settings → bot)
 // ═══════════════════════════════════════════════════════════
-function autoNavigateFromUrl() {
-    if (!VIEW_PARAM) return;
-    const VIEW_MAP = {
-        'cd': 'standby', 'standby': 'standby',
-        'br': 'br', 'lb': 'br', 'leaderboard': 'br',
-        'cs': 'cs', 'bracket': 'cs',
-        'live': 'live', 'stream': 'live',
-        'calling': 'calling',
-        'juara': 'juara', 'podium': 'juara',
-        'ads': 'ads', 'iklan': 'ads'
-    };
-    const scene = VIEW_MAP[VIEW_PARAM.toLowerCase()];
-    if (scene) {
-        dbg('Auto-navigate ke scene: ' + scene, 'ok');
-        setTimeout(() => window.nav(scene), 800);
+function applyAudioSettings() {
+    const url = stripQ(siteSettings.display_bgm_url);
+    const vol = parseFloat(stripQ(siteSettings.display_bgm_volume));
+    if (!isNaN(vol)) bgmAudio.volume = Math.max(0, Math.min(1, vol));
+    if (!url) { if (!bgmAudio.paused) bgmAudio.pause(); bgmAudio.removeAttribute('src'); return; }
+    if (bgmAudio.getAttribute('src') !== url) bgmAudio.src = url;
+    if (audioUnlocked && bgmAudio.paused && currentScene !== 'ads') bgmAudio.play().catch(() => {});
+}
+function unlockAudio() {
+    audioUnlocked = true;
+    const h = document.getElementById('tap-hint'); if (h) h.style.display = 'none';
+    if (bgmAudio.getAttribute('src') && bgmAudio.paused) bgmAudio.play().catch(() => {});
+}
+['click', 'touchstart', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (!audioUnlocked) unlockAudio(); }, { once: false, passive: true }));
+
+// ═══════════════════════════════════════════════════════════
+// VIEW PARAM → SCENE
+// ═══════════════════════════════════════════════════════════
+const VIEW_MAP = {
+    cd: 'standby', standby: 'standby', countdown: 'standby',
+    br: 'br', lb: 'br', leaderboard: 'br',
+    cs: 'cs', bracket: 'cs', jadwal: 'cs',
+    live: 'live', stream: 'live',
+    call: 'calling', calling: 'calling',
+    ads: 'ads', ad: 'ads', iklan: 'ads',
+    win: 'juara', juara: 'juara', podium: 'juara'
+};
+function applyInitialView() {
+    if (VIEW_PARAM === 'auto') { autoMode = true; autoEvaluate(true); return; }
+    let scene = VIEW_MAP[VIEW_PARAM || ''];
+    if (!scene) {
+        // tanpa ?view= → pilih scene default sesuai kondisi turnamen
+        scene = pickAutoScene();
+        autoMode = false;
     }
+    switchScene(scene, true);
 }
 
 // ═══════════════════════════════════════════════════════════
-// RENDER ALL
+// AUTO MODE — ganti scene sendiri sesuai kondisi turnamen
 // ═══════════════════════════════════════════════════════════
-function renderAll() {
-    // Theme
-    if (siteSettings.active_theme) {
-        const theme = String(siteSettings.active_theme).replace(/"/g, '');
-        document.body.className = theme === 'default' ? 'theme-default' : 'theme-' + theme;
+function timerEndMs() {
+    const v = stripQ(siteSettings.display_timer_end);
+    const t = v ? new Date(v).getTime() : NaN;
+    return isNaN(t) ? null : t;
+}
+function pickAutoScene() {
+    const st = tournamentInfo.status;
+    if (st === 'selesai') return 'juara';
+    const te = timerEndMs();
+    if (te && te > Date.now()) return tournamentInfo.format === 'CS' ? 'standby' : 'calling';
+    const sched = tournamentInfo.schedule ? new Date(tournamentInfo.schedule).getTime() : null;
+    if (st !== 'berlangsung' && st !== 'ditunda') {
+        if (!sched || sched > Date.now()) return 'standby';
     }
+    return null; // null = putar rotasi data/live
+}
+function autoEvaluate(force) {
+    if (!autoMode) return;
+    clearTimeout(autoTimer);
+    const fixed = pickAutoScene();
+    if (fixed) { if (currentScene !== fixed) switchScene(fixed, true); autoTimer = setTimeout(autoEvaluate, 8000); return; }
+    const data = tournamentInfo.format === 'CS' ? 'cs' : 'br';
+    const hasStream = !!(tournamentInfo.streamUrl && String(tournamentInfo.streamUrl).trim());
+    const seq = hasStream ? [data, 'live'] : [data];
+    const next = seq[autoIdx % seq.length];
+    autoIdx++;
+    if (force || currentScene !== next) switchScene(next, true);
+    autoTimer = setTimeout(autoEvaluate, AUTO_SCENE_MS);
+}
 
-    // Header
+// ═══════════════════════════════════════════════════════════
+// RENDER ALL (hanya render ulang bagian yang datanya berubah)
+// ═══════════════════════════════════════════════════════════
+function changed(key, val) {
+    const s = JSON.stringify(val);
+    if (lastSig[key] === s) return false;
+    lastSig[key] = s; return true;
+}
+function renderAll(force) {
+    if (siteSettings.active_theme !== undefined) {
+        const theme = stripQ(siteSettings.active_theme) || 'default';
+        const cls = 'theme-' + theme;
+        if (document.body.className !== cls) document.body.className = cls;
+    }
     if (siteSettings.logo_transparent) {
-        $('#h-logo').src = String(siteSettings.logo_transparent).replace(/"/g, '');
-        $('#h-logo').style.display = 'block';
+        const lg = $('#h-logo'); const u = stripQ(siteSettings.logo_transparent);
+        if (lg.getAttribute('src') !== u) lg.src = u;
+        lg.style.display = 'block';
     }
     $('#h-name').textContent = tournamentInfo.name || 'GH-T ARENA';
-    $('#h-sub').textContent = tournamentInfo.format ? (tournamentInfo.format + ' Championship') : 'Free Fire Championship';
-    $('#mq-text').textContent = siteSettings.display_running_text || '🔥 SELAMAT DATANG DI GH-T ARENA 🔥';
-    const statusTxt = tournamentInfo.status ? tournamentInfo.status.toUpperCase().replace('_', ' ') : 'LIVE';
-    $('#h-st').innerHTML = `<div class="live-dot"></div> ${statusTxt}`;
+    $('#h-sub').textContent = tournamentInfo.format
+        ? ((tournamentInfo.format === 'BR' ? 'Battle Royale' : 'Clash Squad') + ' • Free Fire Championship')
+        : 'Free Fire Championship';
+    $('#mq-text').textContent = stripQ(siteSettings.display_running_text) || '🔥 SELAMAT DATANG DI GH-T ARENA 🔥';
+    const stText = tournamentInfo.status ? prettyStatus(tournamentInfo.status) : 'LIVE';
+    $('#h-st').innerHTML = '<div class="live-dot"></div> ' + esc(stText);
 
-    renderStandby();
-    renderBR();
-    renderCS();
-    renderLive();
-    renderKillFeed();
-    startSponsorLoop();
-    renderPodium();
-    renderCalling();
-
-    lastRenderTime = Date.now();
+    if (force || changed('standby', [tournamentInfo, checkinTeams])) { renderStandby(); startStandbyCountdown(); }
+    if (force || changed('br', [leaderboard, matchScores, predator, matchList.length, tournamentInfo.match_count])) renderBR();
+    if (force || changed('cs', csBracket)) renderCS();
+    if (force || changed('live', [tournamentInfo.streamUrl, tournamentInfo.format, chatMessages, matchList, csBracket.map(m => [m.id, m.public_status, m.team_a_name, m.team_b_name])])) renderLive();
+    if (force || changed('kf', killFeeds)) renderKillFeed();
+    if (force || changed('sp', sponsors)) startSponsorLoop();
+    if (force || changed('pod', [podiumData, provisionalPodium])) renderPodium();
+    if (force || changed('call', [tournamentInfo.format, csBracket, matchList, siteSettings.display_timer_end, siteSettings.display_timer_text])) { renderCalling(); startCallingTimer(); }
 }
 
 // ═══════════════════════════════════════════════════════════
 // STANDBY
 // ═══════════════════════════════════════════════════════════
 function renderStandby() {
-    // Tournament info di standby
     $('#sb-tour-name').textContent = tournamentInfo.name || 'Memuat Turnamen...';
     const meta = [];
     if (tournamentInfo.format) meta.push(`<span class="sb-badge">${tournamentInfo.format === 'BR' ? '🎯 BATTLE ROYALE' : '⚔️ CLASH SQUAD'}</span>`);
-    if (tournamentInfo.status) meta.push(`<span class="sb-badge">${tournamentInfo.status.replace('_',' ').toUpperCase()}</span>`);
+    if (tournamentInfo.status) meta.push(`<span class="sb-badge">${esc(prettyStatus(tournamentInfo.status))}</span>`);
     if (tournamentInfo.schedule) {
         const d = new Date(tournamentInfo.schedule);
-        meta.push(`<span class="sb-badge gold">📅 ${d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })} ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span>`);
+        const tz = { timeZone: 'Asia/Jakarta' };
+        meta.push(`<span class="sb-badge gold">📅 ${d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', ...tz })} ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, ...tz })} WIB</span>`);
     }
     if (Number(tournamentInfo.prize_pool) > 0) meta.push(`<span class="sb-badge gold">💰 ${fmtRp(tournamentInfo.prize_pool)}</span>`);
-    if (Number(tournamentInfo.entry_fee) > 0) meta.push(`<span class="sb-badge">🎟 ${fmtRp(tournamentInfo.entry_fee)}</span>`);
-    else meta.push(`<span class="sb-badge">🎟 FREE</span>`);
-    if (tournamentInfo.is_offline) meta.push(`<span class="sb-badge red">📍 OFFLINE</span>`);
+    meta.push(Number(tournamentInfo.entry_fee) > 0 ? `<span class="sb-badge">🎟 ${fmtRp(tournamentInfo.entry_fee)}</span>` : `<span class="sb-badge">🎟 FREE</span>`);
+    if (tournamentInfo.is_offline) meta.push(`<span class="sb-badge red">📍 OFFLINE${tournamentInfo.location_name ? ' • ' + esc(tournamentInfo.location_name) : ''}</span>`);
     $('#sb-tour-meta').innerHTML = meta.join('');
 
-    // Absen list
     const list = $('#absen-list');
-    if (checkinTeams.length === 0) {
+    const title = $('.absen-title');
+    const done = checkinTeams.filter(t => t.checked).length;
+    title.innerHTML = `<i class="fa-solid fa-clipboard-user"></i> STATUS KEHADIRAN TIM <span style="float:right;color:var(--gold)">${done}/${checkinTeams.length}</span>`;
+    if (!checkinTeams.length) {
         list.innerHTML = '<div style="text-align:center; color:var(--muted); padding:1cqw; font-size:1cqw;">Belum ada tim terdaftar</div>';
-        return;
+    } else {
+        list.innerHTML = checkinTeams.map(t => `
+            <div class="absen-item ${t.checked ? 'checked' : ''}">
+                <span>${esc(t.name)}</span>
+                ${t.checked ? '<i class="fa-solid fa-check-circle"></i>' : '<i class="fa-solid fa-circle-notch"></i>'}
+            </div>`).join('');
     }
-    list.innerHTML = checkinTeams.map(t => `
-        <div class="absen-item ${t.checked ? 'checked' : ''}">
-            <span>${esc(t.name)}</span>
-            ${t.checked ? '<i class="fa-solid fa-check-circle"></i>' : '<i class="fa-solid fa-circle-notch"></i>'}
-        </div>
-    `).join('');
+    registerScroll(list);
+
+    // QR check-in selalu menuju situs yang sama dengan display ini
+    const qr = $('.qr-container img');
+    const target = location.origin.startsWith('http') ? location.origin + '/#checkin' : 'https://gh-t-arena-web.pages.dev/#checkin';
+    const src = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' + encodeURIComponent(target);
+    if (qr && qr.getAttribute('src') !== src) qr.src = src;
 }
 
 function startStandbyCountdown() {
-    if (manualTimerInterval) clearInterval(manualTimerInterval);
-    const target = tournamentInfo.schedule ? new Date(tournamentInfo.schedule).getTime() : null;
-    if (!target) {
-        $('#sb-t-h').textContent = '--'; $('#sb-t-m').textContent = '--'; $('#sb-t-s').textContent = '--';
-        return;
-    }
+    if (standbyInterval) clearInterval(standbyInterval);
+    const label = $('.standby-sub');
     const tick = () => {
-        const now = Date.now();
-        let diff = target - now;
-        if (diff <= 0) {
+        const te = timerEndMs();
+        const sched = tournamentInfo.schedule ? new Date(tournamentInfo.schedule).getTime() : null;
+        let target = null, text = 'MATCH WILL START IN';
+        if (te && te > Date.now()) { target = te; text = stripQ(siteSettings.display_timer_text) || 'MATCH WILL RESUME IN'; }
+        else if (sched && sched > Date.now()) { target = sched; }
+        if (!target) {
             $('#sb-t-h').textContent = '00'; $('#sb-t-m').textContent = '00'; $('#sb-t-s').textContent = '00';
-            $('.standby-sub').textContent = '🔴 MATCH ONGOING / FINISHED';
+            label.textContent = tournamentInfo.status === 'berlangsung' ? '🔴 TURNAMEN SEDANG BERLANGSUNG'
+                : tournamentInfo.status === 'selesai' ? '🏆 TURNAMEN SELESAI' : 'SEGERA DIMULAI';
             return;
         }
-        const h = Math.floor(diff / 3600000);
-        const m = Math.floor((diff % 3600000) / 60000);
-        const s = Math.floor((diff % 60000) / 1000);
+        label.textContent = text;
+        const diff = target - Date.now();
+        const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
         $('#sb-t-h').textContent = String(h).padStart(2, '0');
         $('#sb-t-m').textContent = String(m).padStart(2, '0');
         $('#sb-t-s').textContent = String(s).padStart(2, '0');
     };
     tick();
-    manualTimerInterval = setInterval(tick, 1000);
+    standbyInterval = setInterval(tick, 1000);
 }
 
 // ═══════════════════════════════════════════════════════════
-// BR LEADERBOARD — dengan per-match score dari DB
+// BR LEADERBOARD
 // ═══════════════════════════════════════════════════════════
 function renderBR() {
     const L = $('#br-list');
-    L.innerHTML = '';
-    const rows = [...leaderboard].sort((a, b) => a.rank_no - b.rank_no);
+    const nMatch = Math.min(8, Math.max(Number(tournamentInfo.match_count) || 0, matchList.length, 1));
+    const cols = `3.5fr repeat(${nMatch}, 1fr) 1.2fr 1.2fr 1fr`;
+    const head = $('#br-head');
+    head.style.gridTemplateColumns = cols;
+    head.innerHTML = '<span style="text-align:left">TIM</span>' +
+        Array.from({ length: nMatch }, (_, i) => `<span>M${i + 1}</span>`).join('') +
+        '<span>TOTAL<br>KILL</span><span>TOTAL<br>POIN</span><span>RANK</span>';
 
-    if (rows.length === 0) {
-        L.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted); font-size:1.2cqw;">Belum ada data leaderboard</div>';
+    const rows = [...leaderboard].sort((a, b) => a.rank_no - b.rank_no);
+    L.innerHTML = '';
+    if (!rows.length) {
+        L.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted); font-size:1.2cqw;">Belum ada hasil match yang dikonfirmasi</div>';
     } else {
+        const compact = rows.length > 9;
         rows.forEach(t => {
             const logoTag = t.logo_url
                 ? `<img class="lg" src="${esc(t.logo_url)}" onerror="this.style.opacity=0">`
                 : `<span class="lg">${esc((t.team_name || '?')[0])}</span>`;
             const r = document.createElement('div');
-            r.className = 'row' + (t.rank_no <= 3 ? ' r' + t.rank_no : '');
-
-            // Per-match cells dari matchScores
-            const perMatch = (t.registration_id && matchScores[t.registration_id]) || {};
-            const matchCells = [1, 2, 3, 4, 5, 6].map(n => {
-                const v = perMatch[n];
+            r.className = 'row' + (t.rank_no <= 3 ? ' r' + t.rank_no : '') + (compact ? ' compact' : '');
+            r.style.gridTemplateColumns = cols;
+            const perMatch = matchScores[t.registration_id] || {};
+            const cells = Array.from({ length: nMatch }, (_, i) => {
+                const v = perMatch[i + 1];
                 return v != null ? `<span style="color:#fff;font-weight:900;">${v}</span>` : '<span style="opacity:0.25">-</span>';
             }).join('');
-
-            const dqBadge = t.competition_status === 'dq' ? '<span style="color:#e53935;font-weight:900;margin-left:0.5cqw;">DQ</span>' : '';
-            r.innerHTML = `<div class="tm">${logoTag}${esc(t.team_name)}${dqBadge}</div>` +
-                matchCells +
+            const dq = t.competition_status === 'dikeluarkan' || t.competition_status === 'dq'
+                ? '<span style="color:#e53935;font-weight:900;margin-left:0.5cqw;">DQ</span>' : '';
+            r.innerHTML = `<div class="tm">${logoTag}${esc(t.team_name)}${dq}</div>${cells}` +
                 `<b>${t.total_kills || 0}</b><b>${t.total_points || 0}</b><b class="rk">${t.rank_no}</b>`;
             L.appendChild(r);
         });
     }
+    registerScroll(L);
 
-    // Predator
     const prHtml = [...predator].sort((a, b) => b.total_kills - a.total_kills).slice(0, 5)
-        .map((p, i) => `<div class="pi"><em>${i + 1}</em><div>${esc(p.nickname)}<small>${esc(p.team_name)}</small></div><b>${p.total_kills}</b></div>`)
-        .join('');
+        .map((p, i) => `<div class="pi"><em>${i + 1}</em><div>${esc(p.nickname)}<small>${esc(p.team_name)}</small></div><b>${p.total_kills}</b></div>`).join('');
     $('#pr-list').innerHTML = prHtml || '<div style="text-align:center; padding: 2cqw; color: var(--muted);">Belum ada data</div>';
 }
 
 // ═══════════════════════════════════════════════════════════
-// CS BRACKET
+// CS BRACKET / JADWAL
 // ═══════════════════════════════════════════════════════════
+function csStatus(m) {
+    const ps = m.public_status || m.raw_status || '';
+    const done = !!m.winner_name || ['selesai', 'wo', 'hasil_dipublikasikan'].includes(ps) || m.raw_status === 'selesai';
+    const live = !done && ps === 'berlangsung';
+    return { done, live, ps };
+}
 function renderCS() {
     const list = $('#cs-schedule-list');
     list.innerHTML = '';
-    if (!csBracket || csBracket.length === 0) {
-        list.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Bracket belum dibuat</div>';
+    if (!csBracket.length) {
+        list.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">' +
+            (tournamentInfo.format === 'BR' ? 'Turnamen ini format Battle Royale — lihat scene BR.' : 'Bracket belum dibuat') + '</div>';
         return;
     }
-
-    const rounds = {};
+    const rounds = new Map();
     csBracket.forEach(m => {
-        const rn = m.round_label || `Ronde ${m.round_no}`;
-        if (!rounds[rn]) rounds[rn] = [];
-        rounds[rn].push(m);
+        const label = m.round_label || ('Ronde ' + m.round_no);
+        const key = (m.bracket || '') + '|' + m.round_no + '|' + label;
+        if (!rounds.has(key)) rounds.set(key, { label, bracket: m.bracket, items: [] });
+        rounds.get(key).items.push(m);
     });
-
-    let currentNextFound = false;
-    Object.keys(rounds).forEach(roundName => {
+    let nextFound = false;
+    rounds.forEach(g => {
         const group = document.createElement('div');
         group.className = 'round-group';
+        const bk = g.bracket && !String(g.label).toLowerCase().includes(String(g.bracket).toLowerCase()) ? esc(String(g.bracket).toUpperCase()) + ' · ' : '';
         const hdr = document.createElement('div');
         hdr.className = 'round-header';
-        hdr.innerHTML = `${esc(roundName)} <span class="bo-label">BO${rounds[roundName][0].bo || 1}</span>`;
+        hdr.innerHTML = `${bk}${esc(g.label)} <span class="bo-label">BO${g.items[0].bo || 1}</span>`;
         group.appendChild(hdr);
-
-        rounds[roundName].forEach((m) => {
-            const isDone = m.winner_name !== null;
-            const isLive = m.public_status === 'berlangsung';
-            const isNext = !isDone && !isLive && !currentNextFound;
-            if (isNext) currentNextFound = true;
-
+        g.items.forEach(m => {
+            const s = csStatus(m);
+            const isBye = s.ps === 'bye' || (!m.team_a_name && !m.team_b_name && s.done);
+            const isNext = !s.done && !s.live && !nextFound && m.team_a_name && m.team_b_name;
+            if (isNext) nextFound = true;
             const card = document.createElement('div');
-            card.className = `match-card ${isLive ? 'is-live' : ''} ${isNext ? 'is-next' : ''}`;
-
-            const tA_Class = (isDone && m.winner_name !== m.team_a_name) ? 'loser' : '';
-            const tB_Class = (isDone && m.winner_name !== m.team_b_name) ? 'loser' : '';
-
+            card.className = 'match-card' + (s.live ? ' is-live' : '') + (isNext ? ' is-next' : '');
+            const aLose = s.done && m.winner_name && m.winner_name !== m.team_a_name;
+            const bLose = s.done && m.winner_name && m.winner_name !== m.team_b_name;
             let badge = '<div class="badge st-wait">BELUM MULAI</div>';
-            if (isLive) badge = '<div class="badge st-live">🔴 LIVE NOW</div>';
+            if (s.live) badge = '<div class="badge st-live">🔴 LIVE NOW</div>';
+            else if (s.ps === 'ditunda') badge = '<div class="badge st-wait">⏸ DITUNDA</div>';
+            else if (s.ps === 'wo') badge = '<div class="badge st-done">W.O</div>';
+            else if (isBye) badge = '<div class="badge st-wait">BYE</div>';
             else if (isNext) badge = '<div class="badge st-next">⏭️ NEXT MATCH</div>';
-            else if (isDone) badge = '<div class="badge st-done">✓ SELESAI</div>';
-
-            const scA = m.score_a ?? (isDone ? (m.winner_name === m.team_a_name ? 2 : 1) : '-');
-            const scB = m.score_b ?? (isDone ? (m.winner_name === m.team_b_name ? 2 : 1) : '-');
+            else if (s.done) badge = '<div class="badge st-done">✓ SELESAI</div>';
+            const hasScore = m.score_a != null && m.score_b != null;
+            const scoreTxt = hasScore && (s.done || s.live) ? `${m.score_a} - ${m.score_b}` : 'VS';
             const logoA = m.team_a_logo ? `<img src="${esc(m.team_a_logo)}" class="cs-logo" onerror="this.style.display='none'">` : '';
             const logoB = m.team_b_logo ? `<img src="${esc(m.team_b_logo)}" class="cs-logo" onerror="this.style.display='none'">` : '';
-
             card.innerHTML = `
                 <div class="match-info"><div class="match-no">MATCH ${m.match_no}</div></div>
                 <div class="teams-area">
-                    <div class="team team-a ${tA_Class}"><div class="cs-team-wrap">${esc(m.team_a_name || 'TBD')} ${logoA}</div></div>
-                    <div class="score-box">${isDone || isLive ? scA + ' - ' + scB : 'VS'}</div>
-                    <div class="team team-b ${tB_Class}"><div class="cs-team-wrap">${logoB} ${esc(m.team_b_name || 'TBD')}</div></div>
+                    <div class="team team-a ${aLose ? 'loser' : ''}"><div class="cs-team-wrap">${esc(m.team_a_name || 'TBD')} ${logoA}</div></div>
+                    <div class="score-box">${scoreTxt}</div>
+                    <div class="team team-b ${bLose ? 'loser' : ''}"><div class="cs-team-wrap">${logoB} ${esc(m.team_b_name || 'TBD')}</div></div>
                 </div>
                 <div class="status-area">${badge}</div>`;
             group.appendChild(card);
         });
         list.appendChild(group);
     });
+    registerScroll(list);
 }
 
 // ═══════════════════════════════════════════════════════════
-// LIVE STREAM
+// LIVE STREAM + CHAT + MAP POOL
 // ═══════════════════════════════════════════════════════════
+function buildEmbedUrl(raw) {
+    raw = String(raw || '').trim();
+    if (!raw) return { url: null };
+    if (!/^https?:\/\//i.test(raw)) raw = 'https://' + raw;
+    let u; try { u = new URL(raw); } catch (e) { return { url: null, msg: 'Link stream tidak valid' }; }
+    const host = u.hostname.replace(/^www\.|^m\./, '');
+    // YouTube
+    if (host === 'youtube.com' || host === 'youtu.be' || host === 'youtube-nocookie.com') {
+        let id = null;
+        if (host === 'youtu.be') id = u.pathname.split('/').filter(Boolean)[0];
+        else if (u.searchParams.get('v')) id = u.searchParams.get('v');
+        else { const m = u.pathname.match(/\/(?:live|embed|shorts|v)\/([A-Za-z0-9_-]{11})/); if (m) id = m[1]; }
+        if (id && /^[A-Za-z0-9_-]{11}$/.test(id)) return { url: `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&playsinline=1&rel=0` };
+        const ch = u.pathname.match(/\/channel\/(UC[A-Za-z0-9_-]{22})/);
+        if (ch) return { url: `https://www.youtube.com/embed/live_stream?channel=${ch[1]}&autoplay=1&mute=1&playsinline=1` };
+        return { url: null, msg: 'Link YouTube channel/@handle tidak bisa di-embed. Pakai link video live: youtube.com/watch?v=XXXX' };
+    }
+    // Twitch
+    if (host === 'twitch.tv' || host === 'player.twitch.tv' || host === 'clips.twitch.tv') {
+        const parent = location.hostname || 'gh-t-arena-web.pages.dev';
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (host === 'player.twitch.tv') {
+            const ch = u.searchParams.get('channel'), vid = u.searchParams.get('video');
+            if (ch) return { url: `https://player.twitch.tv/?channel=${encodeURIComponent(ch)}&parent=${parent}&autoplay=true&muted=true` };
+            if (vid) return { url: `https://player.twitch.tv/?video=${encodeURIComponent(vid)}&parent=${parent}&autoplay=true&muted=true` };
+        }
+        if (parts[0] === 'videos' && parts[1]) return { url: `https://player.twitch.tv/?video=${encodeURIComponent(parts[1])}&parent=${parent}&autoplay=true&muted=true` };
+        if (parts[0]) return { url: `https://player.twitch.tv/?channel=${encodeURIComponent(parts[0])}&parent=${parent}&autoplay=true&muted=true` };
+    }
+    return { url: raw }; // platform lain (embed langsung)
+}
+
 function renderLive() {
     const f = $('#lv-f');
     const noStream = $('#lv-nostream');
-
-    if (tournamentInfo.streamUrl && String(tournamentInfo.streamUrl).trim()) {
-        let rawUrl = String(tournamentInfo.streamUrl).trim();
-        let embedUrl = rawUrl;
-
-        if (rawUrl.includes("youtube.com/watch") || rawUrl.includes("youtu.be") || rawUrl.includes("youtube.com/live")) {
-            const vidMatch = rawUrl.match(/(?:v=|youtu\.be\/|live\/)([a-zA-Z0-9_-]{11})/);
-            if (vidMatch) embedUrl = `https://www.youtube.com/embed/${vidMatch[1]}?autoplay=1&mute=1`;
-        } else if (rawUrl.includes("twitch.tv")) {
-            const channel = rawUrl.split('/').filter(Boolean).pop().split('?')[0];
-            const parent = window.location.hostname || 'gh-t-arena-web.pages.dev';
-            embedUrl = `https://player.twitch.tv/?channel=${channel}&parent=${parent}&autoplay=true&muted=true`;
-        }
-
-        if (f.getAttribute('src') !== embedUrl) f.src = embedUrl;
+    const emb = buildEmbedUrl(tournamentInfo.streamUrl);
+    if (emb.url) {
+        if (f.getAttribute('src') !== emb.url) f.src = emb.url;
         f.style.display = 'block';
         noStream.style.display = 'none';
-        dbg('Live iframe src set: ' + embedUrl.slice(0, 80), 'ok');
     } else {
         f.style.display = 'none';
         f.removeAttribute('src');
         noStream.style.display = 'flex';
-        dbg('Stream URL kosong, tampil placeholder', 'warn');
+        const p = noStream.querySelector('p');
+        p.textContent = emb.msg || 'Stream URL belum diatur untuk turnamen ini';
     }
 
     // Chat
     const c = $('#chat');
-    if (chatMessages.length > 0) {
-        c.innerHTML = chatMessages.map(x => `<p><b>${esc(x.username)}</b> ${esc(x.message)}</p>`).join('');
-        c.scrollTop = c.scrollHeight;
+    if (chatMessages.length) {
+        const wasBottom = c.scrollTop + c.clientHeight >= c.scrollHeight - 20;
+        c.innerHTML = chatMessages.map(x => {
+            const msg = String(x.message || '');
+            const body = /^https?:\/\/\S+$/.test(msg) ? '📎 <i>kirim gambar/link</i>' : esc(msg);
+            return `<p><b>${esc(x.username)}</b> ${body}</p>`;
+        }).join('');
+        if (wasBottom || !c.dataset.init) { c.scrollTop = c.scrollHeight; c.dataset.init = '1'; }
     } else {
         c.innerHTML = '<p style="text-align:center; color:var(--muted); margin-top:2cqw;">Belum ada chat</p>';
     }
 
-    // Map pool
+    // Panel kanan: BR = MAP POOL, CS = JADWAL
     const mapL = $('#maps');
-    if (matchList.length === 0) {
-        mapL.innerHTML = '<div style="text-align:center; color:var(--muted); padding: 2cqw; font-size: 1.1cqw;">Belum ada match</div>';
+    const hdr = $('#map-p .ph');
+    if (tournamentInfo.format === 'CS') {
+        hdr.innerHTML = '<i class="fa-solid fa-calendar-days"></i> JADWAL MATCH';
+        const upcoming = csBracket.filter(m => !csStatus(m).done && m.team_a_name && m.team_b_name).slice(0, 6);
+        mapL.innerHTML = upcoming.length ? upcoming.map(m => {
+            const s = csStatus(m);
+            return `<div class="mp"><div class="mp-info"><div class="mp-name">${esc(m.team_a_name)} vs ${esc(m.team_b_name)}</div><div class="mp-match">Match ${m.match_no} • ${esc(m.round_label || 'Ronde ' + m.round_no)}</div></div><em class="${s.live ? 'live' : 'next'}">${s.live ? 'LIVE' : 'NEXT'}</em></div>`;
+        }).join('') : '<div style="text-align:center; color:var(--muted); padding: 2cqw; font-size: 1.1cqw;">Belum ada jadwal</div>';
     } else {
-        mapL.innerHTML = matchList.map(m => {
-            const statusCls = m.status === 'selesai' ? 'selesai' : (m.status === 'berlangsung' ? 'live' : 'next');
-            const statusTxt = m.status ? m.status.replace('_', ' ').toUpperCase() : 'NEXT';
-            return `
-                <div class="mp">
-                    <img src="${esc(m.map_image || 'https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg')}" onerror="this.src='https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg'">
-                    <div class="mp-info">
-                        <div class="mp-name">${esc(m.map_name || 'Map belum dipilih')}</div>
-                        <div class="mp-match">Match ${m.match_no}</div>
-                    </div>
-                    <em class="${statusCls}">${statusTxt}</em>
-                </div>
-            `;
-        }).join('');
+        hdr.innerHTML = '<i class="fa-solid fa-map"></i> MAP POOL';
+        if (!matchList.length) {
+            mapL.innerHTML = '<div style="text-align:center; color:var(--muted); padding: 2cqw; font-size: 1.1cqw;">Belum ada match</div>';
+        } else {
+            mapL.innerHTML = matchList.map(m => {
+                const cls = m.status === 'selesai' || m.status === 'hasil_dipublikasikan' ? 'selesai' : (m.status === 'berlangsung' ? 'live' : 'next');
+                const txt = m.status === 'berlangsung' ? 'LIVE' : (cls === 'selesai' ? 'SELESAI' : 'NEXT');
+                return `<div class="mp">
+                    <img src="${esc(m.map_image || FALLBACK_MAP_IMG)}" onerror="this.src='${FALLBACK_MAP_IMG}'">
+                    <div class="mp-info"><div class="mp-name">${esc(m.map_name || 'Map belum dipilih')}</div><div class="mp-match">Match ${m.match_no}</div></div>
+                    <em class="${cls}">${txt}</em></div>`;
+            }).join('');
+        }
     }
+    registerScroll(mapL);
 
-    // Chat overlay
     const ov = $('#chat-overlay');
     ov.innerHTML = '';
     chatMessages.slice(-6).forEach(msg => addOverlayChat(msg.username, msg.message, false));
@@ -1009,44 +1238,26 @@ function toggleVideoFullscreen() {
     const wrap = document.getElementById('lv-wrap');
     const btn = document.querySelector('.btn-vid-fs');
     wrap.classList.toggle('full-video');
-    if (wrap.classList.contains('full-video')) {
-        btn.innerHTML = '<i class="fa-solid fa-compress"></i> EXIT FULL';
-    } else {
-        btn.innerHTML = '<i class="fa-solid fa-expand"></i> FULL VIDEO';
-    }
+    btn.innerHTML = wrap.classList.contains('full-video') ? '<i class="fa-solid fa-compress"></i> EXIT FULL' : '<i class="fa-solid fa-expand"></i> FULL VIDEO';
 }
 
 function addOverlayChat(name, text, animate = true) {
     const box = document.getElementById('chat-overlay');
     const el = document.createElement('div');
     el.className = 'ov-msg';
-    const initial = name.charAt(0).toUpperCase();
-    const isVip = name.toLowerCase().includes('vip') || name.toLowerCase().includes('boss');
+    name = String(name || '?'); text = String(text || '');
+    const isVip = /vip|boss/i.test(name);
     const color = isVip ? '#ffd700' : '#00e5ff';
-    const bg = 'rgba(255,255,255,0.1)';
-    const crown = isVip ? `<i class="fa-solid fa-crown ov-vip"></i>` : '';
-    el.innerHTML = `<div class="ov-avatar" style="border-color:${color}; color:${color}; background:${bg};">${initial}</div><div class="ov-content"><div class="ov-name" style="color:${color};">${name} ${crown}</div><div class="ov-text">${text}</div></div>`;
+    const crown = isVip ? '<i class="fa-solid fa-crown"></i>' : '';
+    el.innerHTML = `<div class="ov-avatar" style="border-color:${color}; color:${color}; background:rgba(255,255,255,0.1);">${esc(name.charAt(0).toUpperCase())}</div><div class="ov-content"><div class="ov-name" style="color:${color};">${esc(name)} ${crown}</div><div class="ov-text">${esc(text)}</div></div>`;
+    box.appendChild(el);
     if (animate) {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px) scale(0.95)';
-        box.appendChild(el);
+        el.style.opacity = '0'; el.style.transform = 'translateY(20px) scale(0.95)';
         void el.offsetWidth;
         el.style.transition = 'all 0.4s cubic-bezier(0.2, 0.9, 0.3, 1)';
-        el.style.opacity = '1';
-        el.style.transform = 'translateY(0) scale(1)';
-    } else {
-        box.appendChild(el);
+        el.style.opacity = '1'; el.style.transform = 'translateY(0) scale(1)';
     }
-    if (box.children.length > 6) {
-        const first = box.firstElementChild;
-        first.style.transition = 'all 0.3s ease-in';
-        first.style.opacity = '0';
-        first.style.transform = 'translateY(-20px) scale(0.95)';
-        first.style.maxHeight = '0';
-        first.style.marginBottom = '0';
-        first.style.padding = '0';
-        setTimeout(() => first.remove(), 300);
-    }
+    while (box.children.length > 6) box.removeChild(box.firstElementChild);
 }
 
 function renderKillFeed() {
@@ -1071,10 +1282,7 @@ function startSponsorLoop() {
     e.classList.remove('in');
     void e.offsetWidth;
     e.classList.add('in');
-    spTimeout = setTimeout(() => {
-        e.classList.remove('in');
-        spTimeout = setTimeout(startSponsorLoop, 9000);
-    }, 6000);
+    spTimeout = setTimeout(() => { e.classList.remove('in'); spTimeout = setTimeout(startSponsorLoop, 9000); }, 6000);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1085,302 +1293,272 @@ function renderCalling() {
     $('#calling-header').style.display = isCS ? 'flex' : 'none';
     $('#calling-cs').style.display = isCS ? 'flex' : 'none';
     $('#calling-br').style.display = isCS ? 'none' : 'flex';
-
-    if (isCS && csBracket.length > 0) {
-        const nextMatch = csBracket.find(m => m.public_status === 'berlangsung')
-            || csBracket.find(m => m.public_status === 'belum_dimulai')
+    if (isCS) {
+        const nm = csBracket.find(m => csStatus(m).live)
+            || csBracket.find(m => !csStatus(m).done && m.team_a_name && m.team_b_name)
             || csBracket[0];
-        if (nextMatch) {
-            $('#c-name-a').textContent = nextMatch.team_a_name || 'TEAM A';
-            $('#c-name-b').textContent = nextMatch.team_b_name || 'TEAM B';
-            $('#c-logo-a').src = nextMatch.team_a_logo || 'https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg';
-            $('#c-logo-b').src = nextMatch.team_b_logo || 'https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg';
-            $('#c-match-no').textContent = `MATCH ${nextMatch.match_no}`;
-            $('#c-bo').textContent = `BO ${nextMatch.bo || 1}`;
-            $('#c-date').textContent = nextMatch.round_label || 'PLAYOFFS';
+        if (nm) {
+            $('#c-name-a').textContent = nm.team_a_name || 'TEAM A';
+            $('#c-name-b').textContent = nm.team_b_name || 'TEAM B';
+            $('#c-logo-a').src = nm.team_a_logo || FALLBACK_MAP_IMG;
+            $('#c-logo-b').src = nm.team_b_logo || FALLBACK_MAP_IMG;
+            $('#c-match-no').textContent = 'MATCH ' + nm.match_no;
+            $('#c-bo').textContent = 'BO ' + (nm.bo || 1);
+            $('#c-date').textContent = nm.round_label || 'PLAYOFFS';
         }
-    } else if (!isCS && matchList.length > 0) {
-        const nextMap = matchList.find(m => m.status === 'belum_dimulai') || matchList[0];
-        if (nextMap) {
-            $('#calling-map-name').textContent = nextMap.map_name || 'MAP';
-            $('#calling-map-img').src = nextMap.map_image || 'https://i.ibb.co.com/fGC2dw0V/image-search-1768105940099.jpg';
+    } else if (matchList.length) {
+        const nm = matchList.find(m => m.status === 'berlangsung') || matchList.find(m => m.status === 'belum_dimulai') || matchList[matchList.length - 1];
+        if (nm) {
+            $('#calling-map-name').textContent = nm.map_name || ('MATCH ' + nm.match_no);
+            $('#calling-map-img').src = nm.map_image || FALLBACK_MAP_IMG;
         }
     }
+}
+let manualCallingEnd = null;
+function startCallingTimer() {
+    if (callingInterval) clearInterval(callingInterval);
+    const tick = () => {
+        let end = manualCallingEnd;
+        const te = timerEndMs();
+        if (!end && te && te > Date.now()) end = te;
+        const el = $('#calling-timer-text');
+        if (!end) { el.innerText = '--:--'; return; }
+        let left = Math.max(0, Math.round((end - Date.now()) / 1000));
+        const mm = Math.floor(left / 60), ss = left % 60;
+        el.innerText = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+        const lbl = $('.br-timer-title');
+        if (lbl) lbl.textContent = (stripQ(siteSettings.display_timer_text) || 'MATCH SELANJUTNYA AKAN DIMULAI DALAM');
+    };
+    tick();
+    callingInterval = setInterval(tick, 1000);
 }
 
 // ═══════════════════════════════════════════════════════════
 // PODIUM
 // ═══════════════════════════════════════════════════════════
+function podCard(team, cls, medal, backLabel) {
+    const tname = team.team_name || 'TEAM';
+    const logo = team.logo_url ? `<img src="${esc(team.logo_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">` : esc(tname.charAt(0));
+    const prize = Number(team.prize_amount) > 0 ? fmtRp(team.prize_amount) : (team.total_points != null ? team.total_points + ' PTS' : '');
+    return `
+        <div class="flip-card ${cls}">
+            ${medal}
+            <div class="flip-inner">
+                <div class="flip-front">
+                    <div class="team-logo">${logo}</div>
+                    <div class="team-name">${esc(tname)}</div>
+                    <div class="team-prize">${esc(prize)}</div>
+                </div>
+                <div class="flip-back">
+                    <div class="back-title">STATISTIK</div>
+                    <div class="back-stat">Peringkat: <span>#${team.final_rank}</span></div>
+                    <div class="back-stat">${backLabel}: <span>${team.total_kills || 0}</span></div>
+                    ${team.total_points != null ? `<div class="back-stat">Poin: <span>${team.total_points}</span></div>` : ''}
+                </div>
+            </div>
+        </div>`;
+}
 function renderPodium() {
     const container = document.getElementById('podium-container');
-    container.innerHTML = '';
-    if (!podiumData || podiumData.length === 0) {
+    $('#scene-juara .page-title').textContent = provisionalPodium ? 'KLASEMEN SEMENTARA' : (tournamentInfo.format === 'CS' ? 'FINAL RESULTS' : 'GRAND FINAL RESULTS');
+    if (!podiumData.length) {
         container.innerHTML = '<div style="color:var(--muted); font-size:2cqw;">Belum ada data juara. Finalisasi turnamen dulu.</div>';
         return;
     }
-
     const sorted = [...podiumData].sort((a, b) => a.final_rank - b.final_rank);
     const mainTier = sorted.filter(t => t.final_rank <= 3);
     const secTier = sorted.filter(t => t.final_rank > 3);
-
-    let mainHTML = '';
-    const order = [mainTier[1], mainTier[0], mainTier[2]].filter(Boolean);
-    order.forEach(team => {
-        const rankClass = team.final_rank === 1 ? 'rank-1' : (team.final_rank === 2 ? 'rank-2' : 'rank-3');
-        const medal = team.final_rank === 1 ? '<i class="fa-solid fa-crown medal"></i>' : '<i class="fa-solid fa-medal medal"></i>';
-        const tname = team.registrations?.team_name || 'TEAM';
-        const tlogo = team.registrations?.logo_url;
-        mainHTML += `
-            <div class="flip-card ${rankClass}">
-                ${medal}
-                <div class="flip-inner">
-                    <div class="flip-front">
-                        <div class="team-logo">${tlogo ? `<img src="${tlogo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : tname.charAt(0)}</div>
-                        <div class="team-name">${esc(tname)}</div>
-                        <div class="team-prize">${fmtRp(team.prize_amount)}</div>
-                    </div>
-                    <div class="flip-back">
-                        <div class="back-title">STATISTIK</div>
-                        <div class="back-stat">Peringkat: <span>#${team.final_rank}</span></div>
-                        <div class="back-stat">Total Kill: <span>${team.total_kills || 0}</span></div>
-                    </div>
-                </div>
-            </div>`;
-    });
-
-    let secHTML = '';
-    secTier.forEach(team => {
-        const tname = team.registrations?.team_name || 'TEAM';
-        const tlogo = team.registrations?.logo_url;
-        secHTML += `
-            <div class="flip-card rank-other">
-                <i class="fa-solid fa-medal medal"></i>
-                <div class="flip-inner">
-                    <div class="flip-front">
-                        <div class="team-logo">${tlogo ? `<img src="${tlogo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : tname.charAt(0)}</div>
-                        <div class="team-name">${esc(tname)}</div>
-                        <div class="team-prize">${fmtRp(team.prize_amount)}</div>
-                    </div>
-                    <div class="flip-back">
-                        <div class="back-title">STATISTIK</div>
-                        <div class="back-stat">Peringkat: <span>#${team.final_rank}</span></div>
-                        <div class="back-stat">Kill: <span>${team.total_kills || 0}</span></div>
-                    </div>
-                </div>
-            </div>`;
-    });
-
-    container.innerHTML = `<div class="main-podium-row">${mainHTML}</div>${secTier.length > 0 ? `<div class="secondary-podium-row">${secHTML}</div>` : ''}`;
+    const byRank = r => mainTier.find(t => t.final_rank === r);
+    const order = [byRank(2), byRank(1), byRank(3)].filter(Boolean);
+    const mainHTML = order.map(t => podCard(t, t.final_rank === 1 ? 'rank-1' : (t.final_rank === 2 ? 'rank-2' : 'rank-3'),
+        t.final_rank === 1 ? '<i class="fa-solid fa-crown medal"></i>' : '<i class="fa-solid fa-medal medal"></i>', 'Total Kill')).join('');
+    const secHTML = secTier.map(t => podCard(t, 'rank-other', '<i class="fa-solid fa-medal medal"></i>', 'Kill')).join('');
+    container.innerHTML = `<div class="main-podium-row">${mainHTML}</div>${secTier.length ? `<div class="secondary-podium-row">${secHTML}</div>` : ''}`;
 }
-
 let currentFlip = 0;
 setInterval(() => {
     const cards = document.querySelectorAll('.flip-card');
-    if (cards.length === 0) return;
+    if (!cards.length) return;
     cards.forEach(c => c.classList.remove('flipped'));
     cards[currentFlip % cards.length].classList.add('flipped');
     currentFlip++;
 }, 4000);
 
 // ═══════════════════════════════════════════════════════════
-// REALTIME — Update otomatis saat OCR submit / data berubah
+// CHECK-IN POPUP
 // ═══════════════════════════════════════════════════════════
-function setupRealtime() {
-    if (!sb) return;
-    const ch = sb.channel('rt_display_v3');
-
-    // Chat
-    ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tournament_chats' }, payload => {
-        if (payload.new && payload.new.tournament_id === TOURNAMENT_ID) {
-            chatMessages.push(payload.new);
-            if (chatMessages.length > 50) chatMessages.shift();
-            if (document.getElementById('scene-live').classList.contains('active')) renderLive();
-        }
-    });
-
-    // Kill feed
-    ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'kill_feeds' }, payload => {
-        if (payload.new && payload.new.tournament_id === TOURNAMENT_ID) {
-            killFeeds.unshift(payload.new);
-            if (killFeeds.length > 5) killFeeds.pop();
-            renderKillFeed();
-        }
-    });
-
-    // ⚠️ OCR UPDATES — BR results & player stats (paling penting!)
-    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'br_results' }, (payload) => {
-        dbg('Realtime: br_results berubah, refresh data...', 'ok');
-        fetchData();
-    });
-    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'br_player_stats' }, () => {
-        dbg('Realtime: br_player_stats berubah, refresh...', 'ok');
-        fetchData();
-    });
-    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'br_matches' }, () => fetchData());
-    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'cs_matches' }, () => fetchData());
-    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_results' }, () => fetchData());
-    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => fetchData());
-    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => fetchData());
-    ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tournaments' }, payload => {
-        if (payload.new && payload.new.id === TOURNAMENT_ID) {
-            dbg('Tournament info berubah (stream_url?), refresh...', 'ok');
-            fetchData();
-        }
-    });
-
-    // Check-in popup
-    ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'etickets' }, async (payload) => {
-        if (payload.new && payload.new.is_checked_in === true && payload.old && payload.old.is_checked_in === false) {
-            const { data: reg } = await sb.from('registrations').select('team_name, logo_url').eq('id', payload.new.registration_id).maybeSingle();
-            if (reg) triggerCheckInSuccess(reg.team_name, reg.logo_url);
-        }
-    });
-
-    ch.subscribe((status) => {
-        if (status === 'SUBSCRIBED') dbg('Realtime channel subscribed ✅', 'ok');
-        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') dbg('Realtime error: ' + status, 'error');
-    });
-}
-
 function triggerCheckInSuccess(name, logoUrl) {
     const overlay = document.getElementById('overlay-success');
     const logoEl = document.getElementById('suc-logo');
     document.getElementById('suc-name').textContent = name;
-    if (logoUrl) {
-        logoEl.innerHTML = `<img src="${logoUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-        logoEl.style.fontSize = '0';
-    } else {
-        logoEl.innerHTML = name.charAt(0).toUpperCase();
-        logoEl.style.fontSize = '5cqw';
-    }
+    if (logoUrl) { logoEl.innerHTML = `<img src="${esc(logoUrl)}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`; logoEl.style.fontSize = '0'; }
+    else { logoEl.textContent = name.charAt(0).toUpperCase(); logoEl.style.fontSize = '5cqw'; }
     overlay.classList.add('active');
-    const team = checkinTeams.find(t => t.name === name);
-    if (team) team.checked = true;
-    renderStandby();
     setTimeout(() => overlay.classList.remove('active'), 5000);
 }
+
+// ═══════════════════════════════════════════════════════════
+// REALTIME (+ polling sebagai jaring pengaman)
+// ═══════════════════════════════════════════════════════════
+function startRealtime() {
+    if (rtStarted || !sb) return;
+    rtStarted = true;
+    const trig = () => scheduleRefresh(600);
+    try {
+        // 1) sinyal dari trigger database (anon boleh baca) — mencakup perubahan hasil OCR/konfirmasi
+        sb.channel('rt_signal_' + TOURNAMENT_ID)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'realtime_events' }, trig)
+            .subscribe(s => dbg('Realtime sinyal: ' + s, s === 'SUBSCRIBED' ? 'ok' : 'warn'));
+        // 2) tabel publik langsung
+        const f = 'tournament_id=eq.' + TOURNAMENT_ID;
+        sb.channel('rt_tables_' + TOURNAMENT_ID)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'br_matches', filter: f }, trig)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'cs_matches', filter: f }, trig)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_results', filter: f }, trig)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'etickets', filter: f }, trig)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'kill_feeds', filter: f }, trig)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tournaments', filter: 'id=eq.' + TOURNAMENT_ID }, trig)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, trig)
+            .subscribe(s => dbg('Realtime tabel: ' + s, s === 'SUBSCRIBED' ? 'ok' : 'warn'));
+    } catch (e) { dbg('Realtime gagal: ' + e.message, 'error'); }
+    setInterval(() => { if (!document.hidden) refreshData(); }, POLL_MS);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleRefresh(200); });
+    window.addEventListener('online', () => scheduleRefresh(200));
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTO SCROLL (leaderboard / jadwal panjang di proyektor)
+// ═══════════════════════════════════════════════════════════
+const scrollers = new Map();
+function registerScroll(el) { if (el && !scrollers.has(el)) scrollers.set(el, { y: 0, dir: 1, wait: 120 }); }
+function scrollLoop() {
+    scrollers.forEach((st, el) => {
+        if (!el.offsetParent) return;
+        const max = el.scrollHeight - el.clientHeight;
+        if (max <= 4) { st.y = 0; if (el.scrollTop) el.scrollTop = 0; return; }
+        if (st.wait > 0) { st.wait--; return; }
+        st.y += st.dir * 0.45;
+        if (st.y >= max) { st.y = max; st.dir = -1; st.wait = 150; }
+        else if (st.y <= 0) { st.y = 0; st.dir = 1; st.wait = 150; }
+        el.scrollTop = st.y;
+    });
+    requestAnimationFrame(scrollLoop);
+}
+requestAnimationFrame(scrollLoop);
 
 // ═══════════════════════════════════════════════════════════
 // ADS & NAVIGASI
 // ═══════════════════════════════════════════════════════════
 const adPlaylist = [
-    "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/lv_0_20261117014719.mp4",
-    "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/lv_0_20261117014702.mp4",
-    "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/GH_TOPUP_Ad_60s_1080p.mp4"
+    'https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/lv_0_20261117014719.mp4',
+    'https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/lv_0_20261117014702.mp4',
+    'https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/GH_TOPUP_Ad_60s_1080p.mp4'
 ];
 let adIndex = 0;
 const adVideo = document.getElementById('ads-video');
-
 function playAd() {
-    if (!adPlaylist.length || !adVideo) return;
+    if (!adVideo) return;
+    if (!bgmAudio.paused) bgmAudio.pause();
     adVideo.src = adPlaylist[adIndex];
     adVideo.muted = false;
     adVideo.volume = bgmAudio.volume;
-    adVideo.play().catch(() => {
-        adVideo.muted = true;
-        adVideo.play().catch(() => {});
-    });
+    adVideo.play().catch(() => { adVideo.muted = true; adVideo.play().catch(() => {}); });
 }
+if (adVideo) adVideo.addEventListener('ended', () => { adIndex = (adIndex + 1) % adPlaylist.length; playAd(); });
 
-if (adVideo) {
-    adVideo.addEventListener('ended', () => {
-        adIndex = (adIndex + 1) % adPlaylist.length;
-        playAd();
-    });
+function switchScene(target, instant) {
+    const el = document.getElementById('scene-' + target);
+    if (!el) return;
+    const cur = document.querySelector('.scene.active');
+    if (cur && cur !== el) cur.classList.remove('active');
+    el.classList.add('active');
+    currentScene = target;
+    if (target === 'cs') renderCS();
+    if (target === 'br') renderBR();
+    if (target === 'live') renderLive();
+    if (target === 'calling') { renderCalling(); startCallingTimer(); }
+    if (target === 'juara') renderPodium();
+    if (target === 'standby') renderStandby();
+    if (target === 'ads') playAd(); else if (adVideo && !adVideo.paused) { adVideo.pause(); applyAudioSettings(); }
+    document.getElementById('ctl').classList.remove('show');
 }
-
+// transisi video hanya untuk klik manual dari panel; tidak pernah bisa bikin layar macet
 function mainkanTransisi(callback) {
-    if (!videoTransisi.src) return callback();
+    let done = false;
+    const finish = () => {
+        if (done) return; done = true;
+        try { callback(); } catch (e) { console.error(e); }
+        videoTransisi.style.transition = 'opacity 0.5s ease-out';
+        videoTransisi.style.opacity = '0';
+        setTimeout(() => { videoTransisi.style.display = 'none'; try { videoTransisi.pause(); } catch (e) {} }, 500);
+    };
+    if (!videoTransisi.src) return finish();
     videoTransisi.style.display = 'block';
-    videoTransisi.currentTime = 0;
+    try { videoTransisi.currentTime = 0; } catch (e) {}
     videoTransisi.style.transition = 'opacity 0.3s ease-in';
     videoTransisi.style.opacity = '0';
     void videoTransisi.offsetWidth;
     videoTransisi.style.opacity = '1';
-    videoTransisi.play().catch(e => console.log("Gagal transisi:", e));
-    videoTransisi.onended = () => {
-        if (callback) callback();
-        videoTransisi.style.transition = 'opacity 0.5s ease-out';
-        videoTransisi.style.opacity = '0';
-        setTimeout(() => { videoTransisi.style.display = 'none'; }, 500);
-    };
+    videoTransisi.onended = finish;
+    videoTransisi.onerror = finish;
+    videoTransisi.play().catch(finish);
+    setTimeout(finish, 20000);
 }
-
-window.nav = function(targetScene) {
+window.nav = function (targetScene) {
     if (window.isTransitioning) return;
-    const currentEl = document.querySelector('.scene.active');
-    if (currentEl && currentEl.id === 'scene-' + targetScene) return;
+    if (currentScene === targetScene) { document.getElementById('ctl').classList.remove('show'); return; }
+    autoMode = false; clearTimeout(autoTimer);
     window.isTransitioning = true;
-    mainkanTransisi(() => {
-        if (currentEl) currentEl.classList.remove('active');
-        const newEl = document.getElementById('scene-' + targetScene);
-        if (newEl) newEl.classList.add('active');
-        if (targetScene === 'cs') renderCS();
-        if (targetScene === 'br') renderBR();
-        if (targetScene === 'live') renderLive();
-        if (targetScene === 'calling') renderCalling();
-        if (targetScene === 'juara') renderPodium();
-        if (targetScene === 'standby') renderStandby();
-        if (targetScene === 'ads') playAd();
-        else if (adVideo) adVideo.pause();
-        document.getElementById('ctl').classList.remove('show');
-        setTimeout(() => { window.isTransitioning = false; }, 100);
-    });
+    mainkanTransisi(() => { switchScene(targetScene); setTimeout(() => { window.isTransitioning = false; }, 100); });
+};
+window.navAuto = function () {
+    autoMode = true; autoIdx = 0; autoEvaluate(true);
+    document.getElementById('ctl').classList.remove('show');
 };
 
-// Wire buttons
 $$('#ctl .btn[data-s]').forEach(b => b.onclick = () => nav(b.dataset.s));
-$('#fv').onclick = () => {
-    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-    else document.exitFullscreen();
-};
+$('#fv').onclick = () => { if (!document.fullscreenElement) goFullscreen(); else document.exitFullscreen(); };
 
 function setTimer() {
     const m = parseInt(document.getElementById('input-timer').value) || 15;
-    if (manualTimerInterval) clearInterval(manualTimerInterval);
-    nav('calling');
+    manualCallingEnd = Date.now() + m * 60000;
+    autoMode = false; clearTimeout(autoTimer);
+    switchScene('calling');
     $('#calling-header').style.display = 'none';
     $('#calling-cs').style.display = 'none';
     $('#calling-br').style.display = 'flex';
-    let timeLeft = m * 60;
-    manualTimerInterval = setInterval(() => {
-        if (timeLeft > 0) {
-            timeLeft--;
-            const mm = Math.floor(timeLeft / 60), ss = timeLeft % 60;
-            $('#calling-timer-text').innerText = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
-        } else {
-            clearInterval(manualTimerInterval);
-            $('#calling-timer-text').innerText = "00:00";
-        }
-    }, 1000);
-    $('#calling-timer-text').innerText = `${String(m).padStart(2, '0')}:00`;
+    startCallingTimer();
+    setTimeout(() => { manualCallingEnd = null; }, m * 60000 + 2000);
 }
-
 function setBGM() {
-    const url = document.getElementById('input-bgm').value;
-    if (url) {
-        bgmAudio.src = url;
-        bgmAudio.play().catch(() => alert('Gagal muter BGM, cek link MP3.'));
-    }
+    const url = document.getElementById('input-bgm').value.trim();
+    if (!url) return;
+    bgmAudio.src = url;
+    audioUnlocked = true;
+    bgmAudio.play().catch(() => alert('Gagal memutar BGM, cek link MP3.'));
 }
-
 function setVolume(val) {
     document.getElementById('vol-txt').innerText = val;
     bgmAudio.volume = val / 100;
     videoTransisi.volume = val / 100;
-    adVideo.volume = val / 100;
+    if (adVideo) adVideo.volume = val / 100;
 }
 
-setInterval(() => {
-    $('#clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false });
-}, 1000);
+setInterval(() => { $('#clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' }).replace(/\./g, ':'); }, 1000);
 
-// Debug: kalau mode debug tapi tidak ada TOURNAMENT_ID, kasih tau
-if (DEBUG_MODE && !TOURNAMENT_ID) {
-    const dbgPanel = document.getElementById('debug-panel');
-    dbgPanel.classList.add('show');
-    document.getElementById('debug-content').innerHTML = '<div class="dbg-err">⚠️ URL tidak punya ?t=TOURNAMENT_ID<br>Bot harus kasih link lengkap!</div>';
-}
+// ═══════════════════════════════════════════════════════════
+// BOOT — langsung jalan tanpa harus klik apa pun
+// ═══════════════════════════════════════════════════════════
+(function boot() {
+    if (URL_PARAMS.get('splash') === '1') document.getElementById('start-screen').style.display = 'flex';
+    if (DEBUG_MODE) {
+        document.getElementById('debug-panel').classList.add('show');
+        document.getElementById('debug-content').innerHTML = '';
+        dbg('Display v4 start | t=' + (TOURNAMENT_ID || '(kosong)') + ' | view=' + (VIEW_PARAM || '(default)'));
+    }
+    if (!sb) { setConn(false, 'Library Supabase gagal dimuat. Cek internet lalu refresh.'); return; }
+    refreshData();
+})();
 </script>
 </body>
 </html>
