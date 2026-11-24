@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -299,10 +300,23 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
             <h3 class="title">Map Pool BR</h3>
             <div class="map-pool" id="map-pool"></div>
             </div>
+            <div id="det-lb-wrap">
+              <h3 class="title" style="margin-top:20px"><i class="fa-solid fa-ranking-star"></i> <span id="det-lb-title">Leaderboard</span></h3>
+              <div id="det-lb" style="overflow-x:auto;margin-bottom:10px"><p style="color:var(--muted);font-size:.8rem;text-align:center">Memuat...</p></div>
+            </div>
+
             <h3 class="title" style="margin-top:20px">Distribusi Hadiah</h3>
             <div class="podium" id="podium-container" style="flex-wrap: wrap; height: auto; min-height: 150px; align-items: flex-end;"></div>
             <h3 class="title">Peserta</h3>
             <div class="part-list" id="part-list"></div>
+            <div id="stream-box" style="display:none;margin-top:20px">
+              <h3 class="title"><i class="fa-solid fa-circle" style="color:var(--danger);font-size:.6rem;animation:pulseRed 2s infinite"></i> Live Streaming</h3>
+              <div id="stream-frame-wrap" style="position:relative;width:100%;aspect-ratio:16/9;background:#000;border:1px solid #333;border-radius:12px;overflow:hidden">
+                <iframe id="stream-frame" style="position:absolute;inset:0;width:100%;height:100%;border:0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+              </div>
+              <button class="btn btn-danger btn-sm" style="margin:10px 0 5px;width:auto" onclick="openStream()"><i class="fa-solid fa-up-right-from-square"></i> Buka di aplikasi / tab baru</button>
+            </div>
+
             <h3 class="title" style="margin-top:20px"><i class="fa-solid fa-comments"></i> Live Chat Turnamen</h3>
             <div class="chat-box" id="chat-tour"><p style="text-align:center;color:var(--muted);font-size:.8rem">Memuat chat...</p></div>
             <div class="chat-input">
@@ -311,12 +325,8 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:12px 2
             <button class="chat-btn" onclick="sendTourChat()"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
             <div class="sticker-grid hidden" id="stk-tour"></div>
-            <div class="live-box" id="stream-box" style="display:none; margin-top:20px; background:#111; border:1px solid #333; border-radius:12px; padding:20px; text-align:center;">
-            <div class="live-icon" style="font-size:2rem;color:var(--danger);margin-bottom:10px;animation:pulseRed 2s infinite;"><i class="fa-brands fa-youtube"></i></div>
-            <div class="live-text" style="font-family:'Orbitron',sans-serif;font-size:.8rem;color:#fff;font-weight:bold;">🔴 LIVE STREAMING</div>
-            <button class="btn btn-danger btn-sm" style="margin-top:15px;width:auto" onclick="openStream()">Tonton Live</button>
-            </div>
-            <button class="btn" style="margin-top:20px" id="btn-reg" onclick="openRegister()">Daftar Sekarang</button>
+            <div id="reg-state-msg" style="display:none;margin-top:20px;padding:12px;border:1px solid;border-radius:10px;text-align:center;font-size:.85rem;font-weight:600"></div>
+            <button class="btn hidden" style="margin-top:20px" id="btn-reg" onclick="openRegister()">Daftar Sekarang</button>
             <button class="btn btn-sec hidden" style="margin-top:10px" id="btn-wait" onclick="joinWaitlist()">Masuk Waiting List</button>
            <!-- TOMBOL SHARE WHATSAPP -->
 <button class="btn" style="margin-top:10px; background: #25D366; color: #fff; border: none; box-shadow: 0 4px 15px rgba(37,211,102,0.3);" onclick="shareToWA()">
@@ -1059,7 +1069,9 @@ startTournamentTimer(data.schedule_at);
   loadTourChat(id);
   checkWaitlist(id);
   
-  if (data.stream_url) { $('stream-box').style.display = 'block'; } else { $('stream-box').style.display = 'none'; }
+  applyTimerState(data);
+  loadStream(id);
+  loadLeaderboard(id);
   nav('detail');
 }
 function renderPodium(totalPrize, winnerPos, prizesTable, prizesConfig) {
@@ -1107,36 +1119,94 @@ function renderPodium(totalPrize, winnerPos, prizesTable, prizesConfig) {
   }
 }
 
+// ---------- LIVE STREAM (semua orang bisa lihat) ----------
+function buildEmbedUrl(raw) {
+  raw = String(raw || '').trim();
+  if (!raw) return null;
+  if (!/^https?:\/\//i.test(raw)) raw = 'https://' + raw;
+  let u; try { u = new URL(raw); } catch (e) { return null; }
+  const host = u.hostname.replace(/^www\.|^m\./, '');
+  if (host === 'youtube.com' || host === 'youtu.be') {
+    let id = null;
+    if (host === 'youtu.be') id = u.pathname.split('/').filter(Boolean)[0];
+    else if (u.searchParams.get('v')) id = u.searchParams.get('v');
+    else { const m = u.pathname.match(/\/(?:live|embed|shorts)\/([A-Za-z0-9_-]{11})/); if (m) id = m[1]; }
+    if (id && /^[A-Za-z0-9_-]{11}$/.test(id)) return 'https://www.youtube.com/embed/' + id + '?autoplay=1&mute=1&playsinline=1&rel=0';
+    const ch = u.pathname.match(/\/channel\/(UC[A-Za-z0-9_-]{22})/);
+    if (ch) return 'https://www.youtube.com/embed/live_stream?channel=' + ch[1] + '&autoplay=1&mute=1&playsinline=1';
+    return null;
+  }
+  if (host === 'twitch.tv') {
+    const parts = u.pathname.split('/').filter(Boolean);
+    const parent = location.hostname || 'gh-t-arena-web.pages.dev';
+    if (parts[0] === 'videos' && parts[1]) return 'https://player.twitch.tv/?video=' + encodeURIComponent(parts[1]) + '&parent=' + parent + '&autoplay=true&muted=true';
+    if (parts[0]) return 'https://player.twitch.tv/?channel=' + encodeURIComponent(parts[0]) + '&parent=' + parent + '&autoplay=true&muted=true';
+  }
+  return raw;
+}
+async function loadStream(tid) {
+  const box = $('stream-box'), fr = $('stream-frame'), wrap = $('stream-frame-wrap');
+  if (!box || !fr) return;
+  // stream_url TIDAK ada di v_tournaments_public -> ambil langsung dari tabel tournaments
+  const { data } = await sb.from('tournaments').select('stream_url').eq('id', tid).maybeSingle();
+  if (curTour !== tid) return;
+  const url = data && data.stream_url ? String(data.stream_url).trim() : '';
+  if (curTourData) curTourData.stream_url = url;
+  if (!url) { box.style.display = 'none'; fr.removeAttribute('src'); return; }
+  box.style.display = 'block';
+  const emb = buildEmbedUrl(url);
+  if (emb) { wrap.style.display = 'block'; if (fr.getAttribute('src') !== emb) fr.src = emb; }
+  else { wrap.style.display = 'none'; fr.removeAttribute('src'); }
+}
 function openStream() {
-  if (curTourData && curTourData.stream_url) {
-    let rawUrl = curTourData.stream_url.trim();
-    let embedUrl = rawUrl;
-
-    // 1. Deteksi YouTube
-    if (rawUrl.includes("youtube.com/watch") || rawUrl.includes("youtu.be")) {
-        embedUrl = rawUrl.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/").split('&')[0] + "?autoplay=1";
-    } 
-    // 2. Deteksi Twitch
-    else if (rawUrl.includes("twitch.tv")) {
-        const channel = rawUrl.split('/').filter(Boolean).pop().split('?')[0];
-        const parent = window.location.hostname || 'gh-t-arena-web.pages.dev';
-        embedUrl = `https://player.twitch.tv/?channel=${channel}&parent=${parent}&autoplay=true`;
-    }
-
-    window.open(embedUrl, '_blank');
-  } else {
-    toast('Link Live Stream belum tersedia.', 'warning');
-  }
+  if (curTourData && curTourData.stream_url) window.open(curTourData.stream_url, '_blank');
+  else toast('Link Live Stream belum tersedia.', 'warning');
 }
 
+// ---------- STATUS PENDAFTARAN & TIMER ----------
+const REG_ACTIVE = ['menunggu_pembayaran', 'menunggu_verifikasi', 'data_belum_lengkap', 'resmi_terdaftar'];
+function isRegOpen(t) {
+  if (!t || t.status !== 'pendaftaran_dibuka') return false;
+  if (t.registration_enabled === false) return false;
+  if (t.registration_deadline && new Date(t.registration_deadline).getTime() < Date.now()) return false;
+  return true;
+}
+function applyTimerState(t) {
+  const box = $('det-timer-box'); if (!box) return;
+  if (['berlangsung', 'selesai', 'dibatalkan'].includes(t.status)) {
+    if (typeof tourTimerInterval !== 'undefined') clearInterval(tourTimerInterval);
+    box.style.display = 'none';
+  } else box.style.display = '';
+}
 async function checkWaitlist(tid) {
-  if (!curTourData) return;
-  if (curTourData.filled_slots >= curTourData.total_slots) {
-    $('btn-reg').classList.add('hidden'); $('btn-wait').classList.remove('hidden');
-  } else {
-    $('btn-reg').classList.remove('hidden'); $('btn-wait').classList.add('hidden');
+  const t = curTourData; if (!t) return;
+  const bReg = $('btn-reg'), bWait = $('btn-wait'), msg = $('reg-state-msg');
+  bReg.classList.add('hidden'); bWait.classList.add('hidden'); msg.style.display = 'none';
+  const show = (html, color) => { msg.innerHTML = html; msg.style.color = color; msg.style.borderColor = color; msg.style.background = 'rgba(255,255,255,.03)'; msg.style.display = 'block'; };
+  let mine = null;
+  if (user) {
+    const { data } = await sb.from('registrations').select('id,status').eq('tournament_id', tid).eq('owner_id', user.id).in('status', REG_ACTIVE).limit(1);
+    mine = data && data[0];
   }
+  if (curTour !== tid) return;
+  if (mine) {
+    const L = { resmi_terdaftar: ['✅ Tim kamu sudah terdaftar resmi', 'var(--success)'],
+                menunggu_verifikasi: ['⏳ Pendaftaran menunggu verifikasi admin', 'var(--warning)'],
+                menunggu_pembayaran: ['⏳ Menunggu pembayaran', 'var(--warning)'],
+                data_belum_lengkap: ['⚠️ Data pendaftaran belum lengkap — cek menu Turnamen', 'var(--warning)'] };
+    const m = L[mine.status] || ['Sudah terdaftar', 'var(--chrome)'];
+    return show(m[0], m[1]);
+  }
+  if (!isRegOpen(t)) {
+    const M = { berlangsung: '🔴 Turnamen sudah dimulai — pendaftaran ditutup', selesai: '🏁 Turnamen sudah selesai',
+                dibatalkan: '❌ Turnamen dibatalkan', ditunda: '⏸ Turnamen ditunda', segera_hadir: '🕒 Pendaftaran belum dibuka',
+                pendaftaran_ditutup: '🔒 Pendaftaran sudah ditutup' };
+    return show(M[t.status] || '🔒 Pendaftaran sudah ditutup', 'var(--muted)');
+  }
+  if (Number(t.filled_slots) >= Number(t.total_slots)) bWait.classList.remove('hidden');
+  else bReg.classList.remove('hidden');
 }
+
 async function joinWaitlist() {
   const { error } = await sb.from('waiting_list').insert({ tournament_id: curTour, owner_id: user.id });
   if (error) return toast(translateError(error.message), 'danger');
@@ -1371,6 +1441,7 @@ async function delPlayer(btn) {
 async function openRegister() {
   if (!user) return nav('auth');
   if (!curTour) return toast('Turnamen belum dipilih', 'danger');
+  if (!isRegOpen(curTourData)) return toast('Pendaftaran sudah ditutup.', 'warning');
   
   const { data: p } = await sb.from('profiles').select('dana_number, dana_name').eq('id', user.id).single();
   if (p && p.dana_number) {
@@ -1479,40 +1550,60 @@ function startQR(dur) {
   }, 1000);
 }
 
+function hiddenRegs() {
+  try { return JSON.parse(localStorage.getItem('hidden_regs_' + (user ? user.id : '')) || '[]'); } catch (e) { return []; }
+}
+function hideMyReg(regId) {
+  if (!confirm('Hapus turnamen ini dari daftar "Turnamen Saya"?')) return;
+  const h = hiddenRegs(); if (!h.includes(regId)) h.push(regId);
+  try { localStorage.setItem('hidden_regs_' + user.id, JSON.stringify(h)); } catch (e) {}
+  toast('Dihapus dari daftar.', 'success'); loadMyTour();
+}
 async function loadMyTour() {
   if (!user) return;
   const box = $('my-tour-list');
   box.innerHTML = '<p style="text-align:center;color:var(--muted)">Memuat...</p>';
-  const { data, error } = await sb.from('registrations').select('*').eq('owner_id', user.id);
+  const { data: all, error } = await sb.from('registrations').select('*').eq('owner_id', user.id);
   if (error) { box.innerHTML = `<p style="color:var(--danger)">${translateError(error.message)}</p>`; return; }
-  
-  if (!data || data.length === 0) { box.innerHTML = `<div class="glass" style="text-align:center;padding:30px"><i class="fa-solid fa-trophy" style="font-size:3rem;color:#333;margin-bottom:15px;display:block"></i><p style="color:var(--muted);font-size:.85rem">Kamu belum mengikuti turnamen apapun.</p></div>`; return; }
-  
+  const hid = new Set(hiddenRegs());
+  const data = (all || []).filter(r => !hid.has(r.id)).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (!data.length) { box.innerHTML = `<div class="glass" style="text-align:center;padding:30px"><i class="fa-solid fa-trophy" style="font-size:3rem;color:#333;margin-bottom:15px;display:block"></i><p style="color:var(--muted);font-size:.85rem">Kamu belum mengikuti turnamen apapun.</p></div>`; return; }
+
   const tIds = [...new Set(data.map(r => r.tournament_id))];
-  const { data: tours } = await sb.from('tournaments').select('id,name,format,is_offline').in('id', tIds);
+  const { data: tours } = await sb.from('tournaments').select('id,name,format,is_offline,status').in('id', tIds);
   const tMap = Object.fromEntries((tours || []).map(t => [t.id, t]));
-  
   const { data: certs } = await sb.from('certificates').select('*').eq('owner_id', user.id);
   const cMap = {}; (certs || []).forEach(c => { cMap[c.tournament_id] = c; });
-  
+
   box.innerHTML = data.map(r => {
-    const t = tMap[r.tournament_id] || { name: 'Unknown', format: '-', is_offline: false };
+    const t = tMap[r.tournament_id] || { name: 'Unknown', format: '-', is_offline: false, status: '' };
     const cert = cMap[r.tournament_id];
-    let btnTicket = '';
-    if (t.is_offline && r.status === 'resmi_terdaftar') {
-      btnTicket = `<button class="btn btn-sm btn-sec" onclick="showTicket('${r.id}')">🎟️ E-Ticket</button>`;
-    }
-    return `<div class="glass" style="margin-bottom:15px;border-left:3px solid var(--chrome)"><h4 style="color:var(--chrome);font-size:.95rem">${t.name}</h4><p style="font-size:.75rem;color:var(--muted);margin:5px 0">Tim: ${r.team_name} • Status: <b style="color:${r.status === 'resmi_terdaftar' ? 'var(--success)' : r.status === 'ditolak' ? 'var(--danger)' : 'var(--warning)'}">${r.status.toUpperCase()}</b></p><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:10px"><button class="btn btn-sm btn-sec" onclick="loadRoom('${r.tournament_id}')">🔑 Room ID</button>${btnTicket}${r.status === 'resmi_terdaftar' ? `<button class="btn btn-sm btn-danger" onclick="openWdTour('${r.id}')">↩️ Mundur</button>` : ''}${cert ? `<button class="btn btn-sm" onclick="toast('Sertifikat segera diunduh','info')">🏅 Sertifikat</button>` : ''}</div><div id="room-${r.tournament_id}" class="hidden" style="margin-top:10px;background:#050505;border:1px solid #333;padding:10px;border-radius:8px"></div></div>`;
+    const ok = r.status === 'resmi_terdaftar';
+    const finished = ['selesai', 'dibatalkan'].includes(t.status);
+    const canDelete = ['mengundurkan_diri', 'ditolak'].includes(r.status) || finished;
+    const stColor = ok ? 'var(--success)' : r.status === 'ditolak' ? 'var(--danger)' : 'var(--warning)';
+    const btnRoom = ok ? `<button class="btn btn-sm btn-sec" onclick="loadRoom('${r.tournament_id}')">🔑 Room ID</button>` : '';
+    const btnTicket = (t.is_offline && ok) ? `<button class="btn btn-sm btn-sec" onclick="showTicket('${r.id}')">🎟️ E-Ticket</button>` : '';
+    const btnWd = (ok && !finished) ? `<button class="btn btn-sm btn-danger" onclick="openWdTour('${r.id}')">↩️ Mundur</button>` : '';
+    const btnDel = canDelete ? `<button class="btn btn-sm btn-danger" onclick="hideMyReg('${r.id}')">🗑️ Hapus</button>` : '';
+    const btnCert = cert ? `<button class="btn btn-sm" onclick="toast('Sertifikat segera diunduh','info')">🏅 Sertifikat</button>` : '';
+    return `<div class="glass" style="margin-bottom:15px;border-left:3px solid var(--chrome)"><h4 style="color:var(--chrome);font-size:.95rem">${t.name}</h4><p style="font-size:.75rem;color:var(--muted);margin:5px 0">Tim: ${r.team_name} • Status: <b style="color:${stColor}">${r.status.replace(/_/g, ' ').toUpperCase()}</b></p><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:10px">${btnRoom}${btnTicket}${btnWd}${btnCert}${btnDel}</div><div id="room-${r.tournament_id}" class="hidden" style="margin-top:10px;background:#050505;border:1px solid #333;padding:10px;border-radius:8px"></div></div>`;
   }).join('');
 }
 
 async function loadRoom(tid) {
-  const box = $(`room-${tid}`); box.classList.toggle('hidden');
+  const box = $(`room-${tid}`); if (!box) return;
+  box.classList.toggle('hidden');
   if (box.classList.contains('hidden')) return;
   box.innerHTML = '<p style="font-size:.75rem;color:var(--muted)">Mencari data...</p>';
-  const { data, error } = await sb.from('tournament_rooms').select('*').eq('tournament_id', tid);
-  if (error || !data || data.length === 0) { box.innerHTML = '<p style="font-size:.75rem;color:var(--danger)">🔒 Room ID belum dipublikasikan.</p>'; return; }
-  box.innerHTML = data.map(room => `<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222;padding:5px 0"><div><div style="font-size:.7rem;color:var(--silver)">Room ID: <b style="color:var(--chrome)">${room.room_id || '-'}</b></div><div style="font-size:.7rem;color:var(--silver)">Pass: <b style="color:var(--chrome)">${room.room_password || '-'}</b></div></div><button class="btn btn-sm btn-sec" onclick="copyText('${room.room_id} ${room.room_password}')"><i class="fa-solid fa-copy"></i></button></div>`).join('');
+  const { data, error } = await sb.from('tournament_rooms').select('*').eq('tournament_id', tid).order('published_at', { ascending: true });
+  const rooms = (data || []).filter(r => r.room_id);
+  if (error || !rooms.length) { box.innerHTML = '<p style="font-size:.75rem;color:var(--danger)">🔒 Room ID belum dipublikasikan.</p>'; return; }
+  box.innerHTML = rooms.map(room => {
+    const rid = lbEsc(room.room_id), pw = lbEsc(room.room_password || '-');
+    const copy = encodeURIComponent(room.room_id + (room.room_password ? ' ' + room.room_password : ''));
+    return `<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222;padding:6px 0;gap:8px"><div>${room.note ? `<div style="font-size:.65rem;color:var(--cyan);font-family:Orbitron,sans-serif;margin-bottom:3px">${lbEsc(room.note)}</div>` : ''}<div style="font-size:.75rem;color:var(--silver)">Room ID: <b style="color:var(--chrome)">${rid}</b></div><div style="font-size:.75rem;color:var(--silver)">Pass: <b style="color:var(--chrome)">${pw}</b></div></div><button class="btn btn-sm btn-sec" style="width:auto" onclick="copyText(decodeURIComponent('${copy}'))"><i class="fa-solid fa-copy"></i></button></div>`;
+  }).join('');
 }
 async function showTicket(regId) {
   const { data: tk, error: errTk } = await sb.from('etickets').select('*').eq('registration_id', regId).maybeSingle();
@@ -2078,6 +2169,135 @@ function startTournamentTimer(targetDateStr) {
 
     }, 1000);
 }
+// ---------- DOWNLOAD E-TICKET (digambar ke canvas, tanpa library tambahan) ----------
+async function downloadTicket(teamName) {
+  const vis = document.getElementById('ticket-visual');
+  if (!vis) return toast('Tiket tidak ditemukan', 'danger');
+  const vals = vis.querySelectorAll('.tk-info .value');
+  const tour = vals[0] ? vals[0].innerText : 'Turnamen';
+  const team = vals[1] ? vals[1].innerText : (teamName || 'Tim');
+  const stEl = vis.querySelector('.tk-info .status');
+  const checked = stEl ? /SUDAH/i.test(stEl.innerText) : false;
+  const code = (vis.querySelector('.tk-code') || {}).innerText || '';
+  const qrSrc = (vis.querySelector('img.qr') || {}).src || '';
+  toast('Menyiapkan tiket...', 'info');
+
+  const loadImg = src => new Promise(res => { if (!src) return res(null); const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+  try { await document.fonts.load('700 30px Orbitron'); } catch (e) {}
+  let qr = await loadImg(qrSrc);
+  if (!qr && code) qr = await loadImg('https://quickchart.io/qr?size=300&text=' + encodeURIComponent(code));
+  const logo = await loadImg('https://i.ibb.co.com/ymSpL0ht/file-000000000c7482118ac26f712cacd01a.png');
+
+  const W = 900, H = 560, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  const fit = (txt, maxW, size, weight) => { let s = size; do { g.font = `${weight || 700} ${s}px Orbitron, Arial`; s -= 2; } while (g.measureText(txt).width > maxW && s > 12); return txt; };
+
+  g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+  const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#15151a'); bg.addColorStop(1, '#050505');
+  rr(10, 10, W - 20, H - 20, 28); g.fillStyle = bg; g.fill();
+  g.lineWidth = 4; g.strokeStyle = '#00e5ff'; g.stroke();
+  const bar = g.createLinearGradient(0, 0, W, 0); bar.addColorStop(0, '#00e5ff'); bar.addColorStop(.5, '#ffd700'); bar.addColorStop(1, '#00e5ff');
+  g.fillStyle = bar; g.fillRect(40, 10, W - 80, 8);
+
+  g.textAlign = 'center'; g.fillStyle = '#00e5ff'; g.font = '700 46px Orbitron, Arial'; g.fillText('E-TICKET', W / 2, 78);
+  g.fillStyle = '#888'; g.font = '600 20px Arial'; g.fillText('GH-T ARENA OFFICIAL', W / 2, 108);
+  g.strokeStyle = '#333'; g.setLineDash([10, 8]); g.lineWidth = 2; g.beginPath(); g.moveTo(40, 130); g.lineTo(W - 40, 130); g.stroke(); g.setLineDash([]);
+
+  g.textAlign = 'left';
+  const label = (t, y) => { g.fillStyle = '#888'; g.font = '600 16px Arial'; g.fillText(t, 50, y); };
+  label('TURNAMEN', 175); g.fillStyle = '#fff'; fit(tour, 480, 30); g.fillText(tour, 50, 212);
+  label('NAMA TIM', 270); g.fillStyle = '#fff'; fit(team, 480, 30); g.fillText(team, 50, 307);
+  label('STATUS', 365);
+  const stTxt = checked ? 'SUDAH CHECK-IN' : 'BELUM CHECK-IN', stCol = checked ? '#43a047' : '#e53935';
+  g.font = '700 20px Arial'; const tw = g.measureText(stTxt).width + 30;
+  rr(50, 380, tw, 40, 8); g.fillStyle = checked ? 'rgba(67,160,71,.2)' : 'rgba(229,57,53,.2)'; g.fill(); g.lineWidth = 2; g.strokeStyle = stCol; g.stroke();
+  g.fillStyle = stCol; g.fillText(stTxt, 65, 408);
+
+  rr(590, 160, 270, 270, 16); g.fillStyle = '#fff'; g.fill();
+  if (qr) g.drawImage(qr, 605, 175, 240, 240);
+  if (qr && logo) { g.save(); g.beginPath(); g.arc(725, 295, 30, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.clip(); g.drawImage(logo, 697, 267, 56, 56); g.restore(); }
+
+  g.textAlign = 'center';
+  rr(W / 2 - 220, 458, 440, 62, 10); g.fillStyle = 'rgba(255,215,0,.1)'; g.fill();
+  g.setLineDash([8, 6]); g.lineWidth = 2; g.strokeStyle = 'rgba(255,215,0,.6)'; g.stroke(); g.setLineDash([]);
+  g.fillStyle = '#ffd700'; g.font = '700 34px Orbitron, Arial'; g.fillText(code, W / 2, 502);
+
+  cv.toBlob(async blob => {
+    if (!blob) return toast('Gagal membuat gambar tiket', 'danger');
+    const fname = 'E-Ticket-' + String(team).replace(/[^\w-]+/g, '_') + '.png';
+    try {
+      const file = new File([blob], fname, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'E-Ticket GH-T ARENA' });
+        return toast('Pilih "Simpan" / Galeri di menu yang muncul', 'success');
+      }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
+    toast('E-Ticket diunduh', 'success');
+  }, 'image/png');
+}
+
+// ---------- LEADERBOARD DI DETAIL TURNAMEN (realtime) ----------
+let lbTimer = null, lbSub = null;
+const lbEsc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
+async function loadLeaderboard(tid) {
+  const box = $('det-lb'); if (!box) return;
+  const fmt = (curTourData && curTourData.format) || curTourMode;
+  $('det-lb-title').innerText = fmt === 'CS' ? 'Bracket & Hasil' : 'Leaderboard';
+  const render = async () => { if (curTour !== tid) return; try { if (fmt === 'CS') await renderCsLb(box, tid); else await renderBrLb(box, tid); } catch (e) { console.error(e); } };
+  await render();
+  clearInterval(lbTimer);
+  lbTimer = setInterval(() => { const v = $('v-detail'); if (!v || v.classList.contains('hidden') || curTour !== tid) return; render(); }, 15000);
+  if (lbSub) { sb.removeChannel(lbSub); lbSub = null; }
+  lbSub = sb.channel('lb_' + tid + '_' + Date.now())
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'realtime_events' }, () => render())
+    .subscribe();
+}
+async function renderBrLb(box, tid) {
+  const [lb, sc] = await Promise.all([
+    sb.from('v_leaderboard_public').select('registration_id,team_name,total_points,total_kills,rank_no').eq('tournament_id', tid).order('rank_no'),
+    sb.from('v_br_match_scores_public').select('registration_id,match_no,total_points').eq('tournament_id', tid)
+  ]);
+  const rows = lb.data || [];
+  if (!rows.length) { box.innerHTML = '<p style="color:var(--muted);font-size:.8rem;text-align:center">Belum ada hasil match yang dikonfirmasi.</p>'; return; }
+  const scores = {}; let maxM = 0;
+  (sc.data || []).forEach(r => { (scores[r.registration_id] = scores[r.registration_id] || {})[r.match_no] = r.total_points; if (r.match_no > maxM) maxM = r.match_no; });
+  const th = 'padding:8px 6px;color:var(--cyan);font-family:Orbitron,sans-serif;font-size:.65rem;text-align:center;border-bottom:1px solid var(--cyan);';
+  const td = 'padding:8px 6px;text-align:center;border-bottom:1px solid #222;';
+  const medal = i => i === 0 ? 'var(--gold)' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : 'var(--chrome)';
+  let h = `<table style="width:100%;border-collapse:collapse;font-size:.75rem;color:#fff"><thead><tr><th style="${th}">#</th><th style="${th}text-align:left">TIM</th>`;
+  for (let m = 1; m <= maxM; m++) h += `<th style="${th}">M${m}</th>`;
+  h += `<th style="${th}">KILL</th><th style="${th}">POIN</th></tr></thead><tbody>`;
+  rows.forEach((t, i) => {
+    h += `<tr${i < 3 ? ' style="background:rgba(255,255,255,.04)"' : ''}><td style="${td}font-family:Orbitron,sans-serif;font-weight:900;color:${medal(i)}">${t.rank_no}</td><td style="${td}text-align:left;font-weight:700">${lbEsc(t.team_name)}</td>`;
+    for (let m = 1; m <= maxM; m++) { const v = scores[t.registration_id] && scores[t.registration_id][m]; h += `<td style="${td}">${v != null ? v : '<span style="opacity:.3">-</span>'}</td>`; }
+    h += `<td style="${td}">${t.total_kills || 0}</td><td style="${td}font-family:Orbitron,sans-serif;font-weight:900;color:var(--cyan)">${t.total_points || 0}</td></tr>`;
+  });
+  box.innerHTML = h + '</tbody></table>';
+}
+async function renderCsLb(box, tid) {
+  const [v, raw] = await Promise.all([
+    sb.from('v_cs_bracket_public').select('id,round_no,match_no,round_label,public_status,team_a_name,team_b_name,winner_name,bo').eq('tournament_id', tid).order('round_no').order('match_no'),
+    sb.from('cs_matches').select('id,score_a,score_b').eq('tournament_id', tid)
+  ]);
+  const ms = v.data || [];
+  if (!ms.length) { box.innerHTML = '<p style="color:var(--muted);font-size:.8rem;text-align:center">Bracket belum dibuat.</p>'; return; }
+  const sc = {}; (raw.data || []).forEach(m => { sc[m.id] = m; });
+  const groups = {}; ms.forEach(m => { const k = m.round_label || ('Ronde ' + m.round_no); (groups[k] = groups[k] || []).push(m); });
+  box.innerHTML = Object.keys(groups).map(k => `<div style="margin-bottom:12px"><div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:var(--cyan);margin-bottom:6px">${lbEsc(k)} • BO${groups[k][0].bo || 1}</div>` +
+    groups[k].map(m => {
+      const s = sc[m.id] || {}, done = !!m.winner_name, live = m.public_status === 'berlangsung';
+      const score = (s.score_a != null && s.score_b != null && (done || live)) ? `${s.score_a} - ${s.score_b}` : 'VS';
+      const b = live ? '<span style="color:var(--danger)">● LIVE</span>' : done ? '<span style="color:var(--success)">✓</span>' : '<span style="color:var(--muted)">–</span>';
+      const nm = (n, w) => `<span style="flex:1;${n && n === m.winner_name ? 'color:var(--gold);font-weight:700' : ''}${done && n && n !== m.winner_name ? 'opacity:.5' : ''}">${lbEsc(n || 'TBD')}</span>`;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#111;border:1px solid #222;border-radius:8px;margin-bottom:5px;font-size:.78rem">${nm(m.team_a_name)}<b style="font-family:Orbitron,sans-serif;color:#fff;min-width:48px;text-align:center">${score}</b><span style="flex:1;text-align:right;${m.team_b_name && m.team_b_name === m.winner_name ? 'color:var(--gold);font-weight:700' : ''}${done && m.team_b_name && m.team_b_name !== m.winner_name ? 'opacity:.5' : ''}">${lbEsc(m.team_b_name || 'TBD')}</span>${b}</div>`;
+    }).join('') + '</div>').join('');
+}
+
    // Listener untuk deteksi URL #checkin
 window.addEventListener('hashchange', () => {
   const hash = window.location.hash.replace('#', '');
@@ -2086,4 +2306,4 @@ window.addEventListener('hashchange', () => {
 });
 </script>
 </body>
-               </html>
+</html>
