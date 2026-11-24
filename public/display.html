@@ -6,7 +6,17 @@
 <title>GH-T ARENA — Esports Display</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&family=Poppins:wght@400;600;700&family=Teko:wght@600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+<!-- ═══ PATCH 1: Supabase CDN dengan fallback ke file lokal ═══ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // Fallback: kalau CDN jsdelivr diblokir/gagal, pakai file lokal /supabase.js
+  if (typeof supabase === 'undefined' || !supabase || typeof supabase.createClient !== 'function') {
+    console.warn('⚠️ CDN Supabase gagal, fallback ke /supabase.js lokal...');
+    document.write('<script src="/supabase.js"><\/script>');
+  }
+</script>
+
 <style>
     /* =========================================
        TEMA & GLOBAL 16:9 SETUP
@@ -34,13 +44,10 @@
         background-size: 100% 100%, 100% 100%, 3cqw 3cqw, 3cqw 3cqw;
     }
 
-    /* Efek Scanline & Partikel */
     .app-wrapper::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(255,255,255,0.02) 50%); background-size: 100% 4px; z-index: 1; pointer-events: none; animation: scanline 10s linear infinite; }
     
-    /* Video Transisi */
     #video-transisi { display: none; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 9998; pointer-events: none; opacity: 0; transition: opacity 0.5s ease-in-out; background: #000; }
 
-    /* HEADER & FOOTER */
     header { position: absolute; top: 0; left: 0; right: 0; height: 7cqw; display: flex; justify-content: space-between; align-items: center; padding: 0 3cqw; background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%); border-bottom: 0.2cqw solid var(--border); z-index: 10; }
     .logo-area { display: flex; align-items: center; gap: 1.5cqw; }
     .logo-area img { height: 4cqw; filter: drop-shadow(0 0 1cqw var(--cyan)); }
@@ -54,23 +61,18 @@
     footer { position: absolute; bottom: 0; left: 0; right: 0; height: 3.5cqw; background: linear-gradient(90deg, #0a0a0a, #1a1a1a, #0a0a0a); border-top: 0.1cqw solid var(--border); display: flex; align-items: center; overflow: hidden; z-index: 10; }
     .running-text { white-space: nowrap; padding-left: 100%; font-family: 'Rajdhani'; font-weight: 800; font-size: 1.5cqw; color: var(--cyan); animation: marquee 20s linear infinite; }
 
-    /* MAIN & SCENES */
     main { position: absolute; inset: 7cqw 0 3.5cqw 0; padding: 2cqw 4cqw; display: flex; justify-content: center; align-items: center; z-index: 5; }
     .scene { width: 100%; height: 100%; display: none; flex-direction: column; }
     .scene.active { display: flex; animation: fadeInScale 0.4s ease-out forwards; }
     .page-title { font-family: 'Orbitron'; font-size: 2.2cqw; color: #fff; text-align: center; margin-bottom: 1cqw; letter-spacing: 0.3cqw; text-shadow: 0 0 2cqw var(--cyan); animation: textGlow 3s ease-in-out infinite alternate; font-weight: 900; }
 
-    /* =========================================
-       SCENE 1: STANDBY (TIMER, QR, ABSEN)
-       ========================================= */
+    /* SCENE 1: STANDBY */
     #scene-standby { flex-direction: row; gap: 4cqw; padding: 1cqw; }
     .sb-left { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
     .standby-sub { font-family: 'Rajdhani'; font-size: 2cqw; color: var(--gold); letter-spacing: 0.3cqw; text-transform: uppercase; margin-bottom: 1.5cqw; font-weight: 700; text-align: center; text-shadow: 0 0 1cqw rgba(255,215,0,0.3); }
-    
     .timer-display { display: flex; align-items: center; gap: 0.5cqw; margin-bottom: 2cqw; }
     .timer-box { width: 4.5cqw; height: 6cqw; border: 1px solid var(--cyan); background: rgba(0,0,0,0.6); border-radius: 0.5cqw; display: flex; justify-content: center; align-items: center; font-family: 'Orbitron'; font-size: 3cqw; color: #fff; box-shadow: inset 0 0 1cqw rgba(0,229,255,0.3); }
     .timer-sep { font-family: 'Orbitron'; font-size: 3cqw; color: var(--cyan); font-weight: bold; margin-bottom: 0.5cqw; }
-
     .absen-board { width: 100%; background: var(--panel); border: 1px solid var(--border); border-radius: 1cqw; padding: 1.5cqw; flex: 1; display: flex; flex-direction: column; max-height: 22cqw; }
     .absen-title { font-family: 'Rajdhani'; font-size: 1.2cqw; color: var(--cyan); font-weight: 700; margin-bottom: 1cqw; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 0.5cqw; }
     .absen-list { display: flex; flex-direction: column; gap: 0.6cqw; overflow-y: auto; padding-right: 0.5cqw; }
@@ -80,23 +82,19 @@
     .absen-item.checked { border-left-color: var(--success); background: rgba(67,160,71,0.1); }
     .absen-item.checked i { color: var(--success); }
     .absen-item i { color: var(--muted); }
-
     .sb-right { width: 45%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); border: 2px dashed rgba(255,255,255,0.1); border-radius: 2cqw; padding: 2cqw; }
     .qr-title { font-family: 'Orbitron'; font-size: 2cqw; color: var(--gold); text-shadow: 0 0 1cqw var(--gold); margin-bottom: 1.5cqw; text-align: center; }
     .qr-container { background: #fff; padding: 1.5cqw; border-radius: 1.5cqw; box-shadow: 0 0 3cqw rgba(0,229,255,0.4); animation: floatQR 3s infinite; }
-    .qr-container img { width: 28cqw; height: 28cqw; display: block; } /* QR DIPERBESAR */
+    .qr-container img { width: 28cqw; height: 28cqw; display: block; }
     .qr-sub { font-family: 'Rajdhani'; font-size: 1.5cqw; color: var(--cyan); margin-top: 1.5cqw; font-weight: bold; letter-spacing: 0.1cqw; }
 
-    /* Overlay Absen Sukses */
     #overlay-success { position: absolute; inset: 0; background: rgba(3, 3, 3, 0.95); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
     #overlay-success.active { display: flex; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     .success-logo { width: 15cqw; height: 15cqw; border-radius: 50%; border: 0.4cqw solid var(--success); box-shadow: 0 0 5cqw var(--success); background: #111; display: flex; justify-content: center; align-items: center; font-family: 'Orbitron'; font-size: 5cqw; color: #fff; margin-bottom: 2cqw; animation: pulseLogo 1s infinite alternate; }
     .success-title { font-family: 'Orbitron'; font-size: 5cqw; color: var(--success); text-shadow: 0 0 2cqw var(--success); font-weight: 900; letter-spacing: 0.5cqw; text-align: center; }
     .success-sub { font-family: 'Rajdhani'; font-size: 2.5cqw; color: #fff; margin-top: 1cqw; font-weight: 700; letter-spacing: 0.2cqw; }
 
-    /* =========================================
-       SCENE 2: BR LEADERBOARD
-       ========================================= */
+    /* SCENE 2: BR */
     #br-wrap { display: flex; gap: 2cqw; height: 100%; }
     #br-tbl { flex: 1; display: flex; flex-direction: column; }
     #pred { width: 22cqw; display: flex; flex-direction: column; }
@@ -115,9 +113,7 @@
     .pi small { display: block; color: var(--muted); font-size: 0.8cqw; font-weight: 600; }
     .pi b { margin-left: auto; font-family: 'Orbitron'; color: #fff; }
 
-    /* =========================================
-       SCENE 3: CS SCHEDULE
-       ========================================= */
+    /* SCENE 3: CS SCHEDULE */
     .schedule-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2cqw; padding-right: 1.5cqw; }
     .schedule-list::-webkit-scrollbar { width: 0.5cqw; }
     .schedule-list::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 1cqw; }
@@ -145,9 +141,7 @@
     .st-next { background: rgba(0,229,255,0.15); color: var(--cyan); border: 0.1cqw solid var(--cyan); }
     .st-wait { background: transparent; color: #555; border: 0.1cqw dashed #444; }
 
-    /* =========================================
-       SCENE 4: LIVE STREAM
-       ========================================= */
+    /* SCENE 4: LIVE STREAM */
     #lv-wrap { display: flex; width: 100%; height: 100%; gap: 2cqw; transition: 0.5s; }
     #lv-v { flex: 1; border: 2px solid var(--border); border-radius: 0.5cqw; overflow: hidden; background: #000; position: relative; }
     #lv-v iframe { width: 100%; height: 100%; border: none; }
@@ -155,7 +149,6 @@
     .btn-vid-fs:hover { opacity: 1; background: rgba(0,229,255,0.2); border-color: var(--cyan); }
     .side { width: 28cqw; display: flex; flex-direction: column; gap: 1.5cqw; }
     #chat-p { flex: 1.2; } #map-p { flex: 1; } .side .panel { height: 100%; }
-    
     .map-list { padding: 0.5cqw 1cqw; overflow-y: auto; height: calc(100% - 3cqw); display: flex; flex-direction: column; gap: 0.8cqw; }
     .mp { display: flex; align-items: center; gap: 1cqw; padding: 0.6cqw; background: rgba(255,255,255,0.03); border: 1px solid #222; border-radius: 0.4cqw; }
     .mp img { width: 5cqw; height: 3cqw; object-fit: cover; border-radius: 0.3cqw; border: 1px solid var(--border); }
@@ -184,28 +177,22 @@
     .kf-victim { color: #888; font-weight: 600; text-decoration: line-through; }
     .kf-icon { color: var(--red); font-size: 0.8cqw; }
 
-    /* =========================================
-       SCENE 5: IKLAN
-       ========================================= */
+    /* SCENE 5: IKLAN */
     #scene-ads { justify-content: center; align-items: center; padding: 0; }
     #ads-video { width: 100%; height: 100%; object-fit: contain; background: #000; }
 
-    /* =========================================
-       SCENE 6: MATCH CALLING (MPL STYLE)
-       ========================================= */
+    /* SCENE 6: CALLING */
     #scene-calling { perspective: 1500px; padding: 0; }
     .calling-bg-left, .calling-bg-right { position: absolute; top: 0; bottom: 0; width: 60%; z-index: 1; }
     .calling-bg-left { left: 0; background: linear-gradient(135deg, rgba(0,85,255,0.4) 0%, transparent 80%); clip-path: polygon(0 0, 100% 0, 70% 100%, 0% 100%); }
     .calling-bg-right { right: 0; background: linear-gradient(225deg, rgba(255,0,51,0.4) 0%, transparent 80%); clip-path: polygon(30% 0, 100% 0, 100% 100%, 0% 100%); }
     .floor-grid { position: absolute; bottom: 0; left: 0; width: 100%; height: 30%; background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 4cqw 4cqw; transform: rotateX(75deg); transform-origin: bottom; z-index: 2; animation: gridMove 2s linear infinite; }
-    
     .top-info { position: absolute; top: 2cqw; width: 100%; text-align: center; z-index: 10; display: flex; flex-direction: column; align-items: center; }
     .playoffs { font-family: 'Teko'; font-size: 2.5cqw; color: #fff; letter-spacing: 0.3cqw; font-weight: 600; line-height: 1; }
     .match-day { font-family: 'Teko'; font-size: 6cqw; font-weight: 700; line-height: 0.9; display: flex; justify-content: center; gap: 1.5cqw; }
     .match-day span.b { color: #0055ff; text-shadow: 0 0 2cqw #0055ff; }
     .match-day span.r { color: #ff0033; text-shadow: 0 0 2cqw #ff0033; }
     .match-details { font-family: 'Rajdhani'; font-size: 1.5cqw; color: #fff; display: flex; justify-content: center; gap: 1.5cqw; font-weight: 700; margin-top: 0.5cqw; background: rgba(0,0,0,0.6); padding: 0.2cqw 2cqw; border-radius: 0.5cqw; }
-    
     .teams-wrap { position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 5cqw; z-index: 10; perspective: 1200px; }
     .calling-team { display: flex; flex-direction: column; align-items: center; width: 30cqw; }
     .calling-team.left { animation: floatLeft 4s ease-in-out infinite; }
@@ -219,8 +206,6 @@
     .calling-team.right .team-name { text-shadow: 0 0 2cqw #ff0033; }
     .vs-container { position: relative; z-index: 20; animation: pulseVS 1.5s infinite alternate; }
     .vs-text { font-family: 'Teko'; font-size: 16cqw; line-height: 0.7; font-style: italic; font-weight: 700; background: linear-gradient(to bottom, #fff 40%, #999 100%); -webkit-background-clip: text; color: transparent; filter: drop-shadow(0.5cqw 0.5cqw 0px #ff0033) drop-shadow(-0.5cqw -0.5cqw 0px #0055ff); }
-
-    /* Timer BR di Calling */
     .calling-br-info { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; z-index: 10; position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); }
     .calling-br-info.active { display: flex; }
     .br-timer-title { font-family: 'Rajdhani'; font-size: 2.5cqw; color: var(--gold); letter-spacing: 0.3cqw; font-weight: 700; margin-bottom: 1cqw; text-shadow: 0 0 1cqw rgba(255,215,0,0.5); }
@@ -231,72 +216,55 @@
     .br-map-label { font-family: 'Rajdhani'; font-size: 1.2cqw; color: var(--muted); }
     .br-map-name { font-family: 'Orbitron'; font-size: 2.5cqw; color: var(--cyan); font-weight: 900; }
 
-    /* =========================================
-       SCENE 7: PODIUM JUARA (3D FLIP)
-       ========================================= */
+    /* SCENE 7: PODIUM */
     #scene-juara { padding-top: 1cqw; align-items: center; }
     .podium-area { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 100%; height: 100%; padding-bottom: 2cqw; transform-style: preserve-3d; }
     .main-podium-row { display: flex; align-items: flex-end; justify-content: center; gap: 1.5cqw; width: 100%; }
     .secondary-podium-row { display: flex; align-items: flex-end; justify-content: center; gap: 1.5cqw; width: 100%; margin-top: 2cqw; }
-    
     .flip-card { position: relative; perspective: 1000px; display: flex; flex-direction: column; align-items: center; transition: transform 0.3s; }
     .rank-1 { width: 20cqw; height: 25cqw; z-index: 3; transform: translateZ(30px); }
     .rank-2 { width: 17cqw; height: 19cqw; z-index: 2; }
     .rank-3 { width: 17cqw; height: 16cqw; z-index: 1; }
     .rank-other { width: 13cqw; height: 12cqw; z-index: 1; opacity: 0.9; }
-    
     .flip-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; cursor: pointer; }
     .flip-card.flipped .flip-inner { transform: rotateY(180deg); }
-    
     .flip-front, .flip-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 1.5cqw; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(180deg, rgba(30,30,35,0.95) 0%, rgba(10,10,12,0.98) 100%); padding: 1.5cqw; }
     .rank-1 .flip-front, .rank-1 .flip-back { border: 0.2cqw solid var(--gold); box-shadow: 0 0 2cqw rgba(255,215,0,0.3); }
     .rank-2 .flip-front, .rank-2 .flip-back { border: 0.2cqw solid #c0c0c0; }
     .rank-3 .flip-front, .rank-3 .flip-back { border: 0.2cqw solid #cd7f32; }
     .rank-other .flip-front, .rank-other .flip-back { border: 0.15cqw solid #555; }
     .flip-back { transform: rotateY(180deg); background: linear-gradient(180deg, rgba(15,15,17,0.98) 0%, rgba(0,0,0,1) 100%); }
-    
     .medal { position: absolute; top: -2.5cqw; font-size: 3.5cqw; filter: drop-shadow(0 0 1cqw currentColor); z-index: 5; }
     .rank-1 .medal { color: var(--gold); top: -4cqw; font-size: 5cqw; }
     .rank-2 .medal { color: #c0c0c0; }
     .rank-3 .medal { color: #cd7f32; }
     .rank-other .medal { color: #555; top: -2cqw; font-size: 2.5cqw; }
-    
     .team-logo { width: 5cqw; height: 5cqw; border-radius: 50%; object-fit: cover; border: 0.15cqw solid #333; background: #111; display: flex; justify-content: center; align-items: center; font-family: 'Orbitron'; font-size: 1.5cqw; color: #fff; margin-bottom: 0.5cqw; }
     .rank-1 .team-logo { width: 7cqw; height: 7cqw; border-color: var(--gold); box-shadow: 0 0 1.5cqw var(--gold); font-size: 2cqw; }
     .rank-other .team-logo { width: 4cqw; height: 4cqw; font-size: 1.2cqw; }
-    
     .team-name { font-family: 'Orbitron'; font-size: 1.2cqw; color: #fff; text-align: center; line-height: 1.1; margin-bottom: 0.3cqw; }
     .rank-1 .team-name { font-size: 1.6cqw; color: var(--gold); text-shadow: 0 0 1cqw var(--gold); }
     .rank-other .team-name { font-size: 1cqw; }
-    
     .team-prize { font-family: 'Rajdhani'; font-size: 1cqw; color: var(--cyan); font-weight: 700; background: rgba(0,229,255,0.1); padding: 0.2cqw 0.8cqw; border-radius: 0.5cqw; }
     .rank-1 .team-prize { font-size: 1.3cqw; color: var(--gold); background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); }
     .rank-other .team-prize { font-size: 0.8cqw; }
-    
     .back-title { font-family: 'Orbitron'; font-size: 1cqw; color: var(--gold); margin-bottom: 0.5cqw; }
     .back-stat { font-family: 'Rajdhani'; font-size: 0.9cqw; color: #ccc; margin-bottom: 0.2cqw; }
     .back-stat span { color: #fff; font-weight: bold; }
     .rank-other .back-title, .rank-other .back-stat { font-size: 0.7cqw; }
 
-    /* =========================================
-       SPONSOR POP-UP & PANEL KONTROL STEALTH
-       ========================================= */
+    /* SPONSOR & PANEL */
     #sp { position: absolute; top: 8cqw; right: -60cqw; z-index: 999; display: flex; align-items: center; gap: 1.5cqw; padding: 1.2cqw 2.5cqw; font-family: 'Orbitron'; font-weight: 700; font-size: 1.1cqw; background: rgba(15, 15, 17, 0.85); backdrop-filter: blur(15px); border: 1px solid var(--cyan); border-right: none; border-radius: 1cqw 0 0 1cqw; transition: transform 0.8s cubic-bezier(0.2, 0.9, 0.2, 1); animation: floatCard 3s ease-in-out infinite; }
     #sp.in { transform: translateX(-60cqw); }
     #sp img { height: 4cqw; filter: drop-shadow(0 0 1cqw var(--cyan)); }
     #sp span { color: #fff; text-shadow: 0 0 1cqw var(--cyan); }
-    
-    /* Panel Kontrol Stealth */
     #btn-setting { position: absolute; bottom: 4cqw; right: 2cqw; z-index: 9999; width: 3cqw; height: 3cqw; border-radius: 50%; background: rgba(0,0,0,0.3); color: #fff; display: flex; justify-content: center; align-items: center; font-size: 1.5cqw; opacity: 0.2; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.2); }
     #btn-setting:hover { opacity: 1; background: var(--cyan); color: #000; border-color: var(--cyan); box-shadow: 0 0 1cqw var(--cyan); }
-    
     #ctl { position: absolute; right: 2cqw; bottom: 8cqw; z-index: 10000; display: flex; flex-direction: column; gap: 0.5cqw; padding: 1.5cqw; background: rgba(15,15,17,0.95); border: 1px solid var(--border); border-radius: 1cqw; opacity: 0; pointer-events: none; transform: translateY(2cqw); transition: 0.3s; backdrop-filter: blur(10px); }
     #ctl.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
-    
     .btn { font-family: 'Orbitron'; font-weight: 700; font-size: 0.8cqw; color: var(--chrome); background: #111; border: 1px solid var(--border); padding: 0.8cqw 1cqw; border-radius: 0.4cqw; cursor: pointer; transition: 0.2s; text-align: center; }
     .btn:hover, .btn.on { background: var(--cyan); color: #000; border-color: var(--cyan); }
     .btn.full-btn { background: var(--gold); color: #000; border-color: var(--gold); margin-top: 0.5cqw; }
-    
     .ctl-group { display: flex; flex-direction: column; gap: 0.5cqw; margin-bottom: 1cqw; border-bottom: 1px solid #333; padding-bottom: 1cqw; }
     .ctl-group label { font-family: 'Rajdhani'; font-size: 0.9cqw; color: var(--muted); }
     .ctl-input { width: 100%; padding: 0.5cqw; background: #000; border: 1px solid #333; color: #fff; border-radius: 0.3cqw; font-family: 'Poppins'; font-size: 0.8cqw; }
@@ -327,13 +295,14 @@
 </head>
 <body class="theme-default">
 
-<div id="start-screen" onclick="startDisplay()">
+<!-- ═══ PATCH 2: onclick diubah ke startDisplaySafe ═══ -->
+<div id="start-screen" onclick="startDisplaySafe()">
     <h1>GH-T ARENA</h1>
     <p>KLIK DI MANA SAJA UNTUK MASUK FULLSCREEN</p>
 </div>
 
 <div class="app-wrapper" id="app-wrapper">
-    <video id="video-transisi" playsinline></video> <!-- SUARA AKTIF -->
+    <video id="video-transisi" playsinline></video>
     
     <header>
         <div class="logo-area">
@@ -350,7 +319,6 @@
     </header>
 
     <main>
-        <!-- SCENE 1: STANDBY & CHECK-IN -->
         <div id="scene-standby" class="scene active">
             <div class="sb-left">
                 <div class="standby-sub">MATCH WILL START IN</div>
@@ -375,7 +343,6 @@
             </div>
         </div>
 
-        <!-- SCENE 2: BR LEADERBOARD -->
         <div id="scene-br" class="scene">
             <h2 class="page-title">KLASEMEN BATTLE ROYALE</h2>
             <div id="br-wrap">
@@ -393,14 +360,12 @@
             </div>
         </div>
 
-        <!-- SCENE 3: CS SCHEDULE -->
         <div id="scene-cs" class="scene">
             <div class="schedule-list" id="cs-schedule-list">
                 <div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Memuat Jadwal...</div>
             </div>
         </div>
 
-        <!-- SCENE 4: LIVE STREAM -->
         <div id="scene-live" class="scene">
             <div id="lv-wrap">
                 <div id="lv-v">
@@ -422,17 +387,14 @@
             </div>
         </div>
 
-        <!-- SCENE 5: IKLAN -->
         <div id="scene-ads" class="scene">
-            <video id="ads-video" playsinline></video> <!-- MUTED DIHAPUS -->
+            <video id="ads-video" playsinline></video>
         </div>
 
-        <!-- SCENE 6: MATCH CALLING -->
         <div id="scene-calling" class="scene">
             <div class="calling-bg-left"></div>
             <div class="calling-bg-right"></div>
             <div class="floor-grid"></div>
-            
             <div class="top-info" id="calling-header">
                 <div class="playoffs">PLAYOFFS</div>
                 <div class="match-day"><span class="b">MATCH</span> <span class="r">DAY</span></div>
@@ -442,8 +404,6 @@
                     <span id="c-date">-</span>
                 </div>
             </div>
-
-            <!-- CS VS MODE -->
             <div class="teams-wrap" id="calling-cs">
                 <div class="calling-team left">
                     <div class="logo-box"><img id="c-logo-a" src="" alt=""></div>
@@ -455,8 +415,6 @@
                     <div class="team-name" id="c-name-b">TEAM B</div>
                 </div>
             </div>
-
-            <!-- BR TIMER MODE -->
             <div class="calling-br-info" id="calling-br">
                 <div class="br-timer-title">MATCH SELANJUTNYA AKAN DIMULAI DALAM</div>
                 <div class="br-timer-text" id="calling-timer-text">15:00</div>
@@ -470,12 +428,9 @@
             </div>
         </div>
 
-        <!-- SCENE 7: PODIUM JUARA -->
         <div id="scene-juara" class="scene">
             <h1 class="page-title" style="margin-bottom: 2cqw;">GRAND FINAL RESULTS</h1>
-            <div class="podium-area" id="podium-container">
-                <!-- Diisi via JS -->
-            </div>
+            <div class="podium-area" id="podium-container"></div>
         </div>
     </main>
 
@@ -492,7 +447,6 @@
 
     <footer><div class="running-text" id="mq-text">🔥 SELAMAT DATANG DI GH-T ARENA 🔥</div></footer>
 
-    <!-- PANEL KONTROL STEALTH -->
     <div id="btn-setting" onclick="document.getElementById('ctl').classList.toggle('show')"><i class="fa-solid fa-gear"></i></div>
     
     <div id="ctl">
@@ -529,6 +483,48 @@
     </div>
 </div>
 
+<!-- ═══ PATCH 3: SAFETY SCRIPT — anti crash, start button selalu responsif ═══ -->
+<script>
+window.startDisplaySafe = function() {
+    // 1. Sembunyikan start screen — PASTI jalan
+    var el = document.getElementById('start-screen');
+    if (el) {
+        el.style.opacity = '0';
+        setTimeout(function() { el.style.display = 'none'; }, 500);
+    }
+
+    // 2. Fullscreen — dibungkus try-catch
+    try {
+        if (document.documentElement.requestFullscreen) {
+            var p = document.documentElement.requestFullscreen();
+            if (p && p.catch) p.catch(function(e){ console.warn('Fullscreen error:', e); });
+        }
+    } catch(e) { console.warn('Fullscreen exception:', e); }
+
+    // 3. Kalau library supabase belum ada → beri peringatan jelas
+    if (typeof supabase === 'undefined' || !supabase || typeof supabase.createClient !== 'function') {
+        console.error('❌ Library Supabase gagal dimuat (CDN & lokal).');
+        var err = document.createElement('div');
+        err.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#e53935;color:#fff;padding:15px 25px;border-radius:8px;z-index:999999;font-family:sans-serif;font-size:14px;max-width:90%;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+        err.innerHTML = '⚠️ <b>Library Supabase gagal dimuat.</b><br>Coba refresh halaman atau ganti jaringan.<br>Data turnamen tidak akan muncul.';
+        document.body.appendChild(err);
+        return;
+    }
+
+    // 4. Panggil startDisplay asli (fetch data & play BGM)
+    if (typeof window.startDisplay === 'function') {
+        try { window.startDisplay(); }
+        catch(e) {
+            console.error('startDisplay error:', e);
+            var err2 = document.createElement('div');
+            err2.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#ff9800;color:#000;padding:15px 25px;border-radius:8px;z-index:999999;font-family:sans-serif;font-size:14px;max-width:90%;text-align:center;';
+            err2.innerHTML = '⚠️ <b>Error saat memuat data:</b><br>' + String(e.message || e).slice(0,150) + '<br>Buka Console (F12) untuk detail.';
+            document.body.appendChild(err2);
+        }
+    }
+};
+</script>
+
 <script>
 // =========================================
 // AUDIO & SETUP
@@ -539,7 +535,13 @@ videoTransisi.src = "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/
 
 const SUPABASE_URL = 'https://honxcvnpdruthlygwdyo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_FVoqUlD3xsLW89Ms9CseEg_5__lHrRh';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let sb = null;
+try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch(e) {
+    console.error('❌ createClient gagal:', e);
+}
 
 let TOURNAMENT_ID = new URLSearchParams(window.location.search).get('t') || null;
 let siteSettings = {}; let tournamentInfo = {};
@@ -547,21 +549,20 @@ let brData = []; let predatorData = []; let mapData = []; let chatData = []; let
 let csData = []; let killFeedData = []; let juaraData = []; let checkinData = [];
 let manualTimerInterval = null;
 
-function startDisplay() {
-    const el = document.getElementById('start-screen');
-    el.style.opacity = '0'; setTimeout(() => { el.style.display = 'none'; }, 500);
-    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e => console.log(e));
+// ═══ PATCH 4: startDisplay jadi global + tidak hide/fullscreen (sudah dihandle Safe) ═══
+window.startDisplay = function() {
     if (bgmAudio.src) bgmAudio.play().catch(e => console.log('BGM:', e));
     fetchData();
-}
+};
 
 // =========================================
 // FETCH DATA
 // =========================================
 async function fetchData() {
+    if (!sb) { console.error('Supabase client tidak tersedia'); return; }
     try {
         if (!TOURNAMENT_ID) {
-            const { data: activeTour } = await sb.from('tournaments').select('id').eq('is_offline', true).in('status', ['berlangsung', 'pendaftaran_dibuka']).order('created_at', { ascending: false }).limit(1).maybeSingle();
+            const { data: activeTour } = await sb.from('tournaments').select('id').in('status', ['berlangsung', 'pendaftaran_dibuka']).order('created_at', { ascending: false }).limit(1).maybeSingle();
             if (activeTour) TOURNAMENT_ID = activeTour.id;
         }
         if (!TOURNAMENT_ID) { renderAll(); return; }
@@ -577,7 +578,7 @@ async function fetchData() {
             sb.from('v_cs_bracket_public').select('*').eq('tournament_id', TOURNAMENT_ID).order('round_no'),
             sb.from('kill_feeds').select('*').eq('tournament_id', TOURNAMENT_ID).order('created_at', {ascending: false}).limit(5),
             sb.from('tournament_results').select('*, registrations(team_name, logo_url)').eq('tournament_id', TOURNAMENT_ID).order('final_rank.asc'),
-            sb.from('registrations').select('team_name, status').eq('tournament_id', TOURNAMENT_ID).eq('status', 'resmi_terdaftar') // Simulasi Checkin
+            sb.from('registrations').select('team_name, status').eq('tournament_id', TOURNAMENT_ID).eq('status', 'resmi_terdaftar')
         ]);
 
         if(tour.data) tournamentInfo = { name: tour.data.name, status: tour.data.status, schedule: tour.data.schedule_at, streamUrl: tour.data.stream_url, format: tour.data.format };
@@ -589,7 +590,7 @@ async function fetchData() {
         brData = br.data || []; predatorData = pred.data || []; mapData = maps.data || [];
         chatData = (chat.data || []).reverse(); sponsorData = sp.data || []; csData = cs.data || []; killFeedData = kf.data || [];
         juaraData = juara.data || [];
-        checkinData = (checkin.data || []).map(t => ({ name: t.team_name, checked: false, initial: t.team_name.charAt(0) })); // Simulasi
+        checkinData = (checkin.data || []).map(t => ({ name: t.team_name, checked: false, initial: t.team_name.charAt(0) }));
 
         renderAll();
         setupRealtime();
@@ -613,7 +614,6 @@ function renderAll() {
     renderStandby(); renderBR(); renderCS(); renderLive(); renderKillFeed(); startSponsorLoop(); renderJuara(); renderCalling();
 }
 
-// -- STANDBY & CHECK-IN --
 function renderStandby() {
     const list = $('#absen-list');
     if(checkinData.length === 0) { list.innerHTML = '<div style="text-align:center; color:var(--muted);">Belum ada tim</div>'; return; }
@@ -627,10 +627,7 @@ function renderStandby() {
 function triggerCheckInSuccess(name, logoUrl) {
     const overlay = document.getElementById('overlay-success');
     const logoEl = document.getElementById('suc-logo');
-    
     document.getElementById('suc-name').textContent = name;
-    
-    // Set Logo Tim (Gambar) atau huruf depan (kalau ga ada logo)
     if (logoUrl) {
         logoEl.innerHTML = `<img src="${logoUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
         logoEl.style.fontSize = '0'; 
@@ -638,22 +635,13 @@ function triggerCheckInSuccess(name, logoUrl) {
         logoEl.innerHTML = name.charAt(0).toUpperCase();
         logoEl.style.fontSize = '5cqw';
     }
-
-    // Munculkan Overlay Fullscreen
     overlay.classList.add('active');
-
-    // Update list absen di layar standby
     const team = checkinData.find(t => t.name === name); 
     if(team) team.checked = true; 
     renderStandby();
-
-    // Sembunyikan lagi setelah 5 detik
-    setTimeout(() => { 
-        overlay.classList.remove('active'); 
-    }, 5000);
+    setTimeout(() => { overlay.classList.remove('active'); }, 5000);
 }
 
-// -- BR & PREDATOR --
 function renderBR() {
     const L = $('#br-list'); L.innerHTML = '';
     const rows = [...brData].sort((a,b) => a.rank_no - b.rank_no);
@@ -667,7 +655,6 @@ function renderBR() {
     $('#pr-list').innerHTML = [...predatorData].sort((a,b)=>b.total_kills-a.total_kills).slice(0,5).map((p,i)=>`<div class="pi"><em>${i+1}</em><div>${esc(p.nickname)}<small>${esc(p.team_name)}</small></div><b>${p.total_kills}</b></div>`).join('') || '<div style="text-align:center; padding: 2cqw; color: var(--muted);">Belum ada data</div>';
 }
 
-// -- CS SCHEDULE --
 function renderCS() {
     const list = $('#cs-schedule-list'); list.innerHTML = '';
     if(!csData || csData.length === 0) { list.innerHTML = '<div style="text-align:center; padding: 5cqw; color: var(--muted); font-size: 1.5cqw;">Jadwal Belum Tersedia</div>'; return; }
@@ -700,7 +687,6 @@ function renderCS() {
     });
 }
 
-// -- KILL FEED --
 function renderKillFeed() {
     const box = $('#kill-feed'); box.innerHTML = '';
     killFeedData.forEach(kf => {
@@ -710,7 +696,6 @@ function renderKillFeed() {
     });
 }
 
-// -- LIVE STREAM (YOUTUBE & TWITCH) --
 let isFullVideo = false;
 function toggleVideoFullscreen() {
     const wrap = document.getElementById('lv-wrap'); const btn = document.querySelector('.btn-vid-fs'); isFullVideo = !isFullVideo;
@@ -753,7 +738,6 @@ function addOverlayChat(name, text, animate = true) {
     if (box.children.length > 6) { const first = box.firstElementChild; first.style.transition = 'all 0.3s ease-in'; first.style.opacity = '0'; first.style.transform = 'translateY(-20px) scale(0.95)'; first.style.maxHeight = '0'; first.style.marginBottom = '0'; first.style.padding = '0'; setTimeout(() => first.remove(), 300); }
 }
 
-// -- SPONSOR --
 let spI = 0, spTimeout;
 function startSponsorLoop() {
     if(spTimeout) clearTimeout(spTimeout); if(!sponsorData.length) return;
@@ -763,15 +747,11 @@ function startSponsorLoop() {
     spTimeout = setTimeout(() => { e.classList.remove('in'); spTimeout = setTimeout(startSponsorLoop, 9000); }, 6000);
 }
 
-// -- CALLING (MPL STYLE) --
 function renderCalling() {
     const isCS = tournamentInfo.format === 'CS';
-    
-    // Sembunyikan/tampilkan elemen sesuai mode
     $('#calling-header').style.display = isCS ? 'flex' : 'none';
     $('#calling-cs').style.display = isCS ? 'flex' : 'none';
     $('#calling-br').style.display = isCS ? 'none' : 'flex';
-    
     if(isCS && csData.length > 0) {
         const nextMatch = csData.find(m => m.public_status === 'berlangsung') || csData.find(m => m.public_status === 'belum_dimulai') || csData[0];
         if(nextMatch) {
@@ -792,7 +772,6 @@ function renderCalling() {
     }
 }
 
-// -- JUARA (3D FLIP) --
 function renderJuara() {
     const container = document.getElementById('podium-container');
     container.innerHTML = ''; 
@@ -804,7 +783,6 @@ function renderJuara() {
     const secTier = sortedData.filter(t => t.final_rank > 3);
     let mainHTML = '';
     const order = [mainTier[1], mainTier[0], mainTier[2]].filter(Boolean);
-    
     order.forEach(team => {
         let rankClass = team.final_rank === 1 ? 'rank-1' : (team.final_rank === 2 ? 'rank-2' : 'rank-3');
         let medal = team.final_rank === 1 ? '<i class="fa-solid fa-crown medal"></i>' : '<i class="fa-solid fa-medal medal"></i>';
@@ -827,7 +805,6 @@ function renderJuara() {
                 </div>
             </div>`;
     });
-    
     let secHTML = '';
     secTier.forEach(team => {
         const tname = team.registrations?.team_name || 'TEAM';
@@ -859,10 +836,8 @@ setInterval(() => {
     cards[currentFlip % cards.length].classList.add('flipped'); currentFlip++;
 }, 4000);
 
-// =========================================
-// REALTIME
-// =========================================
 function setupRealtime() {
+    if (!sb) return;
     sb.channel('rt_display').on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_chats' }, payload => {
         if(payload.new && payload.new.tournament_id === TOURNAMENT_ID) { chatData.push(payload.new); if(chatData.length > 50) chatData.shift(); if(document.getElementById('scene-live').classList.contains('active')) renderLive(); }
     }).on('postgres_changes', { event: '*', schema: 'public', table: 'kill_feeds' }, payload => {
@@ -871,27 +846,14 @@ function setupRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'br_matches' }, () => fetchData())
     .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => fetchData())
     .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => fetchData())
-.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'etickets' }, async (payload) => {
-    // Cek apakah update ini mengubah status menjadi 'sudah check-in'
-    if(payload.new && payload.new.is_checked_in === true && payload.old && payload.old.is_checked_in === false) {
-        console.log("Ada tim check-in realtime...", payload.new);
-        
-        // Tarik data nama tim & logo dari database
-        const { data: reg } = await sb.from('registrations')
-            .select('team_name, logo_url')
-            .eq('id', payload.new.registration_id)
-            .maybeSingle();
-            
-        if (reg) {
-            // Panggil fungsi pop-up yang baru kita buat di atas
-            triggerCheckInSuccess(reg.team_name, reg.logo_url);
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'etickets' }, async (payload) => {
+        if(payload.new && payload.new.is_checked_in === true && payload.old && payload.old.is_checked_in === false) {
+            const { data: reg } = await sb.from('registrations').select('team_name, logo_url').eq('id', payload.new.registration_id).maybeSingle();
+            if (reg) triggerCheckInSuccess(reg.team_name, reg.logo_url);
         }
-    }
-}).subscribe();
+    }).subscribe();
+}
 
-// =========================================
-// PANEL KONTROL & TRANSISI
-// =========================================
 const adPlaylist = [
     "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/lv_0_20261117014719.mp4",
     "https://mxhjnpuzxvynspbzrnte.supabase.co/storage/v1/object/public/Gh-video-iklan1/lv_0_20261117014702.mp4",
@@ -902,11 +864,10 @@ let adIndex = 0; const adVideo = document.getElementById('ads-video');
 function playAd() { 
     if(!adPlaylist.length || !adVideo) return; 
     adVideo.src = adPlaylist[adIndex]; 
-    adVideo.muted = false; // Paksa nyalain suara
-    adVideo.volume = bgmAudio.volume; // Samain volume sama BGM
-    
+    adVideo.muted = false;
+    adVideo.volume = bgmAudio.volume;
     adVideo.play().catch(e => {
-        console.log("Browser nolak autoplay bersuara, terpaksa mute ulang.", e);
+        console.log("Browser nolak autoplay bersuara, mute.", e);
         adVideo.muted = true;
         adVideo.play().catch(()=>{});
     }); 
@@ -937,7 +898,7 @@ window.nav = function(targetScene) {
         if (targetScene === 'calling') renderCalling();
         if (targetScene === 'juara') renderJuara();
         if (targetScene === 'ads') { playAd(); } else { if(adVideo) adVideo.pause(); }
-        document.getElementById('ctl').classList.remove('show'); // Sembunyikan panel saat pindah scene
+        document.getElementById('ctl').classList.remove('show');
         setTimeout(() => { window.isTransitioning = false; }, 100);
     });
 };
@@ -945,18 +906,14 @@ window.nav = function(targetScene) {
 $$('#ctl .btn[data-s]').forEach(b => b.onclick = () => nav(b.dataset.s));
 $('#fv').onclick = () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
 
-// Logic Timer & BGM
 function setTimer() {
     const m = parseInt(document.getElementById('input-timer').value) || 15;
     const total = m * 60;
     if(manualTimerInterval) clearInterval(manualTimerInterval);
-    
-    // Ganti scene ke calling & mode BR
     nav('calling');
-    $('#calling-header').style.display = 'none'; // Sembunyikan header CS
+    $('#calling-header').style.display = 'none';
     $('#calling-cs').style.display = 'none';
     $('#calling-br').style.display = 'flex';
-    
     let timeLeft = total;
     manualTimerInterval = setInterval(() => {
         if(timeLeft > 0) {
@@ -968,8 +925,6 @@ function setTimer() {
             $('#calling-timer-text').innerText = "00:00";
         }
     }, 1000);
-    
-    // Update teks awal
     $('#calling-timer-text').innerText = `${String(m).padStart(2, '0')}:00`;
 }
 
