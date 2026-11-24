@@ -214,23 +214,28 @@ H.t = async (env, chat, mid, p) => {
   if (!a) return sh(env, chat, mid, await tList(env));
   if (a === 'new') return wizStart(env, chat, mid);
   if (a === 'v') return sh(env, chat, mid, await tDetail(env, id));
-  if (a === 'disp') {
-    return show(env, chat, mid, `<b>📺 Kontrol Display Proyektor</b>\nPilih mode layar:`, {
+if (a === 'disp') {
+    return show(env, chat, mid, `<b>📺 Kontrol Display Proyektor</b>\nPilih mode layar (link langsung membuka layar turnamen ini):`, {
       inline_keyboard: [
-        [b('🟢 Standby / Countdown', `m:t:dis:cd:${id}`)],
+        [b('🤖 AUTO (ganti scene otomatis)', `m:t:dis:auto:${id}`)],
+        [b('🟢 Standby / Countdown', `m:t:dis:cd:${id}`), b('📣 Calling', `m:t:dis:call:${id}`)],
         [b('📊 Leaderboard BR', `m:t:dis:br:${id}`), b('⚔️ Bracket CS', `m:t:dis:cs:${id}`)],
-        [b('📺 Live Stream + Chat', `m:t:dis:live:${id}`)],
+        [b('📺 Live Stream + Chat', `m:t:dis:live:${id}`), b('🏆 Juara', `m:t:dis:win:${id}`)],
+        [b('🎬 Iklan', `m:t:dis:ads:${id}`)],
         [b('📝 Ubah Running Text', `m:t:rt:${id}`)],
         [b('⬅️ Kembali', 'm:t:v:' + id)]
       ]
     });
-  }
-  if (a === 'dis') {
-    const mode = p[3];
-    const baseUrl = 'https://gh-t-arena-web.pages.dev/display';
-    const url = `${baseUrl}?view=${mode}&t=${id}`;
-    return show(env, chat, mid, `<b>✅ LINK DISPLAY SIAP</b>\nCopy link di bawah ini, buka di Chrome laptop proyektor:\n\n<code>${url}</code>\n\n<i>Tips: Tekan F11 untuk Fullscreen.</i>`, { inline_keyboard: [[b('⬅️ Kembali', 'm:t:disp:' + id)]] });
-  }
+}
+    if (a === 'dis') {
+    const mode = p[3];          // ← mode  (cd|br|cs|live|call|ads|win|auto)
+    const tid  = p[4];          // ← ID turnamen (BUKAN p[3])
+    const baseUrl = (env.DISPLAY_URL || 'https://gh-t-arena-web.pages.dev/display.html');
+    const url = `${baseUrl}?view=${mode}&t=${tid}`;
+    return show(env, chat, mid,
+      `<b>✅ LINK DISPLAY SIAP</b>\nTap tombol <b>Buka Display</b> atau copy link di bawah, buka di Chrome laptop proyektor:\n\n<code>${url}</code>\n\n<i>Tips: F11 untuk Fullscreen. Display otomatis ter-update (leaderboard, jadwal, stream, map) tanpa refresh.</i>`,
+      { inline_keyboard: [[{ text: '🔗 Buka Display', url }], [b('⬅️ Kembali', 'm:t:disp:' + tid)]] });
+    }
   if (a === 'rt') {
     await setState(env, chat, 't_rt', { tid: id });
     return show(env, chat, mid, `<b>📝 Ubah Running Text</b>\nKetik teks berjalan di bawah layar proyektor:`, { inline_keyboard: [[b('✖️ Batal', 'm:t:disp:' + id)]] });
